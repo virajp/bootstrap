@@ -921,8 +921,8 @@ A key is a path whose first segment names the file: `repo.<key>`,
 - `set` and `unset` write only the file of the key, with its comments kept,
   and run no sync. A change of a key that a sync reads prints the info line
   `run bootstrap sync to apply it`: each `tools.*` key, and each `repo.*` key
-  except `deploy.*`, `release_env`, `topology`, `topology_reason`,
-  `bootstrap_commit` and `format`. A change whose result breaks a rule of the
+  except `topology`, `topology_reason`, `bootstrap_commit` and `format`. A
+  change whose result breaks a rule of the
   schema writes nothing and stops with code 2. `unset` of a required key stops
   with code 2.
 - `set repo.projects.<name> '{"folder": "<folder>"}'` writes a project. Each

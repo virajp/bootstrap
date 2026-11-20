@@ -266,15 +266,16 @@ the path below `.config/mise/tasks/` in the target, for example
 `code/lint/70-ruff.py`. The header comments `# MISE` and `# USAGE` stay in
 the task file, a Python task of the repo side or of the Mac side.
 
-| Key              | Side | Meaning                                                                                                                                                                                                                                                                       |
-| ---------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`         | Both | Necessary. The path below `tasks/`, with no `..` part. The tools use a flat name: `code-lint-ruff.py`.                                                                                                                                                                        |
-| `mode`           | Both | `copy` (the default) or `template`.                                                                                                                                                                                                                                           |
-| `requires`       | Both | As in `[files]`.                                                                                                                                                                                                                                                              |
-| `requires_found` | Repo | As in `[files]`.                                                                                                                                                                                                                                                              |
-| `when`           | Both | As in `[files]`.                                                                                                                                                                                                                                                              |
-| `library`        | Both | `true` for a library below `_scripts/`, and only there. A library is not a task.                                                                                                                                                                                              |
-| `replaces`       | Both | A non-empty list of `sha256:<64 hex>` items, in lower case: the hashes of the known old copies of a part, for example the copy of a stackgen pack. Only a part in the folder of its group has it, for example `test/golden/40-swift.py`. The repo side acts on it; see below. |
+| Key              | Side | Meaning                                                                                                                                                                                                                                                                                           |
+| ---------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`         | Both | Necessary. The path below `tasks/`, with no `..` part. The tools use a flat name: `code-lint-ruff.py`.                                                                                                                                                                                            |
+| `mode`           | Both | `copy` (the default) or `template`.                                                                                                                                                                                                                                                               |
+| `requires`       | Both | As in `[files]`.                                                                                                                                                                                                                                                                                  |
+| `requires_found` | Repo | As in `[files]`.                                                                                                                                                                                                                                                                                  |
+| `when`           | Both | As in `[files]`.                                                                                                                                                                                                                                                                                  |
+| `library`        | Both | `true` for a library below `_scripts/`, and only there. A library is not a task.                                                                                                                                                                                                                  |
+| `each`           | Repo | A value path of `repo.toml` with `{name}` parts, for example `"release.{project}.{kind}"`. The sync renders the entry one time for each table at that path; the key of the entry has the same `{name}` parts, for example `release/{project}/{kind}.py`. It needs `mode = "template"`. See below. |
+| `replaces`       | Both | A non-empty list of `sha256:<64 hex>` items, in lower case: the hashes of the known old copies of a part, for example the copy of a stackgen pack. Only a part in the folder of its group has it, for example `test/golden/40-swift.py`. The repo side acts on it; see below.                     |
 
 The rules of the task files:
 
@@ -298,6 +299,13 @@ The rules of the task files:
   `code:format:40-ruff` is gone. The gates `code:lint:70-ruff` and
   `code:lint:50-pyrefly` run only with a `pyproject.toml` (`requires_found`),
   and their `# FILES` header excludes `.config/mise/tasks/**`.
+- An entry with `each` gives one file for each table at its path, in key
+  order, and none when the path has no table. Each `{name}` of the key becomes
+  the key of the table at that part of the path, which must be letters,
+  digits, `-` and `_`. The template gets `.each`: each `{name}` and `value`,
+  the table (see [repo.md](repo.md#the-template-context)). When a table goes,
+  the stale rule removes its file. A `{name}` part of a key needs `each`, and
+  `each` is not for the Mac side.
 - A known old copy of a part is a regular file at the old path of its group
   (`test/golden`) or at `<group>/50-local`, whose sha256 is in `replaces` of
   that part, and the tool of the part is selected. `bootstrap migrate` removes

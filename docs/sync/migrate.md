@@ -54,6 +54,8 @@ into `.config/bootstrap/`.
 | `main` and `develop` in `core_branches`, and `main` with a commit that `develop` does not have                                      | M49, before the next `git:merge:main`.                                                                                                                     |
 | A script, a hook or a habit that runs `setup:configs` on a dirty tree, or commits its result by hand                                | M50, after the release with `default_branch`.                                                                                                              |
 | An own task that is not a Python uv script, or own shell functions in `.config/mise/tasks/_scripts/local`                           | M51, after M48.                                                                                                                                            |
+| `release_env` or a `[deploy.<env>]` table in `.config/bootstrap/repo.toml`                                                          | M52, before the next sync.                                                                                                                                 |
+| An own task that bumps a version, commits a release or makes a release tag, for example `p:release`                                 | M53, after the release with the release tasks.                                                                                                             |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1610,3 +1612,54 @@ set of rules. M48 moved only the own tasks that source a shell library.
    instead, or run it and discard its changes.
 7. Change each doc that names an old file path of a task.
 8. Commit the changed files.
+
+## M52: `release_env` and `[deploy.<env>]` are gone
+
+`repo.toml` has no `release_env` key and no `[deploy.<env>]` table now. No
+task read them. The `[release.<project>.<kind>]` tables describe the releases
+of a repository (M53). A sync or `bootstrap check` stops with code 2 while
+the file has one of them.
+
+1. Delete the `release_env` line and each `[deploy.<env>]` table of
+   `.config/bootstrap/repo.toml` in an editor. `bootstrap config unset` does
+   not know these keys now.
+2. Run `bootstrap check`, and make sure that it exits 0.
+3. Commit `.config/bootstrap/repo.toml`.
+
+## M53: Own release tasks become `[release.<project>.<kind>]` tables
+
+The `git` tool ships `git:tag` and one task `release:<project>:<kind>` for
+each `[release.<project>.<kind>]` table of `repo.toml`. An own task that bumps
+a version, commits the bump and makes a tag, for example `p:release` and
+`p:version`, does the same work. Move it to a table. The keys are in
+`docs/design/bootstrap-config.md` of `bootstrap`
+("`[release.<project>.<kind>]`").
+
+1. Find the own release tasks, and the release workflows of the repository:
+
+   ```bash
+   grep -rlE 'git tag|version --no-git-tag-version|cargo set-version' .config/mise/tasks
+   grep -lE '^\s+tags:' .github/workflows/*.y*ml
+   ```
+
+2. For each project that has a release, make sure that it has a
+   `[projects.<name>]` table (`bootstrap detect --add`).
+3. Write one table for each release of the project with
+   `bootstrap config set`:
+   - A release that CI starts from a tag: `type = "tag"`, the `tag` with
+     `{version}` (the tag pattern of the workflow), `version` (the version
+     file, or `"tag"`), the `branch` of the tag, `preflight` (the checks that
+     the old task ran first) and `workflow` (the workflow file).
+   - A second environment of the same project, for example production after
+     staging: `type = "tag"` with `from` the first kind.
+   - A build that installs on this machine: `type = "local"` and `task`, the
+     own task that builds and installs it.
+4. Move the pending level of each project to
+   `bootstrap config set releases.<project> <level>`. A file such as
+   `.config/releases.yaml` goes.
+5. Run `mise run setup:configs`, then
+   `mise run release:<project>:<kind> --dry-run` for each table. Make sure
+   that the tag and the version are the ones that the old task gives.
+6. Delete the old release tasks, and change each doc and workflow that names
+   them.
+7. Commit the changed files.

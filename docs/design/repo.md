@@ -187,6 +187,12 @@ names are in [bootstrap-config.md](bootstrap-config.md#reserved-names).
 A name has only letters, digits, `-` and `_`, and two members never have the
 same name. If not, the sync stops.
 
+A task entry with `each` (see [tools.md](tools.md#the-tasks-table)) also gets
+`.each`: one value for each `{name}` of its path, and `.each.value`, the table
+of that file. For `each = "release.{project}.{kind}"`, `.each.project` is the
+project, `.each.kind` the kind and `.each.value` the
+`[release.<project>.<kind>]` table.
+
 ## The branch model and the merge tasks
 
 The `git` tool holds the branch model. The engine has no branch rule.
@@ -344,6 +350,55 @@ git, not worktrunk. `create` and `delete` read `core_branches` with
 - `delete` stops with code 2 for a core branch, and when it runs inside the
   worktree that it would remove. It stops with code 1 when no worktree has the
   branch.
+
+### The release tasks
+
+The `git` tool ships `git:tag`, the library `_scripts/release.py`, and one
+task `release:<project>:<kind>` for each `[release.<project>.<kind>]` table of
+`repo.toml` (see
+[bootstrap-config.md](bootstrap-config.md#releaseprojectkind)). The tables
+are in the repository that owns the project. A base repository runs the
+release of a member with `mise --cd <member> run release:<project>:<kind>`.
+
+`git:tag <name> [--message <text>] [--push]` tags `HEAD` with an annotated,
+signed tag (`git tag --sign`). The default message is the name. It stops with
+code 1, and changes nothing, when the tree has uncommitted or untracked files,
+when the tag exists here or on `origin`, and with `--push` when no branch of
+`origin` contains `HEAD`. With `--push`, it pushes only the tag. It does not
+examine the branch.
+
+A task of a `local` kind runs the tasks of `preflight`, then `task`. It reads
+no level and makes no tag.
+
+A task of a `tag` kind runs on its `branch`, with a clean tree, else it stops
+with code 1. It takes the first step that applies:
+
+1. **Resume.** The newest commit `ops: release <tag>` of its `tag` on
+   `branch` has no tag: the task tags the first commit of the first-parent
+   line of `branch` that contains it. That is the merge commit, or the release
+   commit itself after a direct commit. It does not bump.
+2. **Promotion.** The table has `from`: the task finds the last tag of the
+   `from` kind, makes sure that `branch` contains its commit, and tags `HEAD`
+   with the same version and its own `tag`. It reads no level and makes no
+   commit.
+3. **Release.** The task reads the level of `releases.<project>`. With `NONE`,
+   it prints one line and exits 0. Else it runs the tasks of `preflight`,
+   bumps the version of `version`, and makes one commit `ops: release <tag>`
+   with the version file and the cleared level (`bootstrap config unset`). A
+   `Cargo.toml` also updates its package in `Cargo.lock`. The commit lands as
+   `[branches.<branch>].landing` says:
+   - `direct-merge`: the commit is on the local branch `release/<tag>`,
+     `git:merge:<branch>` lands it, and the task deletes the branch and tags
+     the merge commit.
+   - `direct-commit`: the commit is on `branch`, and the task tags it. With
+     `--push`, it pushes `branch` first.
+   - `pr`: `git:merge:<branch>` opens the request and the task stops. A run
+     after the merge tags it (step 1).
+
+Each `tag` task takes `--push`, which goes to `git:tag`, and `--dry-run`,
+which prints the level, the versions and the tag and changes nothing. Without
+`--push`, the task prints the push command. With `--push` and `workflow`, it
+watches the run of the workflow with `gh run watch`.
 
 ## The pre-commit config
 

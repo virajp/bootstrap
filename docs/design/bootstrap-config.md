@@ -142,8 +142,8 @@ web = "PATCH"
 | `[home]`                            | Table           | No        | The sync writes it; `git:worktree:list`                                       |
 | `[projects.<name>]`                 | Table           | No        | `detect`, `check`, `describe`; vwf through `bootstrap config`                 |
 | `[projects.<name>].folder`          | String          | Yes       | `detect`, `check`                                                             |
-| `release_env`                       | String          | No        | Nothing in bootstrap                                                          |
-| `[deploy.<env>].<project>`          | String          | No        | Nothing in bootstrap                                                          |
+| `[release.<project>.<kind>]`        | Table           | No        | The sync: one `release:<project>:<kind>` task for each table                  |
+| `[release.<project>.<kind>].<key>`  | See below       | No        | `release:<project>:<kind>`                                                    |
 
 `tools.toml`:
 
@@ -164,10 +164,10 @@ web = "PATCH"
 
 `releases.toml`:
 
-| Key         | Type    | Necessary | Read by                                     |
-| ----------- | ------- | --------- | ------------------------------------------- |
-| `format`    | Integer | Yes       | The engine: `3`, the form of the file       |
-| `<project>` | String  | No        | `bootstrap config`; the release tasks later |
+| Key         | Type    | Necessary | Read by                               |
+| ----------- | ------- | --------- | ------------------------------------- |
+| `format`    | Integer | Yes       | The engine: `3`, the form of the file |
+| `<project>` | String  | No        | `bootstrap config`; the release tasks |
 
 Keys are snake case. A key of a question is a `[tools.<folder>].<key>`:
 `bootstrap migrate` and `bootstrap add tool <tool…>` write the answer there. See
@@ -481,11 +481,49 @@ folder = "services/api"
 
 No synced file uses the projects.
 
-### `release_env` and `[deploy.<env>]`
+### `[release.<project>.<kind>]`
 
-`release_env` names the environment of a release. `[deploy.<env>]` holds the
-URL of each project in an environment, `<project> = "<url>"`. Bootstrap does
-not read them.
+One release of a project. `<project>` is the name of a `[projects.<name>]`
+table of the same file. `<kind>` is a name in lowercase kebab case, for
+example `prod`, `staging` or `local`. The `git` tool ships the task
+`release:<project>:<kind>` for each table, and `git:tag`. See
+[repo.md](repo.md#the-release-tasks).
+
+```toml
+[projects.web]
+folder = "web"
+
+[release.web.prod]
+preflight = [ "p:check" ]
+tag = "web-v{version}"
+type = "tag"
+version = "package.json"
+workflow = "release.yml"
+
+[release.web.local]
+task = "p:local"
+type = "local"
+```
+
+| Key         | Types | Necessary | Default | Meaning                                                                                                                              |
+| ----------- | ----- | --------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `type`      | Both  | Yes       |         | `tag`: the release is a tag, and CI starts on it. `local`: the release builds and installs the project on this machine, with no tag. |
+| `tag`       | tag   | Yes       |         | The name of the tag, with `{version}`, for example `"v{version}"`. Two tables of one file cannot have the same tag.                  |
+| `version`   | tag   | No        | `tag`   | The source of the version: `tag`, the last tag of `tag`, or a `.json` file or a `Cargo.toml`, relative to the folder of the project. |
+| `branch`    | tag   | No        | `main`  | The core branch of the release commit and of the tag.                                                                                |
+| `from`      | tag   | No        |         | Another tag kind of the project: the table promotes the last version of that kind. It has no `version`.                              |
+| `preflight` | Both  | No        | `[]`    | The tasks that run first, for example `["p:check"]`.                                                                                 |
+| `workflow`  | tag   | No        |         | The workflow file that the tag starts, for example `"release.yml"`. With `--push`, the task watches its run with `gh run watch`.     |
+| `task`      | local | Yes       |         | The own task that builds the project and installs it on this machine.                                                                |
+
+`bootstrap check` stops with code 2 when the project is not a
+`[projects.<name>]` table, the kind is not kebab case, a table has no type or a
+key of the other type, a `tag` table has no `tag` or a `tag` without
+`{version}`, two tables have one `tag`, `branch` is not a core branch,
+`version` is not a version source, `from` is not another tag kind without
+`from`, a table has both `from` and `version`, or a project has more than one
+tag kind without `from`. A change of a table needs a sync, because the sync
+writes the tasks.
 
 ## The keys of `tools.toml`
 
@@ -611,8 +649,10 @@ The release level of a project: `NONE`, `PATCH`, `MINOR` or `MAJOR`. The
 default is `NONE`. `bootstrap config set releases.<project> <level>` keeps the
 higher level when the file already has one, and creates the file with
 `format = 3` when it is not there. `bootstrap config unset releases.<project>`
-clears it. The release tasks of the plugins still read `.config/releases.yaml`
-until they move to `bootstrap config`; `migrate` does not move that file.
+clears it. The task `release:<project>:<kind>` of a tag kind reads the level,
+and its release commit clears it. The release tasks of the plugins still read
+`.config/releases.yaml` until they move to `[release.<project>.<kind>]`;
+`migrate` does not move that file.
 
 ## Reserved names
 
