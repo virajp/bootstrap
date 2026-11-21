@@ -73,7 +73,7 @@ in more than one pack, or in no pack. Only a member of `base` can be required.
 | Pack             | Required members                                                                                                                                                                                                                                                                                                                                                                                                                                    | Other members                                                                                                                                       |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `base`           | `mise`, `homebrew`, `bash`, `zsh`, `fish`, `git`, `git-tools`, `ssh`, `cli`, `fnox`, `node`, `touchid-sudo`, `starship`, `network`, `macos-defaults`, `gh`, `ruby`, `fonts`, `mas`, `age`, `bat`, `coreutils`, `curl`, `doggo`, `eza`, `fzf`, `gping`, `httping`, `ipcalc`, `jq`, `lazygit`, `prettyping`, `ripgrep`, `zoxide`, `diff-so-fancy`, `glab`, `btop`, `pstree`, `tree`, `watch`, `wget`, `yq`, `vorssaint`, `pre-commit`, `python`, `uv` | `visual-studio-code`                                                                                                                                |
-| `claude`         | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `claude-desktop`, `claude-cli`, `claude-status`, `codeburn`                                                                                         |
+| `claude-apps`    | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `claude-desktop`, `claude-cli`, `claude-status`, `codeburn`                                                                                         |
 | `essentials`     | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `alfred`, `easyfind`, `the-unarchiver`, `brave-browser`, `github-desktop`, `google-chrome`, `tailscale`, `taskexplorer`, `battery-health`, `setapp` |
 | `1password-apps` | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `1password`, `1password-cli`, `1password-safari`                                                                                                    |
 | `dev`            | —                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `lcov`, `orbstack`, `superfile`, `sublime-text`                                                                                                     |
@@ -206,45 +206,59 @@ Cardhop, from the Mac App Store.
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
-### `claude-cli`
+### `claude`
 
-Claude Code: its settings, CLAUDE.md, output styles, the func:claude and
-upgrade:ai tasks and the cc* aliases.
+The shared Claude files: settings.json, CLAUDE.md and the upgrade:ai task.
+`claude-cli` and `claude-desktop` depend on it, so the sync adds it with
+either one.
 
-- **Packs:** `claude`
-- **Depends:** `cli`
+- **Packs:** none
 - **Files:**
-  - `~/.claude/CLAUDE.md` — seed
-  - `~/.claude/output-styles/ste100.md` — copy
-  - `~/.claude/output-styles/terse.md` — copy
+  - `~/.claude/CLAUDE.md` — merge
   - `~/.claude/settings.json` — merge
 - **Tasks:**
-  - `~/.config/mise/tasks/func/claude.py`
   - `~/.config/mise/tasks/upgrade/ai.py`
 - **Defaults:** `settings`, `lists`
-- **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
+- **Mise sections:** none
 - **Settings:** The merge spec adds only `$schema`, the install keys of `env`
   and, with `claude-status`, its status lines and hook. The own keys of the
-  user are in `settings` of `[tools.claude-cli]`. `lists` maps a dotted path,
-  for example `"permissions.allow"`, to the items that the sync adds to that
-  list. The `CLAUDE.md` seed is a short generic file.
+  user are in `settings` of `[tools.claude]`. `lists` maps a dotted path, for
+  example `"permissions.allow"`, to the items that the sync adds to that list.
+- **CLAUDE.md:** bootstrap owns the section between the `bootstrap:start` and
+  `bootstrap:end` lines at the top of the file, and each sync writes it again.
+  The own rules of the user go after the `bootstrap:end` line, and they stay.
+- **upgrade:ai:** it calls the `claude` command of `claude-cli`.
+
+### `claude-cli`
+
+Claude Code: its output styles, the func:claude task and the cc* aliases.
+
+- **Packs:** `claude-apps`
+- **Depends:** `claude`, `cli`
+- **Files:**
+  - `~/.claude/output-styles/ste100.md` — copy
+  - `~/.claude/output-styles/terse.md` — copy
+- **Tasks:**
+  - `~/.config/mise/tasks/func/claude.py`
+- **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 
 ### `claude-desktop`
 
 Claude Desktop.
 
-- **Packs:** `claude`
+- **Packs:** `claude-apps`
+- **Depends:** `claude`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `claude-status`
 
 The status line of Claude Code (from the virajp/tap tap). When this tool is
-selected, the merge spec of `~/.claude/settings.json` of `claude-cli` adds
+selected, the merge spec of `~/.claude/settings.json` of `claude` adds
 `statusLine`, `subagentStatusLine` and the `PostToolUse` hook of
 `claude-status`.
 
-- **Packs:** `claude`
+- **Packs:** `claude-apps`
 - **Depends:** `claude-cli`
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.brew]`, `[mise.bootstrap.packages]`
@@ -270,7 +284,7 @@ keychain:delete tasks. Each command-line package is a tool of its own.
 
 codeburn, the usage and cost report of the AI tools, and its aistats alias.
 
-- **Packs:** `claude`
+- **Packs:** `claude-apps`
 - **Depends:** `claude-cli`, `node`
 - **Files:** none
 - **Mise sections:** `[mise.tools]`, `[mise.shell_alias]`

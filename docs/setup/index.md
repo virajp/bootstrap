@@ -330,6 +330,10 @@ Do each command of these items in the clone.
    key. If `macos.toml` has `UV_NO_CACHE` in `[overrides.mise.env]`, remove
    it before the dry run, else the sync stops (see M46 in
    `docs/sync/migrate.md`).
+
+   The values `settings` and `lists` of `claude-cli` are now in
+   `[tools.claude]`. If `[tools.claude-cli]` has them, do M55 of
+   `docs/sync/migrate.md` before the dry run.
 5. Do a dry run: `bootstrap mac migrate --answer … --dry-run`. It also moves an
    old form, for example a file without `format = 2`, the `[packs.*]` tables,
    or the table of the old Mac entry tool to `[tools.mise]` (see

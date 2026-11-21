@@ -1,0 +1,33 @@
+# The claude tool: the ~/.claude files that Claude Code and Claude Desktop
+# share (settings.json and CLAUDE.md), and the upgrade:ai task. claude-cli and
+# claude-desktop depend on it.
+
+category = "ai"
+description = "The shared Claude files: settings.json, CLAUDE.md and the upgrade:ai task"
+summary = "The shared Claude settings and CLAUDE.md"
+
+# settings.json and CLAUDE.md are shared files. bootstrap adds the keys and
+# list items of the settings.json spec, and Claude Code owns the rest. In
+# CLAUDE.md, bootstrap owns the section at the top, and the user adds own rules
+# after it.
+
+# The own settings of the user, in [tools.claude] of macos.toml. settings is a
+# table of keys for settings.json. lists maps a dotted path, for example
+# "permissions.allow", to the items that the sync adds to that list.
+[defaults]
+lists = {}
+settings = {}
+
+# The files of the tool, below files/.
+[files.".claude/CLAUDE.md"]
+mode = "merge"
+source = ".claude/CLAUDE.md.merge.toml"
+
+[files.".claude/settings.json"]
+mode = "merge"
+source = ".claude/settings.json.merge.toml"
+
+# The task files of the tool, below tasks/. The key is the path below
+# .config/mise/tasks/.
+[tasks."upgrade/ai.py"]
+source = "upgrade-ai.py"

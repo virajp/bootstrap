@@ -1478,11 +1478,12 @@ key stops that target.
 
 - `format` is `text`, `json`, `jsonc`, `yaml` or `toml`. The default is the
   `format` of the entry, else the extension of the target.
-- `comment` is the comment marker of a text file, for example `#`.
+- `comment` is the comment marker of a text file, for example `#`. The marker
+  `<!--` writes each comment line as `<!-- <text> -->`, for a Markdown file.
 
 | Key of an item       | Meaning                                                                                                                                                                         |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kind`               | `key`, `keys`, `item` or `block`. A text file has only `item`.                                                                                                                  |
+| `kind`               | `key`, `keys`, `item`, `block` or `section`. A text file has only `item` and `section`.                                                                                         |
 | `path`               | The place in the file: a list of keys. An item of a text file has no path.                                                                                                      |
 | `value`              | The bootstrap value.                                                                                                                                                            |
 | `match`              | A regex for an item of a list of scalars or for a line. A non-empty list of keys for a block in a `table[]`; a key path through a list (`hooks.id`) compares the set of values. |
@@ -1491,12 +1492,22 @@ key stops that target.
 | `type`               | Optional. Necessary for an empty list. One of `string`, `boolean`, `integer`, `float`, `<scalar>[]`, `table`, `table[]`.                                                        |
 | `"$mode"`, `"$skip"` | `"$mode" = "remove"` removes the item. `"$skip" = true` does not add it.                                                                                                        |
 
-| Kind    | What it is                                                                                                   | Found                                                                                |
-| ------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `key`   | One leaf key. A list value is one value.                                                                     | The live value stays. A live value of another type is written again, with a warning. |
-| `keys`  | A table of leaf keys: one `key` item for each leaf. The user can add keys to the table.                      | As `key`, for each leaf.                                                             |
-| `item`  | One item of a list of scalars, or one line of a text file. Found by an equal `value`, or by a `match` regex. | The live item stays. A new item or line goes at the end, in spec order.              |
-| `block` | A value that bootstrap owns: a table, a list, or one table of a `table[]`, found by its `match` keys.        | Written again from the spec, except the `ignore` keys.                               |
+| Kind      | What it is                                                                                                   | Found                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `key`     | One leaf key. A list value is one value.                                                                     | The live value stays. A live value of another type is written again, with a warning. |
+| `keys`    | A table of leaf keys: one `key` item for each leaf. The user can add keys to the table.                      | As `key`, for each leaf.                                                             |
+| `item`    | One item of a list of scalars, or one line of a text file. Found by an equal `value`, or by a `match` regex. | The live item stays. A new item or line goes at the end, in spec order.              |
+| `block`   | A value that bootstrap owns: a table, a list, or one table of a `table[]`, found by its `match` keys.        | Written again from the spec, except the `ignore` keys.                               |
+| `section` | The part of a text file that bootstrap owns: a string of lines between two marker lines at the top.          | Written again from the spec. Each line outside the markers stays.                    |
+
+A text file has at most one `section`, and its spec needs the `comment` key.
+The marker lines are comments that start with `bootstrap:start` and
+`bootstrap:end`. A new section goes at the top of the file, after the shared
+header, with an empty line before the lines of the user. A change of the user
+between the markers is lost at the next sync; the user adds own text after
+`bootstrap:end`. A start line without an end line gets a warning, and the
+section replaces that start line. A section has no override: `"$mode" =
+"remove"` in the spec removes it, with the empty line after it.
 
 A spec renders its items from the values, for example from the contributions of
 the other tools: `[[contributes.pre-commit.repos]]` gives one block for each
@@ -1535,7 +1546,8 @@ strongKind = "underscore" # own value
 - A JSONC file keeps its comments and its trailing commas.
 - A YAML or TOML file is written with the yq code, so the comments of the live
   file stay. In TOML, a comment on a table-header line can be lost.
-- A text file keeps each live line. New lines go at the end.
+- A text file keeps each live line. New lines go at the end. The section goes
+  at the top.
 - A file in a format with comments gets the shared header. See
   [The header](#the-header).
 
