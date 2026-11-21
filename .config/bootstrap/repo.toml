@@ -22,4 +22,4 @@ workflow = "release-engine.yml"
 
 [release.bootstrap.local]
 task = "p:cli:local"
-type = "local"
+type = "task"
