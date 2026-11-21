@@ -94,7 +94,7 @@ func MergeShared(in SharedInput) (SharedResult, *Failure) {
 			cur = arr(nil)
 		}
 	}
-	d := &doc{v: cur}
+	d := &doc{v: cur, comment: marker}
 	res.Records = mergeItems(d, items, parseRecords(in.Records), func(w string) {
 		res.Warnings = append(res.Warnings, in.Show+": "+w)
 	})
@@ -405,7 +405,7 @@ func stripHeader(b []byte, marker string, header []string) []byte {
 	}
 	end := start + 1
 	for i := 1; i < len(header) && end < len(lines); i++ {
-		line, ok := strings.CutPrefix(strings.TrimRight(lines[end], "\r\n"), marker+" ")
+		line, ok := uncomment(marker, strings.TrimRight(lines[end], "\r\n"))
 		if !ok || !sameHeaderLine(line, header[i]) {
 			break
 		}
@@ -422,7 +422,7 @@ func addHeader(b []byte, marker string, header []string) []byte {
 	}
 	var h strings.Builder
 	for _, l := range header {
-		h.WriteString(marker + " " + l + "\n")
+		h.WriteString(asComment(marker, l) + "\n")
 	}
 	s := string(b)
 	first, rest, cut := strings.Cut(s, "\n")

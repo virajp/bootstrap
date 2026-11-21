@@ -359,3 +359,65 @@ func TestSpecErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestSharedSection(t *testing.T) {
+	const spec = "format = \"text\"\ncomment = \"<!--\"\n[[item]]\nkind = \"section\"\nvalue = \"\"\"\n# Rules\n\n- one\n\"\"\"\n"
+	const start = "<!-- bootstrap:start - the next sync writes this part again, and a change in it is lost -->\n"
+	const end = "<!-- bootstrap:end - add own text below this line -->\n"
+	const head = "<!-- Shared with bootstrap: x. -->\n<!-- A change stays. -->\n"
+	row := []string{`{"kind":"section","path":[]}`}
+	cases := []sharedCase{
+		{
+			name: "section-new-file", target: "CLAUDE.md", spec: spec,
+			want: head + start + "# Rules\n\n- one\n" + end, wantRows: row,
+		},
+		{
+			name: "section-above-user-text", target: "CLAUDE.md", spec: spec,
+			live: sp("# Mine\n- own\n"),
+			want: head + start + "# Rules\n\n- one\n" + end + "\n# Mine\n- own\n", wantRows: row,
+		},
+		{
+			name: "section-written-again", target: "CLAUDE.md", spec: spec,
+			live: sp(head + start + "# Old\n- changed\n" + end + "\n# Mine\n"),
+			want: head + start + "# Rules\n\n- one\n" + end + "\n# Mine\n", wantRows: row,
+		},
+		{
+			name: "section-removed", target: "CLAUDE.md",
+			spec: "format = \"text\"\ncomment = \"<!--\"\n[[item]]\nkind = \"section\"\n\"$mode\" = \"remove\"\n",
+			live: sp(head + start + "# Old\n" + end + "\n# Mine\n"),
+			want: head + "# Mine\n",
+		},
+		{
+			name: "section-cleanup", target: "CLAUDE.md",
+			spec: "format = \"text\"\ncomment = \"<!--\"\n", records: row,
+			live: sp(head + start + "# Old\n" + end + "\n# Mine\n"),
+			want: head + "# Mine\n",
+		},
+		{
+			name: "section-no-end", target: "CLAUDE.md", spec: spec,
+			live: sp(start + "# Mine\n"),
+			want: head + start + "# Rules\n\n- one\n" + end + "# Mine\n", wantRows: row, warn: 1,
+		},
+		{
+			name: "section-hash-comment", target: "notes.txt",
+			spec: "format = \"text\"\ncomment = \"#\"\n[[item]]\nkind = \"section\"\nvalue = \"a\"\n",
+			live: sp("b\n"),
+			want: "# Shared with bootstrap: x.\n# A change stays.\n# bootstrap:start - the next sync writes this part again, and a change in it is lost\na\n# bootstrap:end - add own text below this line\n\nb\n",
+		},
+		{
+			name: "section-needs-comment", target: "CLAUDE.md",
+			spec: "format = \"text\"\n[[item]]\nkind = \"section\"\nvalue = \"a\"\n", fail: "needs the comment key",
+		},
+		{
+			name: "section-only-one", target: "CLAUDE.md",
+			spec: spec + "[[item]]\nkind = \"section\"\nvalue = \"b\"\n", fail: "one section only",
+		},
+		{
+			name: "section-text-only", target: "a.json",
+			spec: "[[item]]\nkind = \"section\"\nvalue = \"a\"\n", fail: "only a text file has a section",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) { runShared(t, c) })
+	}
+}

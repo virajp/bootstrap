@@ -54,8 +54,9 @@ type op struct {
 
 // doc is the live document and the edits made to it.
 type doc struct {
-	v   Value
-	ops []op
+	v       Value
+	ops     []op
+	comment string // The comment marker of a text file, for its section.
 }
 
 // at gives the value at <p>.
@@ -398,6 +399,10 @@ func mergeItems(d *doc, items []*specItem, records map[string]*object, warn func
 		rec := records[key]
 		p := keys2path(it.path)
 		switch {
+		case it.kind == kindSection:
+			if d.mergeSection(it, warn) {
+				record(it, nil)
+			}
 		case it.kind == kindKey || (it.kind == kindBlock && it.keys == nil):
 			cur, found := at(d.v, p)
 			if it.remove {
@@ -524,6 +529,8 @@ func cleanup(d *doc, rec *object) {
 	}
 	p := keys2path(path)
 	switch rec.m["kind"].s {
+	case kindSection:
+		d.cleanupSection()
 	case kindKey, kindBlock:
 		if f, ok := rec.m["find"]; ok && f.k == kObject {
 			list, _ := at(d.v, p)

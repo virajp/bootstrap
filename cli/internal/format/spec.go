@@ -22,6 +22,8 @@ const (
 	kindKeys  = "keys"  // A table of leaf keys: one key item for each leaf.
 	kindItem  = "item"  // One item of a list of scalars, or one line of a text file.
 	kindBlock = "block" // A value that bootstrap owns.
+	// The part of a text file that bootstrap owns, between two marker lines.
+	kindSection = "section"
 )
 
 // specItem is one `[[item]]` of a spec, or one leaf of a `keys` item.
@@ -124,7 +126,28 @@ func ParseSpec(text []byte, show string) (*Spec, error) {
 		}
 		sp.items = append(sp.items, si)
 	}
+	if err := checkSections(sp.items, sp.Comment); err != nil {
+		return nil, bad("%v", err)
+	}
 	return sp, nil
+}
+
+// checkSections refuses more than one section, and a section without the
+// comment marker of its markers.
+func checkSections(items []*specItem, comment string) error {
+	n := 0
+	for _, it := range items {
+		if it.kind == kindSection {
+			n++
+		}
+	}
+	switch {
+	case n > 1:
+		return fmt.Errorf("a text file has one section only")
+	case n == 1 && comment == "":
+		return fmt.Errorf("a section needs the comment key, for its marker lines")
+	}
+	return nil
 }
 
 func strings1(v Value) ([]string, bool) {
@@ -158,11 +181,14 @@ func parseItem(it Value, text bool) (*specItem, error) {
 	} else if text {
 		si.kind = kindItem
 	}
-	if !oneOfStr(si.kind, []string{kindKey, kindKeys, kindItem, kindBlock}) {
-		return nil, fmt.Errorf("kind must be \"key\", \"keys\", \"item\" or \"block\"")
+	if !oneOfStr(si.kind, []string{kindKey, kindKeys, kindItem, kindBlock, kindSection}) {
+		return nil, fmt.Errorf("kind must be \"key\", \"keys\", \"item\", \"block\" or \"section\"")
 	}
-	if text && si.kind != kindItem {
-		return nil, fmt.Errorf("a text file has items of kind \"item\" only")
+	if text && si.kind != kindItem && si.kind != kindSection {
+		return nil, fmt.Errorf("a text file has items of kind \"item\" or \"section\" only")
+	}
+	if !text && si.kind == kindSection {
+		return nil, fmt.Errorf("only a text file has a section")
 	}
 	if p := it.get("path"); p.k != kNull {
 		l, ok := strings1(p)
@@ -205,6 +231,10 @@ func parseItem(it Value, text bool) (*specItem, error) {
 		}
 		if text && si.hasVal && (si.value.k != kString || strings.ContainsAny(si.value.s, "\r\n")) {
 			return nil, fmt.Errorf("the value of a line must be a string of one line")
+		}
+	case kindSection:
+		if si.hasVal && si.value.k != kString {
+			return nil, fmt.Errorf("the value of a section must be a string")
 		}
 	}
 	if m := it.get("match"); m.k != kNull {
