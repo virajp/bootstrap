@@ -14,3 +14,12 @@ style = "conventional"
 
 [projects.bootstrap]
 folder = "cli"
+
+[release.bootstrap.prod]
+tag = "bootstrap@{version}"
+type = "tag"
+workflow = "release-engine.yml"
+
+[release.bootstrap.local]
+task = "p:cli:local"
+type = "local"
