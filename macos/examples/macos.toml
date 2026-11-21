@@ -36,13 +36,15 @@ ssh_vault = "Sample"
 
 [tools.cardhop]
 
-[tools.claude-cli]
+[tools.claude]
 
-[tools.claude-cli.settings]
+[tools.claude.settings]
 model = "opus"
 
-[tools.claude-cli.lists]
+[tools.claude.lists]
 "permissions.allow" = [ "Read" ]
+
+[tools.claude-cli]
 
 [tools.claude-desktop]
 

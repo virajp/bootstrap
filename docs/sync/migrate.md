@@ -57,6 +57,7 @@ into `.config/bootstrap/`.
 | `release_env` or a `[deploy.<env>]` table in `.config/bootstrap/repo.toml`                                                          | M52, before the next sync.                                                                                                                                 |
 | An own task that bumps a version, commits a release or makes a release tag, for example `p:release`                                 | M53, after the release with the release tasks.                                                                                                             |
 | `type = "local"` in a `[release.<project>.<kind>]` table of `.config/bootstrap/repo.toml`                                           | M54, before the next sync.                                                                                                                                 |
+| `settings` or `lists` in `[tools.claude-cli]` of `macos.toml`, or a `~/.claude/CLAUDE.md` that bootstrap wrote as a seed            | M55, before the next Mac sync.                                                                                                                             |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1683,3 +1684,25 @@ or `bootstrap check` stops with code 2 while a table has `type = "local"`.
    `type = "task"` in an editor.
 3. Run `bootstrap check`, and make sure that it exits 0.
 4. Run `mise run setup:configs`. It writes the release task again.
+
+## M55: The Mac tool `claude` owns the shared Claude files
+
+The new Mac tool `claude` has `~/.claude/settings.json`, `~/.claude/CLAUDE.md`
+and the task `upgrade:ai`. `claude-cli` and `claude-desktop` depend on it, so
+the sync adds it with either one. The values `settings` and `lists` are now in
+`[tools.claude]`, and a Mac sync stops with code 2 while `[tools.claude-cli]`
+has them. `CLAUDE.md` is now a shared file: bootstrap owns the section between
+the `bootstrap:start` and `bootstrap:end` lines at the top, and the own rules
+of the owner go after it. The pack `claude` is now `claude-apps`; `macos.toml`
+keeps no record of a pack, so this name matters only to `mac add pack`.
+
+1. In `macos.toml`, rename the tables `[tools.claude-cli.settings]` and
+   `[tools.claude-cli.lists]` to `[tools.claude.settings]` and
+   `[tools.claude.lists]`. Keep the empty `[tools.claude-cli]` table.
+2. Run `bootstrap mac sync`, and make sure that it exits 0. The sync adds the
+   empty `[tools.claude]` table when step 1 did not write it.
+3. Open `~/.claude/CLAUDE.md`. The first sync puts the bootstrap section at the
+   top and keeps the old file below the `bootstrap:end` line. Remove from the
+   old part each line that the section already has, and keep the own rules of
+   the owner.
+4. Run `bootstrap mac sync` again, and make sure that it changes nothing.

@@ -1,21 +1,11 @@
-# The claude-cli tool: Claude Code, its ~/.claude files (settings, CLAUDE.md,
-# output styles), the func:claude and upgrade:ai tasks and the cc* aliases.
+# The claude-cli tool: Claude Code, its output styles, the func:claude task
+# and the cc* aliases. The claude tool has settings.json, CLAUDE.md and the
+# upgrade:ai task.
 
 category = "ai"
-depends = [ "cli" ]
-description = "Claude Code: its settings, CLAUDE.md, output styles, the func:claude and upgrade:ai tasks and the cc* aliases"
-summary = "Claude Code, its settings and its tasks"
-
-# Claude Code rewrites CLAUDE.md, so it is a seed: written once and then owned
-# by the user. settings.json is a shared file: bootstrap adds the keys and list
-# items of its merge spec, and Claude Code owns the rest.
-
-# The own settings of the user, in [tools.claude-cli] of macos.toml. settings
-# is a table of keys for settings.json. lists maps a dotted path, for example
-# "permissions.allow", to the items that the sync adds to that list.
-[defaults]
-lists = {}
-settings = {}
+depends = [ "claude", "cli" ]
+description = "Claude Code: its output styles, the func:claude task and the cc* aliases"
+summary = "Claude Code, its output styles and its aliases"
 
 # The claude-cli tool: Claude Code and its aliases.
 [mise.bootstrap.packages]
@@ -30,24 +20,13 @@ cco = "mise run --silent func:claude --model 'opus[1m]'"
 ccs = "mise run --silent func:claude --model 'sonnet[1m]'"
 
 # The files of the tool, below files/.
-[files.".claude/CLAUDE.md"]
-mode = "seed"
-source = ".claude/CLAUDE.md"
-
 [files.".claude/output-styles/ste100.md"]
 source = ".claude/output-styles/ste100.md"
 
 [files.".claude/output-styles/terse.md"]
 source = ".claude/output-styles/terse.md"
 
-[files.".claude/settings.json"]
-mode = "merge"
-source = ".claude/settings.json.merge.toml"
-
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
 [tasks."func/claude.py"]
 source = "func-claude.py"
-
-[tasks."upgrade/ai.py"]
-source = "upgrade-ai.py"

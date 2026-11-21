@@ -15,7 +15,7 @@ kind = "keys"
 CLAUDE_INSTALL_METHOD = "other"
 DISABLE_AUTOUPDATER = "1"
 
-# The keys of the user: settings in [tools.claude-cli] of macos.toml. Each
+# The keys of the user: settings in [tools.claude] of macos.toml. Each
 # leaf is one key.
 <%- if .config.settings %>
 [[item]]
@@ -23,7 +23,7 @@ kind = "keys"
 value = <% .config.settings | data.ToTOMLInline %>
 <%- end %>
 
-# The list items of the user: lists in [tools.claude-cli] of macos.toml. Each
+# The list items of the user: lists in [tools.claude] of macos.toml. Each
 # key is a dotted path, for example "permissions.allow", and each item of its
 # list is added once. An item that the user adds in Claude Code stays.
 <%- range $path, $items := .config.lists %>

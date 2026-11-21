@@ -54,7 +54,7 @@ visual-studio-code = {}
 python = { required = true }
 uv = { required = true }
 
-[pack.claude]
+[pack.claude-apps]
 description = "Claude: the desktop app, Claude Code, its status line, and codeburn, the cost report of the AI tools."
 claude-desktop = {}
 claude-cli = {}

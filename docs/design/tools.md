@@ -253,7 +253,7 @@ the header, a seed and a merge target stay.
   for example `requires = ["package.json"]`.
 - A shared file is in [cli.md](cli.md#shared-files). The
   `pre-commit`, `dprint`, `git` and `vscode` tools of `repo/tools/` and the
-  `claude-cli`, `gem`, `gh` and `superfile` tools of `macos/tools/` have one.
+  `claude`, `gem`, `gh` and `superfile` tools of `macos/tools/` have one.
 - The test `e2e/macostools` fails when a `[files]` table gives `mode = "seed"`
   to a
   JSON, YAML

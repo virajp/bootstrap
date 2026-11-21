@@ -1,6 +1,7 @@
 # The claude-desktop tool: Claude Desktop, the desktop app.
 
 category = "ai"
+depends = [ "claude" ]
 description = "Claude Desktop"
 summary = "The Claude desktop app"
 

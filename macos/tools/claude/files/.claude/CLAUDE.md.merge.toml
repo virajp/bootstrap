@@ -1,0 +1,24 @@
+# The merge spec of ~/.claude/CLAUDE.md, a shared file. bootstrap owns the
+# section at the top of the file, between the bootstrap:start and
+# bootstrap:end lines, and writes it again on each sync. The user adds own
+# rules after the bootstrap:end line, and they stay.
+
+format = "text"
+comment = "<!--"
+
+[[item]]
+kind = "section"
+value = '''
+# User-Level CLAUDE.md
+
+Global conventions for all projects. A project-level CLAUDE.md overrides them.
+bootstrap writes this part again on each sync. Add your own rules after the
+`bootstrap:end` line.
+
+## Stack
+
+- **mise**: `mise` installs the development tools and runs the tasks. Homebrew
+  installs the other tools and the apps. List the tasks with `mise tasks`.
+- **shell**: some core commands are aliases of other tools. Prefix a command
+  with `command` when you parse its output or need its standard flags.
+'''
