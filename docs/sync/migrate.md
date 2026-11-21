@@ -56,6 +56,7 @@ into `.config/bootstrap/`.
 | An own task that is not a Python uv script, or own shell functions in `.config/mise/tasks/_scripts/local`                           | M51, after M48.                                                                                                                                            |
 | `release_env` or a `[deploy.<env>]` table in `.config/bootstrap/repo.toml`                                                          | M52, before the next sync.                                                                                                                                 |
 | An own task that bumps a version, commits a release or makes a release tag, for example `p:release`                                 | M53, after the release with the release tasks.                                                                                                             |
+| `type = "local"` in a `[release.<project>.<kind>]` table of `.config/bootstrap/repo.toml`                                           | M54, before the next sync.                                                                                                                                 |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1652,8 +1653,9 @@ a version, commits the bump and makes a tag, for example `p:release` and
      the old task ran first) and `workflow` (the workflow file).
    - A second environment of the same project, for example production after
      staging: `type = "tag"` with `from` the first kind.
-   - A build that installs on this machine: `type = "local"` and `task`, the
-     own task that builds and installs it.
+   - A release that an own task does, for example a build that installs on
+     this machine: `type = "task"`, `task` (the own task) and, when the task
+     needs fixed arguments, `args`.
 4. Move the pending level of each project to
    `bootstrap config set releases.<project> <level>`. A file such as
    `.config/releases.yaml` goes.
@@ -1663,3 +1665,21 @@ a version, commits the bump and makes a tag, for example `p:release` and
 6. Delete the old release tasks, and change each doc and workflow that names
    them.
 7. Commit the changed files.
+
+## M54: The release type `local` is now `task`
+
+A `[release.<project>.<kind>]` table of `type = "task"` runs an own task to do
+the release: a build on this machine, or a production release that the own
+task bumps and tags. The new key `args` gives the task fixed arguments. A sync
+or `bootstrap check` stops with code 2 while a table has `type = "local"`.
+
+1. Find the tables:
+
+   ```bash
+   grep -n 'type = "local"' .config/bootstrap/repo.toml
+   ```
+
+2. In each table that the command finds, change `type = "local"` to
+   `type = "task"` in an editor.
+3. Run `bootstrap check`, and make sure that it exits 0.
+4. Run `mise run setup:configs`. It writes the release task again.

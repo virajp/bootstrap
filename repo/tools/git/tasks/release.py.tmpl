@@ -5,13 +5,13 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-<% if eq .each.value.type "local" -%>
-# MISE description="Build <% .each.project %> and install it on this machine (<% .each.kind %>)"
+<% if eq .each.value.type "task" -%>
+# MISE description="Release <% .each.project %> (<% .each.kind %>) with its task <% .each.value.task %>"
 <% else -%>
 # MISE description="Release <% .each.project %> (<% .each.kind %>): bump, land and tag it"
 <% end -%>
 # MISE tools={uv="latest", python="3.14"}
-<% if ne .each.value.type "local" -%>
+<% if ne .each.value.type "task" -%>
 # USAGE flag "--push" help="also push the tag, and watch its workflow"
 <% end -%>
 # USAGE flag "--dry-run" help="print what the release does, and change nothing"

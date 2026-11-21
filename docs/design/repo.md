@@ -367,8 +367,10 @@ when the tag exists here or on `origin`, and with `--push` when no branch of
 `origin` contains `HEAD`. With `--push`, it pushes only the tag. It does not
 examine the branch.
 
-A task of a `local` kind runs the tasks of `preflight`, then `task`. It reads
-no level and makes no tag.
+A task of a `task` kind runs the tasks of `preflight`, then
+`mise run <task> <args…>`. It reads no level, and makes no commit and no tag.
+With `--dry-run`, it prints each command and runs nothing. It never passes
+`--dry-run` to the task. It stops with code 2 when `task` does not exist.
 
 A task of a `tag` kind runs on its `branch`, with a clean tree, else it stops
 with code 1. It takes the first step that applies:

@@ -485,7 +485,8 @@ No synced file uses the projects.
 
 One release of a project. `<project>` is the name of a `[projects.<name>]`
 table of the same file. `<kind>` is a name in lowercase kebab case, for
-example `prod`, `staging` or `local`. The `git` tool ships the task
+example `prod`, `staging`, `production` or `local`. The `git` tool ships the
+task
 `release:<project>:<kind>` for each table, and `git:tag`. See
 [repo.md](repo.md#the-release-tasks).
 
@@ -501,20 +502,22 @@ version = "package.json"
 workflow = "release.yml"
 
 [release.web.local]
+args = [ "--target", "dev" ]
 task = "p:local"
-type = "local"
+type = "task"
 ```
 
 | Key         | Types | Necessary | Default | Meaning                                                                                                                              |
 | ----------- | ----- | --------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `type`      | Both  | Yes       |         | `tag`: the release is a tag, and CI starts on it. `local`: the release builds and installs the project on this machine, with no tag. |
+| `type`      | Both  | Yes       |         | `tag`: the release is a tag, and CI starts on it. `task`: an own task does the release, for example a build on this machine.         |
 | `tag`       | tag   | Yes       |         | The name of the tag, with `{version}`, for example `"v{version}"`. Two tables of one file cannot have the same tag.                  |
 | `version`   | tag   | No        | `tag`   | The source of the version: `tag`, the last tag of `tag`, or a `.json` file or a `Cargo.toml`, relative to the folder of the project. |
 | `branch`    | tag   | No        | `main`  | The core branch of the release commit and of the tag.                                                                                |
 | `from`      | tag   | No        |         | Another tag kind of the project: the table promotes the last version of that kind. It has no `version`.                              |
 | `preflight` | Both  | No        | `[]`    | The tasks that run first, for example `["p:check"]`.                                                                                 |
 | `workflow`  | tag   | No        |         | The workflow file that the tag starts, for example `"release.yml"`. With `--push`, the task watches its run with `gh run watch`.     |
-| `task`      | local | Yes       |         | The own task that builds the project and installs it on this machine.                                                                |
+| `task`      | task  | Yes       |         | The own task that does the release. It owns each step: a build on this machine, or a bump and a tag.                                 |
+| `args`      | task  | No        | `[]`    | Fixed arguments of `task`: the task runs `mise run <task> <args…>`. Two tables can share one task with different `args`.             |
 
 `bootstrap check` stops with code 2 when the project is not a
 `[projects.<name>]` table, the kind is not kebab case, a table has no type or a
