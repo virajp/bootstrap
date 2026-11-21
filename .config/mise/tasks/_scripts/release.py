@@ -13,7 +13,8 @@
 # release:<project>:<kind> task calls main(project, kind). See
 # docs/design/repo.md of bootstrap ("The release tasks").
 #
-# A local kind runs its preflight tasks and its task. A tag kind:
+# A task kind runs its preflight tasks, then its task with its args. It
+# reads no level, and makes no commit and no tag. A tag kind:
 #
 #   1. With a release commit `ops: release <tag>` on its branch and no tag,
 #      it tags the first commit of the branch that has that commit (resume).
@@ -27,6 +28,7 @@
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -244,15 +246,24 @@ def landed_commit(branch, commit):
   return after[0] if after else None
 
 
-def release_local(sec, dry_run):
+def release_task(sec, dry_run):
+  """Run the preflight tasks, then mise run <task> <args...>. --dry-run
+  prints the command and runs nothing; the task never gets --dry-run."""
   task = sec["task"]
+  args = sec.get("args") or []
   preflight = sec.get("preflight") or []
+  command = shlex.join(["mise", "run", task, *args])
   if dry_run:
-    helpers.print_info(f"Would run {', '.join([*preflight, task])}")
+    for name in preflight:
+      helpers.print_info(f"Would run: mise run {name}")
+    helpers.print_info(f"Would run: {command}")
     return 0
   run_tasks(preflight)
-  run_tasks([task])
-  helpers.print_success("Installed the local release")
+  if not helpers.has_own_task(task):
+    helpers.print_error(f"The task {task} does not exist.")
+    return 2
+  must("mise", "run", task, *args)
+  helpers.print_success(f"Ran {command}")
   return 0
 
 
@@ -370,6 +381,6 @@ def main(project, kind):
   sec = value(f'repo.release."{project}"."{kind}"')
   folder = value(f'repo.projects."{project}".folder') or "."
   helpers.print_header(f"Releasing {project} ({kind}) ...")
-  if sec.get("type") == "local":
-    return release_local(sec, dry_run)
+  if sec.get("type") == "task":
+    return release_task(sec, dry_run)
   return release_tag(project, kind, sec, folder, push, dry_run)
