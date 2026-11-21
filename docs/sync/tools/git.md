@@ -173,8 +173,9 @@ worktree that it removes, and with code 1 when no worktree has the branch.
 
 `git:tag` stops, and changes nothing, when the tree is not clean, when the
 tag exists here or on `origin`, and with `--push` when no branch of `origin`
-has `HEAD`. A `release:<project>:<kind>` task of a `local` kind runs its
-`preflight` tasks and its `task`. A task of a `tag` kind reads the level of
+has `HEAD`. A `release:<project>:<kind>` task of a `task` kind runs its
+`preflight` tasks, then its `task` with its `args`. A task of a `tag` kind reads
+the level of
 `releases.<project>` of `.config/bootstrap/releases.toml`, bumps the version,
 makes one commit `ops: release <tag>` with the version file and the cleared
 level, lands it as `landing` of its branch says, and calls `git:tag`. A kind
@@ -262,3 +263,4 @@ None.
   `repo.toml`.
 - M53 of `migrate.md`: an own release task moves to a
   `[release.<project>.<kind>]` table.
+- M54 of `migrate.md`: the type `local` of a release table is now `task`.

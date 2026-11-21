@@ -82,8 +82,9 @@ preflight = [ "p:check" ]
 workflow = "release.yml"
 
 [release.web.local]
-type = "local"
+type = "task"
 task = "p:local"
+args = [ "--fast" ]
 `, ""},
 		{"unknown key", head + "colour = \"red\"\n", "colour in repo.toml is not a key of repo.toml"},
 		{"unknown nested key", head + "[branches.main]\nmerge_model = \"pr\"\n", "branches.main.merge_model in repo.toml is not a key of repo.toml"},
@@ -137,12 +138,14 @@ tag = "api@{version}"
 version = "Cargo.toml"
 `, ""},
 		{"no project", base + "[release.cli.prod]\ntype = \"tag\"\ntag = \"v{version}\"\n", "[release.cli] in repo.toml: cli is not a [projects.<name>] table - add the project, or remove the table"},
-		{"bad kind", base + "[release.web.Prod]\ntype = \"local\"\ntask = \"t\"\n", `[release.web."Prod"] in repo.toml has a name that is not valid - a kind is lowercase kebab case, for example prod`},
-		{"no type", base + "[release.web.prod]\ntag = \"v{version}\"\n", "[release.web.prod] in repo.toml has no type - set type to tag or local"},
-		{"bad type", base + "[release.web.prod]\ntype = \"ci\"\n", `release.web.prod.type = "ci" in repo.toml is not one of tag, local`},
-		{"local without task, with tag", base + "[release.web.local]\ntype = \"local\"\ntag = \"v{version}\"\n",
-			"[release.web.local] in repo.toml has tag, but tag is for type = \"tag\" - remove it\n[release.web.local] in repo.toml has no task - set task to the task that builds and installs the release on this machine"},
-		{"tag with task", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"v{version}\"\ntask = \"t\"\n", `[release.web.prod] in repo.toml has task, but task is for type = "local" - remove it`},
+		{"bad kind", base + "[release.web.Prod]\ntype = \"task\"\ntask = \"t\"\n", `[release.web."Prod"] in repo.toml has a name that is not valid - a kind is lowercase kebab case, for example prod`},
+		{"no type", base + "[release.web.prod]\ntag = \"v{version}\"\n", "[release.web.prod] in repo.toml has no type - set type to tag or task"},
+		{"bad type", base + "[release.web.prod]\ntype = \"ci\"\n", `release.web.prod.type = "ci" in repo.toml is not one of tag, task`},
+		{"task without task, with tag", base + "[release.web.local]\ntype = \"task\"\ntag = \"v{version}\"\n",
+			"[release.web.local] in repo.toml has tag, but tag is for type = \"tag\" - remove it\n[release.web.local] in repo.toml has no task - set task to the task that does the release"},
+		{"tag with task", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"v{version}\"\ntask = \"t\"\n", `[release.web.prod] in repo.toml has task, but task is for type = "task" - remove it`},
+		{"tag with args", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"v{version}\"\nargs = [ \"-x\" ]\n", `[release.web.prod] in repo.toml has args, but args is for type = "task" - remove it`},
+		{"args not a list", base + "[release.web.l]\ntype = \"task\"\ntask = \"t\"\nargs = \"-x\"\n", "release.web.l.args in repo.toml must be a list of strings"},
 		{"no tag", base + "[release.web.prod]\ntype = \"tag\"\n", `[release.web.prod] in repo.toml has no tag - set tag to the name of the tag, with {version}, for example "v{version}"`},
 		{"tag without version", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"latest\"\n", `[release.web.prod] in repo.toml has tag = "latest" without {version} - add {version} to it`},
 		{"same tag", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"v{version}\"\n[release.api.prod]\ntype = \"tag\"\ntag = \"v{version}\"\n", `[release.web.prod] in repo.toml has the tag "v{version}" of [release.api.prod] too - each table has its own tag`},
@@ -150,7 +153,7 @@ version = "Cargo.toml"
 		{"bad version", base + "[release.web.prod]\ntype = \"tag\"\ntag = \"v{version}\"\nversion = \"../package.json\"\n", `[release.web.prod] in repo.toml has version = "../package.json" - use "tag", a .json file or a Cargo.toml, relative to the folder of the project`},
 		{"from with version", base + "[release.web.a]\ntype = \"tag\"\ntag = \"a{version}\"\n[release.web.b]\ntype = \"tag\"\ntag = \"b{version}\"\nfrom = \"a\"\nversion = \"tag\"\n", "[release.web.b] in repo.toml has from and version - a promotion takes the version of its from kind, so remove version"},
 		{"from missing", base + "[release.web.a]\ntype = \"tag\"\ntag = \"a{version}\"\nfrom = \"z\"\n", `[release.web.a] in repo.toml has from = "z", which is not another kind of the project`},
-		{"from a local", base + "[release.web.l]\ntype = \"local\"\ntask = \"t\"\n[release.web.a]\ntype = \"tag\"\ntag = \"a{version}\"\nfrom = \"l\"\n", `[release.web.a] in repo.toml has from = "l", which is not a tag kind without from`},
+		{"from a task kind", base + "[release.web.l]\ntype = \"task\"\ntask = \"t\"\n[release.web.a]\ntype = \"tag\"\ntag = \"a{version}\"\nfrom = \"l\"\n", `[release.web.a] in repo.toml has from = "l", which is not a tag kind without from`},
 		{"two roots", base + "[release.web.a]\ntype = \"tag\"\ntag = \"a{version}\"\n[release.web.b]\ntype = \"tag\"\ntag = \"b{version}\"\n", "[release.web] in repo.toml has more than one tag kind without from (a, b) - one kind bumps the version, and the other kinds promote it with from"},
 	}
 

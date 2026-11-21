@@ -92,7 +92,7 @@ func TestExpand(t *testing.T) {
 		"release": map[string]any{
 			"web": map[string]any{
 				"prod":  map[string]any{"type": "tag"},
-				"local": map[string]any{"type": "local"},
+				"local": map[string]any{"type": "task"},
 			},
 			"api": map[string]any{"prod": map[string]any{"type": "tag"}},
 			"odd": "not a table",
@@ -115,7 +115,7 @@ func TestExpand(t *testing.T) {
 	if !reflect.DeepEqual(targets, want) {
 		t.Errorf("targets %v, want %v", targets, want)
 	}
-	if v := got[1].Vars; v["project"] != "web" || v["kind"] != "local" || !reflect.DeepEqual(v[EachValue], map[string]any{"type": "local"}) {
+	if v := got[1].Vars; v["project"] != "web" || v["kind"] != "local" || !reflect.DeepEqual(v[EachValue], map[string]any{"type": "task"}) {
 		t.Errorf("vars %+v", v)
 	}
 

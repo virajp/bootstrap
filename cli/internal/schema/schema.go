@@ -95,7 +95,7 @@ var Repo = []Key{
 	{Path: "release", Type: Table, Sync: true},
 	{Path: "release.*", Type: Table, Sync: true},
 	{Path: "release.*.*", Type: Table, Sync: true},
-	{Path: "release.*.*.type", Type: String, Enum: []string{ReleaseTag, ReleaseLocal}, Sync: true},
+	{Path: "release.*.*.type", Type: String, Enum: []string{ReleaseTag, ReleaseTask}, Sync: true},
 	{Path: "release.*.*.tag", Type: String, Sync: true},
 	{Path: "release.*.*.version", Type: String, Sync: true, Default: ReleaseVersionTag},
 	{Path: "release.*.*.branch", Type: String, Sync: true, Default: "main"},
@@ -103,13 +103,14 @@ var Repo = []Key{
 	{Path: "release.*.*.preflight", Type: StringList, Sync: true, Default: []any{}},
 	{Path: "release.*.*.workflow", Type: String, Sync: true},
 	{Path: "release.*.*.task", Type: String, Sync: true},
+	{Path: "release.*.*.args", Type: StringList, Sync: true, Default: []any{}},
 }
 
 // The types of a `[release.<project>.<kind>]` table, and the version source
 // that reads the last tag.
 const (
 	ReleaseTag        = "tag"
-	ReleaseLocal      = "local"
+	ReleaseTask       = "task"
 	ReleaseVersionTag = "tag"
 )
 
@@ -385,8 +386,8 @@ func projectRules(raw *source.Obj, shown string) []*fail.Error {
 // releaseKeys are the keys of each type of a [release.<project>.<kind>]
 // table, besides type and preflight.
 var releaseKeys = map[string][]string{
-	ReleaseTag:   {"tag", "version", "branch", "from", "workflow"},
-	ReleaseLocal: {"task"},
+	ReleaseTag:  {"tag", "version", "branch", "from", "workflow"},
+	ReleaseTask: {"task", "args"},
 }
 
 // releaseRules are the rules of the [release.<project>.<kind>] tables: the
@@ -432,11 +433,11 @@ func releaseRules(raw *source.Obj, shown string) []*fail.Error {
 			}
 			t, ok := e.Get("type").(string)
 			if !ok {
-				bad(p, k, "has no type - set type to %s or %s", ReleaseTag, ReleaseLocal)
+				bad(p, k, "has no type - set type to %s or %s", ReleaseTag, ReleaseTask)
 				continue
 			}
-			other := ReleaseLocal
-			if t == ReleaseLocal {
+			other := ReleaseTask
+			if t == ReleaseTask {
 				other = ReleaseTag
 			}
 			for _, key := range releaseKeys[other] {
@@ -444,9 +445,9 @@ func releaseRules(raw *source.Obj, shown string) []*fail.Error {
 					bad(p, k, "has %s, but %s is for type = %q - remove it", key, key, other)
 				}
 			}
-			if t == ReleaseLocal {
+			if t == ReleaseTask {
 				if !e.Has("task") {
-					bad(p, k, "has no task - set task to the task that builds and installs the release on this machine")
+					bad(p, k, "has no task - set task to the task that does the release")
 				}
 				continue
 			}

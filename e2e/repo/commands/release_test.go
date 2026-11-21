@@ -10,8 +10,8 @@ import (
 	rc "github.com/virajp/bootstrap/e2e/internal/repocase"
 )
 
-// releaseValues: the project web, a tag kind prod with package.json, and a
-// local kind.
+// releaseValues: the project web, a tag kind prod with package.json, a
+// promotion, and a task kind with args.
 const releaseValues = devValues + `
 
 [projects.web]
@@ -28,8 +28,9 @@ tag = "web-promoted-v{version}"
 from = "prod"
 
 [release.web.local]
-type = "local"
-task = "p:local"`
+type = "task"
+task = "p:local"
+args = ["--target", "this machine"]`
 
 // releaseRepo writes the project folder, a local task, a signing key and a
 // bare origin with main, then commits and pushes. The case removes the hook
@@ -37,7 +38,7 @@ task = "p:local"`
 func releaseRepo(c *rc.Case) {
 	_ = os.Remove(c.Path(".config/pre-commit-config.yaml"))
 	writeConsumer(c, "web/package.json", "{", `  "name": "web",`, `  "version": "1.2.0"`, "}")
-	writeConsumer(c, tasksPath+"/p/local.py", "#!/bin/sh", "echo local-build-ran")
+	writeConsumer(c, tasksPath+"/p/local.py", "#!/bin/sh", `echo "local-build-ran $1|$2"`)
 	if err := os.Chmod(c.Path(tasksPath+"/p/local.py"), 0o755); err != nil {
 		c.T.Fatal(err)
 	}
@@ -71,7 +72,7 @@ func TestReleaseTasksSynced(t *testing.T) {
 		Change: func(c *rc.Case) { writeConsumer(c, "web/package.json", "{}") },
 		Call: synced(func(c *rc.Case) int {
 			harness.WriteFile(c.T, c.RepoValues, strings.Replace(harness.ReadFile(c.RepoValues),
-				"[release.web.local]\ntype = \"local\"\ntask = \"p:local\"\n", "", 1))
+				"[release.web.local]\ntype = \"task\"\ntask = \"p:local\"\nargs = [\"--target\", \"this machine\"]\n", "", 1))
 			return c.Synced()
 		}),
 		Check: func(c *rc.Case) {
@@ -138,10 +139,13 @@ func TestReleaseTag(t *testing.T) {
 			c.CheckThat("resume: the release commit gets the tag", plainGit(c.Consumer, "log", "-1", "--format=%s", "web-v1.3.1") == "ops: release web-v1.3.1")
 			c.CheckThat("resume: the branch comes back", plainGit(c.Consumer, "rev-parse", "--abbrev-ref", "HEAD") == "main")
 		}})
-	rc.Run(t, rc.Spec{Name: "release: a local kind runs its task", Values: releaseValues,
+	rc.Run(t, rc.Spec{Name: "release: a task kind runs its task with its args", Values: releaseValues,
 		Call: synced(func(c *rc.Case) int { releaseRepo(c); return 0 }),
 		Check: func(c *rc.Case) {
-			c.CheckThat("local: exits 0", gitTask(c, "release:web:local") == 0)
-			c.CheckThat("local: the task ran", c.LogHas("local-build-ran"))
+			c.CheckThat("task --dry-run: exits 0", gitTask(c, "release:web:local", "--dry-run") == 0)
+			c.CheckThat("task --dry-run: prints the command", c.LogHas("Would run: mise run p:local --target 'this machine'"))
+			c.CheckThat("task --dry-run: does not run the task", !c.LogHas("local-build-ran"))
+			c.CheckThat("task: exits 0", gitTask(c, "release:web:local") == 0)
+			c.CheckThat("task: the task ran with its args", c.LogHas("local-build-ran --target|this machine"))
 		}})
 }
