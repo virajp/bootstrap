@@ -5,7 +5,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-# MISE description="Build bootstrap and install it on this machine (local)"
+# MISE description="Release bootstrap (local) with its task p:cli:local"
 # MISE tools={uv="latest", python="3.14"}
 # USAGE flag "--dry-run" help="print what the release does, and change nothing"
 
