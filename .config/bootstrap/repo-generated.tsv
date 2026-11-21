@@ -97,6 +97,8 @@ git	.config/mise/tasks/git/pull.py
 git	.config/mise/tasks/git/tag.py
 git	.config/mise/tasks/git/worktree/create.py
 git	.config/mise/tasks/git/worktree/delete.py
+git	.config/mise/tasks/release/bootstrap/local.py
+git	.config/mise/tasks/release/bootstrap/prod.py
 git	.gitattributes
 git	.gitignore	{"kind":"item","path":[],"value":".impeccable/"}
 gitleaks	.config/mise/conf.d/gitleaks/mise.dev.toml
