@@ -91,6 +91,18 @@ func ValuesDir(getenv func(string) string) string {
 	return ""
 }
 
+// LostValues gives the message of a Mac where a sync finished (it has a
+// manifest) but the folder <dir> has no macos.toml, or "". A missing file
+// then selects only the members of base, and the stale rule would remove the
+// files of each other tool: the file moved, for example from the old place in
+// a clone.
+func LostValues(getenv func(string) string, dir string) string {
+	if NeedsFirstSetup(getenv) || isFile(dir+"/"+valuesName) {
+		return ""
+	}
+	return "a sync finished on this Mac, but " + dir + "/" + valuesName + " does not exist - move your " + valuesName + " there (docs/sync/migrate.md, M56)"
+}
+
 // NeedsFirstSetup tells if no sync finished on this Mac: it has no manifest.
 func NeedsFirstSetup(getenv func(string) string) bool {
 	_, err := os.Stat(ManifestFile(getenv))
@@ -243,6 +255,10 @@ func (s *state) run(args []string) fail.Code {
 	cfg := ValuesDir(s.getenv)
 	if cfg == "" {
 		s.log("HOME is not set")
+		return fail.Usage
+	}
+	if msg := LostValues(s.getenv, cfg); msg != "" {
+		s.log("%s", msg)
 		return fail.Usage
 	}
 

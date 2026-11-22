@@ -320,7 +320,9 @@ func caseMiseDeselected(c *mcase) {
 	c.runReal()
 	c.exit(0)
 	c.check("the mise config is written", isFile(file))
+	// A macos.toml with no other tool: a synced Mac with no file stops.
 	c.useConfig("-")
+	c.valuesFile()
 	c.runReal()
 	c.exit(0)
 	c.check("the mise config of the tool is removed", !exists(file))
@@ -554,7 +556,9 @@ func caseStaleDeselected(c *mcase) {
 	c.runReal()
 	c.exit(0)
 	c.check("opt is in the manifest", hasLine(c.manifest, "opt\t.config/opt/opt.txt"))
+	// A macos.toml with no other tool: a synced Mac with no file stops.
 	c.useConfig("-")
+	c.valuesFile()
 	c.runReal()
 	c.exit(0)
 	c.check("the files of opt are removed", !exists(c.home+"/.config/opt"))
@@ -1329,7 +1333,9 @@ func caseMergeContrib(c *mcase) {
 	c.runReal()
 	c.exit(0)
 	c.check("the item of a tool that went is removed", listOf(c.mDir()+"/m.json", "items") == `["a"]`)
+	// A macos.toml with no other tool: a synced Mac with no file stops.
 	c.useConfig("-")
+	c.valuesFile()
 	c.runReal()
 	c.exit(0)
 	c.check("the shared files of a deselected tool stay", isFile(c.mDir()+"/m.json") && isFile(c.mDir()+"/m.yaml"))
@@ -1399,4 +1405,20 @@ func caseBackupMissing(c *mcase) {
 	c.runReal()
 	c.exit(2)
 	c.has("the backup clone " + filepath.Join(c.dir, "backup") + " is not a folder")
+}
+
+// caseConfigLost: a Mac where a sync finished, with no macos.toml at the
+// fixed place, stops: a sync of base only would remove the other files.
+func caseConfigLost(c *mcase) {
+	c.useConfig("context")
+	c.runReal()
+	c.exit(0)
+	c.remove(c.values)
+	c.runReal()
+	c.exit(2)
+	c.has("a sync finished on this Mac, but " + c.values + " does not exist - move your macos.toml there (docs/sync/migrate.md, M56)")
+	c.check("the files of the tools stay", exists(c.home+"/.config/context/context.txt"))
+	c.mac("migrate", "--yes", "--no-bootstrap")
+	c.exit(2)
+	c.check("migrate writes no new macos.toml", !exists(c.values))
 }

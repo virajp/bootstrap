@@ -29,6 +29,7 @@ func TestMac(t *testing.T) {
 	cases := []tc{
 		{"config: a missing config folder", caseConfigMissing},
 		{"config: macos.toml below HOME", caseConfigHome},
+		{"config: a synced Mac with no macos.toml", caseConfigLost},
 		{"config: an unknown flag, with the usage", caseUnknownFlag},
 		{"config: sync migrates an unknown tool in a [tools.<name>] table away", expect("unknown-tool", 0, "[tools.nope] removed: bootstrap no longer has the tool", nil)},
 		{"config: an [overrides.mise.<path>] that no selected tool has", expect("unknown-override", 2, "no selected tool has", nil)},

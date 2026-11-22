@@ -600,6 +600,9 @@ func (p *PlanResult) initValues() error {
 		return p.initFolder()
 	}
 	if !p.Existed {
+		if msg := macos.LostValues(os.Getenv, filepath.Dir(sd.Values)); msg != "" {
+			return problem(fail.Usage, msg, "")
+		}
 		format := fmt.Sprintf("%s = %d\n", oldform.FormatKey, oldform.Format)
 		p.Next = []byte(MacHeader + "\n\n" + format)
 		p.Notes = append(p.Notes, "create the values file")
