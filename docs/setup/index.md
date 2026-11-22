@@ -63,16 +63,17 @@ of `bootstrap` in `~/.cache/bootstrap/`. This file uses these commands:
 | Command                                         | Use                                                                                                                                                         |
 | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bootstrap mac questions [tool…] --json`        | Prints a JSON envelope whose `data` lists the questions of the tools, with the proposal and the answer of each. Without a tool, it uses the selected tools. |
-| `bootstrap mac migrate`                         | Runs in the clone. Writes `macos.toml` with the members of `base`, or moves an old form, asks the questions, then syncs.                                    |
+| `bootstrap mac migrate`                         | Writes `~/.config/bootstrap/macos.toml` with the members of `base`, or moves an old form, asks the questions. `--backup <clone>` sets the backup clone.     |
 | `bootstrap mac add pack <pack> [--exclude <m>]` | Writes a `[tools.<name>]` table for each member of the pack that is not selected, and for each new dependency, then syncs.                                  |
 | `bootstrap mac add tool <tool…>`                | Writes a `[tools.<name>]` table for each tool and each new dependency, then syncs.                                                                          |
 | `bootstrap mac remove tool <tool…>`             | Removes the tables of the tools, and of each dependency that no other tool needs, then syncs.                                                               |
 | `bootstrap mac sync`                            | Syncs the Mac. The task `updateall:configs` runs it.                                                                                                        |
 
-`bootstrap mac migrate` takes no tool names. The other `mac` commands find
-`macos.toml` through
-`MACOS_SETUP_REPO_PATH`, or `--repo-path <path>`. Before the first sync, give
-that variable inline. The user config file of the CLI has no key for this path.
+`bootstrap mac migrate` takes no tool names. Each `mac` command uses the fixed
+file `~/.config/bootstrap/macos.toml` (below `$XDG_CONFIG_HOME` when it is
+set), from any folder. The key `backup` names the clone: the sync links the
+synced files into `<clone>/dotfiles/`, so the owner commits them in the clone.
+See [mac.md](../design/mac.md#the-backup-clone).
 
 An agent has no terminal for a prompt of the CLI. Thus give each answer with
 `--answer <tool>.<key>=<value>`, also an empty answer with
@@ -146,11 +147,12 @@ Examine the Mac. Do the first path that agrees:
 | The Mac                                                                                 | Path                                                                                           |
 | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `~/.config/mise` is a link into a `dotfiles/` folder, and the clone has no `macos.toml` | The old model. Do [`migrate-dotfiles.md`](migrate-dotfiles.md) first. Come back if it says so. |
-| The clone has no `macos.toml`                                                           | [First adoption](#first-adoption).                                                             |
-| The clone has `macos.toml`                                                              | [Update](#update-to-a-newer-bootstrap_commit).                                                 |
+| The clone has `macos.toml` at its root (the old place)                                  | Do item M56 of [`docs/sync/migrate.md`](../sync/migrate.md) first, then the update.            |
+| `~/.config/bootstrap/macos.toml` does not exist                                         | [First adoption](#first-adoption).                                                             |
+| `~/.config/bootstrap/macos.toml` exists                                                 | [Update](#update-to-a-newer-bootstrap_commit).                                                 |
 
-Commands: `readlink ~/.config/mise` and
-`test -f <path of the clone>/macos.toml`.
+Commands: `readlink ~/.config/mise`, `test -f <path of the clone>/macos.toml`
+and `test -f ~/.config/bootstrap/macos.toml`.
 
 ## First adoption
 
@@ -186,8 +188,8 @@ command, name each tool of step 1 and each member of each pack of step 1 that
 the owner did not leave out:
 
 ```text
-MACOS_SETUP_REPO_PATH="$PWD" bootstrap mac questions --json
-MACOS_SETUP_REPO_PATH="$PWD" bootstrap mac questions <tool…> --json
+bootstrap mac questions --json
+bootstrap mac questions <tool…> --json
 ```
 
 Each command prints one JSON envelope, and `data` is the list of the rows.
@@ -198,14 +200,11 @@ row is answered. For each row with no answer, do these items:
 1. If `source` is `detect`, show `proposal` as the proposal. If `source` is
    `example`, show it only as the form of the answer. Do not use it as an
    answer.
-2. For `mise.config_path`, propose the path of the clone:
-   `git rev-parse --show-toplevel`. The sync writes this answer to the mise env
-   as `MACOS_SETUP_REPO_PATH`.
-3. Ask the `question`. Show the `note`, when it is not empty, under the
+2. Ask the `question`. Show the `note`, when it is not empty, under the
    question.
-4. The owner can leave a row with `optional` = `true` empty. Give it as
+3. The owner can leave a row with `optional` = `true` empty. Give it as
    `--answer <tool>.<key>=`.
-5. The rows with the same `tool` and a `group` that is not empty need at
+4. The rows with the same `tool` and a `group` that is not empty need at
    least one answer that is not empty. Give each empty answer of the group as
    `--answer <tool>.<key>=`.
 
@@ -216,8 +215,14 @@ Pass: each other row has an answer that is not empty.
 Give one `--answer` for each answer of step 2 of a tool of `base`:
 
 ```text
-bootstrap mac migrate --answer <tool>.<key>=<value> … --dry-run
+bootstrap mac migrate --backup <clone> --answer <tool>.<key>=<value> … --dry-run
 ```
+
+`<clone>` is the path of the clone of requirement 4. The change list shows each
+file that the run moves into the clone, and each link. A conflict stops the
+command with code 2 and names the file: a file of `$HOME` that differs from the
+file in the clone, or a link to a different place. Show it to the owner, and
+let the owner fix it. Do not delete or move the file yourself.
 
 A tool in `depends` can add a question that step 2 did not show. Then the
 command names it: `the question <tool>.<key> has no answer`. For a group, the
@@ -238,7 +243,7 @@ Ask the owner whether to write the changes. Then run the same command with
 `--yes` in place of `--dry-run`:
 
 ```text
-bootstrap mac migrate --answer <tool>.<key>=<value> … --yes
+bootstrap mac migrate --backup <clone> --answer <tool>.<key>=<value> … --yes
 ```
 
 On a Mac where no sync finished, the command does the first setup, and exit 4
@@ -252,9 +257,10 @@ Then sync the Mac. Run this command in the new terminal:
 bootstrap mac sync
 ```
 
-The first setup wrote the task `updateall:configs` and
-`MACOS_SETUP_REPO_PATH` into the mise config, so `mise run updateall:configs`
-also works. Then ask the owner to run `updateall`, which installs the tools of
+The first setup wrote the task `updateall:configs` into the mise config, so
+`mise run updateall:configs` also works. bootstrap never commits: ask the owner
+to examine the clone with `git status` and to commit the files. Then ask the
+owner to run `updateall`, which installs the tools of
 the sync.
 
 Pass: `bootstrap mac sync` exits 0, and `bootstrap_commit` of `macos.toml` is

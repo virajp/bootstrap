@@ -215,7 +215,9 @@ Two Mac sources do not follow this rule, each from its old copy:
 6. It makes the file plan: each file of a selected tool, relative to `$HOME`,
    with the `.config/mise/` files first and the generated mise files first of
    all.
-7. It writes each file of the plan in one pass, and applies the stale rule.
+7. It makes the links of the backup clone (see
+   [The backup clone](#the-backup-clone)), then writes each file of the plan in
+   one pass, and applies the stale rule.
 8. It writes the manifest, runs the `after` scripts, and sets
    `bootstrap_commit`. It runs no `mise bootstrap`.
 
@@ -345,7 +347,47 @@ The link rule picks the level of each link:
 
 A runtime file is a file that the program of a tool writes, which must not go
 into git, for example `.config/fish/fish_variables`. The key `runtime` of the
-`tools.toml` of a tool names them.
+`tools.toml` of a Mac tool names them: a list of paths relative to `$HOME`,
+with no `~`, no `..` and no `/` at the start or the end.
+
+The engine makes the links itself, also the link `~/.config/mise`. It writes
+no `[mise.dotfiles]` entry for them: mise reads its entries from
+`~/.config/mise`, and it refuses an entry whose source is missing. The own
+`[mise.dotfiles]` entries of the user in `macos.toml` stay with mise.
+
+Each run with `backup` (`mac sync`, and the first setup of `mac migrate`)
+does these steps before it writes a file:
+
+1. It stops with code 2 when the clone is not a folder.
+2. It makes the list of links from the targets of the plan, the generated
+   mise files and `macos.toml` (when its folder is below `$HOME`).
+3. It examines each link. The run stops with code 2 before any change when one
+   link has a conflict, and each conflict has one error line with the fix
+   `fix it by hand, then run the sync again`.
+4. It does the steps of the safe cases, then makes each missing link. A folder
+   link with no folder in the clone gets an empty folder there.
+
+| State of the target in `$HOME`                                                      | Action                                                    |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| The link to its place in the clone                                                  | none                                                      |
+| Nothing                                                                             | the link                                                  |
+| A real file or folder, and the clone has nothing there                              | move it into the clone, then the link                     |
+| A real file with the same bytes as the clone                                        | remove the real file, then the link                       |
+| A link that resolves to its place in the clone (for example a link of an old level) | remove that link, then the link                           |
+| A real folder, and the clone has a folder there                                     | the same rules for each item of the folder, then the link |
+| A real file that differs from the clone                                             | conflict                                                  |
+| A link to a different place                                                         | conflict                                                  |
+| A file and a folder at the same place                                               | conflict                                                  |
+| A folder above the link is a link (the rule now splits that folder)                 | conflict: replace the link with a folder                  |
+
+A dry run examines the links, stops on a conflict, and shows
+`would move <path> into the backup <clone path>` and
+`would link <path> to <clone path>`. It changes nothing, so the render of the
+dry run compares the targets at their place of today. A real run shows
+`moved <path> into the backup` and `linked <path> to <clone path>`.
+
+A link stays when its tool is no longer selected: the files in the clone are
+the user's backup. bootstrap never commits and never runs git in the clone.
 
 ## The manifest
 
@@ -364,6 +406,8 @@ the rows of each tool, also of a tool that is not selected.
 ## Where the Mac side writes
 
 - `$HOME`, and the sources that its symlinks point to.
+- The backup clone: the moves and the empty folders of the links, below
+  `<backup>/dotfiles/`.
 - The cache: the clone, the lock and `macos-generated.tsv`.
 - `macos.toml`: `bootstrap_commit`, the tables of the required members of
   `base`, and the writes of `mac migrate`, `mac add`, `mac remove`,

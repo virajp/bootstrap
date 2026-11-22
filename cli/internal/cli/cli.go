@@ -100,6 +100,8 @@ Flags
                        after the consent
   --exclude <member>   add pack: leave out a member of the pack, as
                        packs.toml writes it (repeatable; one pack only)
+  --backup <path>      mac migrate: the backup clone, the key backup of
+                       macos.toml
   --answer <tool>.<key>=<value>
                        migrate, sync, add, replace, detect --add: the answer
                        of a question (repeatable); --answer <tool>.<key>= writes
@@ -137,8 +139,8 @@ var argsOf = map[string]string{
 // flagUsage gives each flag of a usage line, by the name of the flag.
 var flagUsage = map[string]string{
 	"answer": "[--answer <tool>.<key>=<value>]", "jobs": "[--jobs <n>]",
-	"exclude": "[--exclude <member>]",
-	"format":  "[--format json|yaml|toml]",
+	"exclude": "[--exclude <member>]", "backup": "[--backup <path>]",
+	"format": "[--format json|yaml|toml]",
 }
 
 // usageLine gives the usage line of a command: its arguments and its own
@@ -300,6 +302,7 @@ type opts struct {
 	// when it migrates first.
 	auto    bool
 	answers []string
+	backup  string            // mac migrate: --backup, the backup clone.
 	kind    string            // add, remove, replace: the kind word, tool or pack.
 	names   []string          // The names after the kind word.
 	exclude []string          // add pack: the members of --exclude.
@@ -391,6 +394,9 @@ func (a *app) run(args []string) fail.Code {
 	}
 	if cmd != "version" && cmd != "contract" {
 		flags += " config cache-dir url clone"
+	}
+	if mac && cmd == "migrate" {
+		flags += " backup"
 	}
 	if cmd == "migrate" {
 		// --no-tui is an old flag of migrate, which never opens the TUI
@@ -545,7 +551,7 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 			return o, fmt.Errorf("%s has no flag %s", cmd, arg)
 		}
 		takes := name == "answer" || name == "exclude" || name == "jobs" || name == "config" || name == "cache-dir" ||
-			name == "url" || name == "clone" || name == "format"
+			name == "url" || name == "clone" || name == "format" || name == "backup"
 		if takes && !withValue {
 			if i+1 >= len(args) {
 				return o, fmt.Errorf("%s needs a value", arg)
@@ -578,6 +584,11 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 			o.verbose = true
 		case "answer":
 			o.answers = append(o.answers, value)
+		case "backup":
+			if value == "" {
+				return o, fmt.Errorf("--backup needs a value")
+			}
+			o.backup = value
 		case "jobs":
 			n, err := strconv.Atoi(value)
 			if err != nil || n < 1 {

@@ -124,6 +124,8 @@ func (c *mcase) oldMacValues() {
 		`config_path = "~/macos-setup"`, "", "[tools.opt]"))
 	c.git("-C", c.cfg, "add", "-A")
 	c.git("-C", c.cfg, "commit", "--quiet", "--no-verify", "-m", "old")
+	// mac migrate moves config_path to backup: the clone must be a folder.
+	c.mkdir(c.home + "/macos-setup")
 }
 
 func caseSyncOldForm(c *mcase) {
@@ -715,4 +717,16 @@ func caseEntryLeftovers(c *mcase) {
 	c.exit(2)
 	c.has("colour is not a key of")
 	c.check("after a bad macos.toml: no lock, no temp copy", c.noLeftovers())
+}
+
+// caseInitBackup: mac migrate --backup writes the key backup, and the first
+// setup links the files into the clone.
+func caseInitBackup(c *mcase) {
+	c.useConfig("-")
+	clone := filepath.Join(c.dir, "backup")
+	c.mkdir(clone)
+	c.mac("init", "--backup", clone, "--yes", "--no-bootstrap")
+	c.exit(0)
+	c.check("the key backup", hasLine(c.values, `backup = "`+clone+`"`))
+	c.check("~/.config/mise is a link into the clone", linkOf(c.home+"/.config/mise") == clone+"/dotfiles/.config/mise")
 }

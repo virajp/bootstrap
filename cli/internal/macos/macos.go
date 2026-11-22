@@ -342,6 +342,11 @@ func (s *state) run(args []string) fail.Code {
 		s.r.Summary(int(code))
 		return code
 	}
+	// The links of the backup clone, before any file: the render writes
+	// through them.
+	if code := s.backup(dryRun); code != fail.OK {
+		return code
+	}
 	firstRun := !exists(manifestFile)
 	s.oldRows, _ = manifest.Read(s.e, manifest.Macos, manifestFile, "")
 	s.merged = map[string]bool{}

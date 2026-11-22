@@ -26,7 +26,7 @@ func (a *app) init(mac bool, o opts) fail.Code {
 	if code != fail.OK {
 		return code
 	}
-	code = a.finish(sd, o, core.List{Init: true})
+	code = a.finish(sd, o, core.List{Init: true, Backup: o.backup})
 	if mac && code == fail.OK && !o.dryRun {
 		a.infof("Next: run bootstrap mac sync")
 	}

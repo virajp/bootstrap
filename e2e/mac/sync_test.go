@@ -1334,3 +1334,69 @@ func caseMergeContrib(c *mcase) {
 	c.exit(0)
 	c.check("the shared files of a deselected tool stay", isFile(c.mDir()+"/m.json") && isFile(c.mDir()+"/m.yaml"))
 }
+
+// ---- backup -----------------------------------------------------------------
+
+// useBackup selects the fixture context with the key backup, and gives the
+// folder of the files in the backup clone.
+func (c *mcase) useBackup() string {
+	c.useConfig("context")
+	clone := filepath.Join(c.dir, "backup")
+	c.mkdir(clone)
+	c.write(c.values, "backup = \""+clone+"\"\n"+harness.ReadFile(c.values))
+	return clone + "/dotfiles"
+}
+
+// linkOf gives the target of the link <p>, or "" when <p> is not a link.
+func linkOf(p string) string {
+	to, err := os.Readlink(p)
+	if err != nil {
+		return ""
+	}
+	return to
+}
+
+func caseBackupLinks(c *mcase) {
+	root := c.useBackup()
+	c.write(c.home+"/.config/context/own.txt", "own\n")
+	c.runReal()
+	c.exit(0)
+	c.check("~/.config/mise is a folder link", linkOf(c.home+"/.config/mise") == root+"/.config/mise")
+	c.check("~/.config/context is a folder link", linkOf(c.home+"/.config/context") == root+"/.config/context")
+	c.check("the render wrote into the clone", exists(root+"/.config/context/context.txt"))
+	c.check("an own file moved into the clone", hasLine(root+"/.config/context/own.txt", "own"))
+	c.has("linked     ~/.config/context to ")
+	c.runReal()
+	c.exit(0)
+	c.lacks("linked ")
+	c.lacks("moved ")
+}
+
+func caseBackupDryRun(c *mcase) {
+	c.useBackup()
+	c.write(c.home+"/.config/context/own.txt", "own\n")
+	c.runDry()
+	c.exit(0)
+	c.has("would link ~/.config/context to ")
+	c.has("would move ~/.config/context into the backup ")
+	c.check("no link made", linkOf(c.home+"/.config/context") == "")
+}
+
+func caseBackupConflict(c *mcase) {
+	root := c.useBackup()
+	c.write(c.home+"/.config/context/own.txt", "home\n")
+	c.write(root+"/.config/context/own.txt", "clone\n")
+	c.write(c.home+"/.zshrc", "z\n")
+	c.runReal()
+	c.exit(2)
+	c.has("backup: ~/.config/context/own.txt and " + root + "/.config/context/own.txt differ - fix it by hand")
+	c.check("nothing moved", hasLine(c.home+"/.config/context/own.txt", "home") && linkOf(c.home+"/.config/mise") == "")
+}
+
+func caseBackupMissing(c *mcase) {
+	c.useBackup()
+	c.remove(filepath.Join(c.dir, "backup"))
+	c.runReal()
+	c.exit(2)
+	c.has("the backup clone " + filepath.Join(c.dir, "backup") + " is not a folder")
+}

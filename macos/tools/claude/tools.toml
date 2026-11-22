@@ -4,6 +4,9 @@
 
 category = "ai"
 description = "The shared Claude files: settings.json, CLAUDE.md and the upgrade:ai task"
+# Claude Code writes its sessions, history and caches in ~/.claude, so the
+# backup clone links the synced files of ~/.claude one by one.
+runtime = [ ".claude/history.jsonl", ".claude/projects", ".claude/sessions" ]
 summary = "The shared Claude settings and CLAUDE.md"
 
 # settings.json and CLAUDE.md are shared files. bootstrap adds the keys and

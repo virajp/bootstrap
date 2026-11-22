@@ -88,6 +88,9 @@ type List struct {
 	Init    bool
 	Items   []Item
 	Answers []Answer
+	// Backup is the key backup of macos.toml that mac migrate writes
+	// (--backup), or empty.
+	Backup string
 	// Projects are the [projects.<name>] tables to add to repo.toml, and
 	// Links the project names to add to the projects list of each tool
 	// (detect --add, repo side).
@@ -344,6 +347,15 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 		return p, err
 	}
 	p.Pending = Pending(sel, given, p.AskOnly)
+	if sd.Mac && l.Backup != "" {
+		if p.Next, err = EditTOML(p.Next, []string{".backup = " + q(l.Backup)}); err != nil {
+			return p, err
+		}
+		p.Notes = append(p.Notes, "set backup")
+		if err := write(); err != nil {
+			return p, err
+		}
+	}
 	if len(given) > 0 {
 		var exprs []string
 		for _, qq := range questions.Of(sel.Idx, sel.Tools) {

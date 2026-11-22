@@ -489,7 +489,7 @@ the module of the test (see "The test cache" below).
   copy of `macos/examples/macos.toml`, in a temporary `HOME`. No `[files]`
   table gives `mode = "seed"` to a JSON, YAML or TOML target; the example
   selects each tool and each rendered file parses; an example without the
-  answer `config_path` of `mise` stops the sync with code 2; a mise tool on
+  answer `ssh_vault` of `1password` stops the sync with code 2; a mise tool on
   both sides of `repo/tools/` and `macos/tools/` has one version and one
   `depends`, and a mise setting on both sides has one value (an intended
   difference goes in `driftAllowed`, with a reason); the git tool needs one

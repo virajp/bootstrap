@@ -1,5 +1,8 @@
 # Example: the values file of the Mac side.
 # This file is at ~/.config/bootstrap/macos.toml.
+# backup = "~/Projects/github.com/janedoe/macos-setup" names a git clone: the
+# sync links the synced files into its dotfiles/ folder. See
+# docs/design/mac.md ("The backup clone").
 # Each [tools.<name>] table selects a tool and gives its values.
 # The file holds tools only: it has no [packs.<name>] table.
 

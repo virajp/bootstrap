@@ -4,7 +4,7 @@
 // test:mac (.config/mise/tasks/test/mac, all 2,499 lines).
 //
 // Each case has its own temporary HOME, XDG_* folders, cache, TMPDIR, git
-// config and config folder (MACOS_SETUP_REPO_PATH). MISE_DATA_DIR and
+// config and folder of macos.toml ($XDG_CONFIG_HOME/bootstrap). MISE_DATA_DIR and
 // MISE_CACHE_DIR stay the folders of the user, so a real `mise x` finds its
 // tools with no download.
 package mac
@@ -45,7 +45,7 @@ func TestMac(t *testing.T) {
 		{"config: a packs.toml with no [pack.base]", expect("ok", 3, "base is not a bootstrap pack (named in macos/packs.toml)", noBase)},
 		{"config: required = true in a pack other than base", expect("ok", 2, "macos/packs.toml: [pack.more] opt: required = true is only for a tool of pack base", packs("[pack.more]", "opt = { required = true }"))},
 		{"config: the old member key default", expect("ok", 2, "macos/packs.toml: [pack.more] opt has the entry key 'default', the old form - each member is a default: write opt = {}", packs("[pack.more]", "opt = { default = true }"))},
-		{"config: an unknown key in a tools.toml", expect("ok", 2, "macos/tools/opt/tools.toml: depend is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]", prepend("opt", `depend = [ "core" ]`))},
+		{"config: an unknown key in a tools.toml", expect("ok", 2, "macos/tools/opt/tools.toml: depend is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, runtime, [defaults], [questions], [contributes], [files], [tasks] and [mise]", prepend("opt", `depend = [ "core" ]`))},
 		{"config: a stage that is not init", expect("ok", 2, `macos/tools/opt/tools.toml: stage = "login" - the only stage is "init"`, prepend("opt", `stage = "login"`))},
 		{"config: the old stage = shell", expect("ok", 2, `macos/tools/opt/tools.toml: stage = "shell" is the old name - write stage = "init"`, prepend("opt", `stage = "shell"`))},
 		{"config: the old seed key", expect("ok", 2, `macos/tools/core/tools.toml: seed is the old key - write a [files."<target>"] table with mode = "seed"`, prepend("core", `seed = [ ".config/core/seeded.toml" ]`))},
@@ -115,6 +115,10 @@ func TestMac(t *testing.T) {
 		{"render: a seed", caseSeed},
 		{"render: a generated file overwritten", caseOverwrite},
 		{"context: .cli_dir and .env", caseContext},
+		{"backup: links the files into the clone", caseBackupLinks},
+		{"backup: a dry run shows the links", caseBackupDryRun},
+		{"backup: a conflict stops the sync", caseBackupConflict},
+		{"backup: a missing clone", caseBackupMissing},
 		{"symlinks: a link to a file", caseLinkFile},
 		{"symlinks: a symlinked folder", caseLinkFolder},
 		{"symlinks: a stale file through a link", caseLinkStale},
@@ -193,6 +197,7 @@ func TestMac(t *testing.T) {
 		{"init: a new macos.toml", caseInitNew},
 		{"init: tool names", caseInitNames},
 		{"init: from another git repository", caseInitOtherRepo},
+		{"init: --backup writes the key and links", caseInitBackup},
 		{"init: nothing to change", caseInitNothing},
 
 		{"entry clone: a first clone", caseEntryCloneFirst},
