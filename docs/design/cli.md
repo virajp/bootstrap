@@ -1499,7 +1499,9 @@ key stops that target.
 
 A text file has at most one `section`, and its spec needs the `comment` key.
 The marker lines are comments that start with `bootstrap:start` and
-`bootstrap:end`. A new section goes at the top of the file, after the shared
+`bootstrap:end`. The section has an empty line after the start line and before
+the end line, as a Markdown formatter writes them, so a formatter does not
+change it. A new section goes at the top of the file, after the shared
 header, with an empty line before the lines of the user. A change of the user
 between the markers is lost at the next sync; the user adds own text after
 `bootstrap:end`. A start line without an end line gets a warning, and the

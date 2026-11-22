@@ -56,13 +56,16 @@ func findSection(lines []Value, marker string) (int, int) {
 	return start, -1
 }
 
-// sectionLines gives the lines of the section of <value>, with its markers.
+// sectionLines gives the lines of the section of <value>, with its markers
+// and an empty line after the start marker and before the end marker, as a
+// Markdown formatter writes them. Thus a formatter does not change the
+// section.
 func sectionLines(value, marker string) []Value {
-	out := []Value{str(asComment(marker, startText))}
-	for _, l := range strings.Split(strings.TrimSuffix(value, "\n"), "\n") {
+	out := []Value{str(asComment(marker, startText)), str("")}
+	for _, l := range strings.Split(strings.Trim(value, "\n"), "\n") {
 		out = append(out, str(l))
 	}
-	return append(out, str(asComment(marker, endText)))
+	return append(out, str(""), str(asComment(marker, endText)))
 }
 
 // setLines replaces the lines of the text document. The writer of a text
