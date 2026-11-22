@@ -1729,7 +1729,12 @@ files, not their folders. See `docs/design/mac.md` ("The place of
    `[tools.mise]` to the key `backup`. Make sure that `backup` names the clone,
    then run `bootstrap mac migrate --yes`.
 3. If the clone has `dotfiles/.config/bootstrap/` from an earlier try, remove
-   it, else the sync of step 4 compares the two folders.
+   it, else the sync of step 4 compares the two folders. A clone of the old
+   symlink model also has the old mise templates of the files that the Mac
+   sync renders, with `{{ vars.<name> }}` in them, for example
+   `dotfiles/.config/git/identity` and `dotfiles/.ssh/config.identity`. They
+   differ from the files in `$HOME`, so step 4 stops on them. They are
+   obsolete: remove them from the clone with `git rm`.
 4. Run `bootstrap mac sync --dry-run`. Read each `would move` and `would link`
    line. A conflict stops the run with code 2 and names the file: fix it by
    hand. A file that differs from its copy in the clone needs a decision of the
