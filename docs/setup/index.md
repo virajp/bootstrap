@@ -89,6 +89,10 @@ has a change to make.
 
 - Each decision of the owner is one question. Ask one question at a time. Before
   you ask, find each value that you can, and show it as the proposal.
+- Do not create a branch in the clone, and do not switch it off its default
+  branch: `$HOME` links into it, so a switch changes the live files of the
+  Mac. Make each change in a git worktree with its own branch. See
+  [mac.md](../design/mac.md#the-backup-clone).
 - Do not delete `dotfiles/`, and do not remove a symlink. The sync keeps a link
   and writes through it to its source.
 - Do not edit a file that the sync writes. That file has the header
