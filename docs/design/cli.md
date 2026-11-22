@@ -2157,6 +2157,8 @@ and 5. Code 4 is only for the Mac side: see
 
 - A `mise` that is not at `~/.local/bin/mise`.
 - A `HOME` that is not set.
+- A Mac with a manifest and no `macos.toml` at its fixed place. See
+  [mac.md](mac.md#the-place-of-macostoml).
 - A `BOOTSTRAP_CLONE` without `cli/` or `macos/tools/`.
 - A `macos.toml` that breaks a rule, also a `[overrides.mise_env.*]` table.
 - A nested run of `updateall:configs`.

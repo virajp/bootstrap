@@ -32,6 +32,10 @@ const (
 // tools.toml, next to a repo.toml with the required keys.
 func fixture(t *testing.T, side source.Side, tools map[string]string, packs, values string) Side {
 	t.Helper()
+	if side == source.Macos {
+		// An empty cache: no test reads the manifest of the machine.
+		t.Setenv("BOOTSTRAP_CACHE", t.TempDir())
+	}
 	clone, root := t.TempDir(), t.TempDir()
 	write := func(p, text string) {
 		t.Helper()
@@ -445,9 +449,10 @@ func TestApply(t *testing.T) {
 	}
 
 	// mac migrate on a Mac with a manifest writes the values file and runs
-	// no sync: the user runs bootstrap mac sync next.
+	// no sync: the user runs bootstrap mac sync next. A synced Mac has a
+	// values file (else migrate stops: macos.LostValues).
 	f = &fakeSync{code: fail.Network}
-	sd = macFixture(t, "")
+	sd = macFixture(t, "format = 2\n")
 	f.install(t, sd)
 	if err := os.WriteFile(macos.ManifestFile(os.Getenv), nil, 0o644); err != nil {
 		t.Fatal(err)

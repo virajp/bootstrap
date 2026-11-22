@@ -23,7 +23,14 @@ folder, for example in a clone of a project, never writes a second
 `macos.toml`.
 
 The folder needs no git repository. A clean real run creates the folder when
-it is not there. The backup of `macos.toml` in git comes from the key `backup`:
+it is not there.
+
+A Mac where a sync finished (it has a manifest) and with no `macos.toml` at
+this place stops each `mac sync` and `mac migrate` with code 2:
+`a sync finished on this Mac, but <path> does not exist - move your macos.toml
+there (docs/sync/migrate.md, M56)`. Without this stop, the run selects only
+the members of `base`, and the stale rule removes the files of each other
+tool. The backup of `macos.toml` in git comes from the key `backup`:
 the sync links `~/.config/bootstrap/` into the backup clone. See
 [The backup clone](#the-backup-clone).
 
