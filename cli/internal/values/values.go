@@ -314,9 +314,13 @@ type Macos struct {
 	Sel []Item
 	// User holds the `[tools.<name>]` tables.
 	User *source.Obj
+	// Backup is the key `backup`: the clone that holds the backup of the
+	// synced files, as the file has it (a ~ at the start is not expanded).
+	// Empty: no backup.
+	Backup string
 }
 
-const macosKeys = "bootstrap_commit, format, [tools.<name>], [overrides.mise.<path>] and [mise.*]"
+const macosKeys = "backup, bootstrap_commit, format, [tools.<name>], [overrides.mise.<path>] and [mise.*]"
 
 // ReadMacos reads the Mac values file <path> if it exists, as `_ss_read_values`
 // does. <shown> is the path as a message names it. The error holds each message
@@ -348,8 +352,8 @@ func ReadMacos(path, shown string) (*Macos, error) {
 		switch name {
 		case "packs":
 			bad("packs in %s must be [packs.<name>] tables - the top-level keys are %s", shown, macosKeys)
-		case "bootstrap_commit":
-			bad("bootstrap_commit in %s must be a string", shown)
+		case "bootstrap_commit", "backup":
+			bad("%s in %s must be a string", name, shown)
 		default:
 			bad("%s in %s must be a table - the top-level keys are %s", name, shown, macosKeys)
 		}
@@ -360,6 +364,12 @@ func ReadMacos(path, shown string) (*Macos, error) {
 		case "bootstrap_commit":
 			if _, ok := x.(string); !ok {
 				typeBad(k)
+			}
+		case "backup":
+			if s, ok := x.(string); !ok || s == "" {
+				typeBad(k)
+			} else {
+				v.Backup = s
 			}
 		case "format":
 			// The package oldform examines its value.

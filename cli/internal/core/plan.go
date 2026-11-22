@@ -379,7 +379,7 @@ func Plan(sd Side, l List, o Options) (*PlanResult, error) {
 	run := frontEnd(sd.Mac)
 	envKey, envVal := "BOOTSTRAP_VALUES", tmpValues
 	if sd.Mac {
-		envKey, envVal = "MACOS_SETUP_REPO_PATH", tmp
+		envVal = tmp
 	}
 	old, had := os.LookupEnv(envKey)
 	_ = os.Setenv(envKey, envVal)

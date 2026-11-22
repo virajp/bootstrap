@@ -34,24 +34,13 @@ func (a *app) init(mac bool, o opts) fail.Code {
 }
 
 // tui is `bootstrap [mac] tui`: the TUI on the values file of the side. It
-// needs a terminal, and stops when migrate has a change to make. mac tui
-// finds macos.toml with --repo-path, then MACOS_SETUP_REPO_PATH, then in the
-// current folder.
+// needs a terminal, and stops when migrate has a change to make.
 func (a *app) tui(mac bool, o opts) fail.Code {
 	if !a.interactive() {
 		a.fail(cmdName(mac, "tui")+" needs a terminal", "use: "+cmdName(mac, "add tool")+", "+cmdName(mac, "remove tool")+" or "+cmdName(mac, "migrate"))
 		return fail.Usage
 	}
-	getenv := a.getenv
-	if mac {
-		getenv = func(k string) string {
-			if v := a.getenv(k); v != "" || k != "MACOS_SETUP_REPO_PATH" {
-				return v
-			}
-			return a.pwd
-		}
-	}
-	sd, err := core.Prepare(mac, false, a.pwd, getenv)
+	sd, err := core.Prepare(mac, false, a.pwd, a.getenv)
 	if err != nil {
 		return a.logErr(err)
 	}

@@ -1,6 +1,5 @@
 # Example: the values file of the Mac side.
-# This file is at the root of the private macos-setup clone.
-# MACOS_SETUP_REPO_PATH names the folder of that clone.
+# This file is at ~/.config/bootstrap/macos.toml.
 # Each [tools.<name>] table selects a tool and gives its values.
 # The file holds tools only: it has no [packs.<name>] table.
 
@@ -153,8 +152,6 @@ dock_orientation = "right"
 [tools.microsoft-word]
 
 [tools.mise]
-# The answer to the question config_path of mise.
-config_path = "~/Projects/github.com/janedoe/macos-setup"
 
 [tools.network]
 

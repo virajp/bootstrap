@@ -31,9 +31,6 @@ var Keys = []Key{
 	{Name: "cache_dir", Var: "BOOTSTRAP_CACHE", Flag: "cache-dir", InFile: true},
 	{Name: "url", Var: "BOOTSTRAP_URL", Flag: "url", InFile: true},
 	{Name: "clone", Var: "BOOTSTRAP_CLONE", Flag: "clone", InFile: true},
-	// The mise env of an adopted Mac exports the variable, so the file has
-	// no key for it.
-	{Name: "mac.repo_path", Var: "MACOS_SETUP_REPO_PATH", Flag: "repo-path"},
 }
 
 // File is the content of a config file.

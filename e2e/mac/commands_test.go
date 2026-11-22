@@ -140,7 +140,8 @@ func caseInitMigrate(c *mcase) {
 	c.exit(0)
 	c.has("[tools.macos-setup] to [tools.mise]")
 	c.check("no [tools.macos-setup]", !hasStr(c.values, "macos-setup]"))
-	c.check("config_path in [tools.mise]", hasLine(c.values, `config_path = "~/macos-setup"`))
+	c.has("config_path of [tools.mise] to backup")
+	c.check("config_path is the key backup", hasLine(c.values, `backup = "~/macos-setup"`) && !hasStr(c.values, "config_path"))
 	c.check("the [tools.mise] table", hasLine(c.values, "[tools.mise]"))
 	c.check("the header comment stays", hasLine(c.values, "# My Mac."))
 	c.check("init writes no file of a tool", !exists(c.home+"/.config/opt/opt.txt"))
@@ -186,12 +187,16 @@ func caseInitNames(c *mcase) {
 	c.check("no macos.toml", !exists(c.values))
 }
 
-func caseInitNotGit(c *mcase) {
-	c.useConfig("-")
-	c.remove(c.cfg + "/.git")
-	c.mac("init", "--yes", "--no-bootstrap")
-	c.exit(2)
-	c.has("is not a git repository - create one with git init, then run bootstrap mac migrate again")
+// caseInitOtherRepo: mac migrate in some other git repository writes
+// macos.toml at the fixed path, never in the current folder.
+func caseInitOtherRepo(c *mcase) {
+	c.remove(c.cfg)
+	c.git("init", "--quiet", c.user)
+	env := harness.SetEnv(c.env, "BOOTSTRAP_CLONE="+c.clone)
+	c.execIn(c.user, env, harness.Bin, "mac", "init", "--yes", "--no-bootstrap")
+	c.exit(0)
+	c.check("macos.toml at the fixed path", hasLine(c.values, "format = 2"))
+	c.check("no macos.toml in the current folder", !exists(c.user+"/macos.toml"))
 }
 
 func caseInitNothing(c *mcase) {
@@ -650,15 +655,6 @@ func caseEntryMiseRun(c *mcase) {
 	c.check("mise run prints the same would-update lines", a != "" && a == b)
 	c.entryMise("--bogus")
 	c.check(fmt.Sprintf("mise run rejects an unknown flag itself (exit %d)", c.rc), c.rc != 0)
-}
-
-func caseEntryConfigUnset(c *mcase) {
-	c.entrySetup()
-	c.setEnv("MACOS_SETUP_REPO_PATH")
-	c.entryReal()
-	c.exit(2)
-	c.has("MACOS_SETUP_REPO_PATH is not set")
-	c.check("no clone made", !exists(c.repo))
 }
 
 func caseEntryNested(c *mcase) {

@@ -92,7 +92,7 @@ func (f *fakeSync) install(t *testing.T, sd Side) {
 			f.dry = append(f.dry, dry)
 			file := f.value
 			if dry && sd.Mac {
-				file = os.Getenv("MACOS_SETUP_REPO_PATH") + "/macos.toml"
+				file = os.Getenv("BOOTSTRAP_VALUES") + "/macos.toml"
 			}
 			b, _ := os.ReadFile(file)
 			f.saw = append(f.saw, string(b))

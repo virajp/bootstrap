@@ -105,28 +105,23 @@ func migrateTree(c *mcase) {
 
 // ---- config -----------------------------------------------------------------
 
+// caseConfigMissing: with no folder of macos.toml, a clean sync creates the
+// folder and the file at the fixed path. The folder needs no git.
 func caseConfigMissing(c *mcase) {
 	c.remove(c.cfg)
 	c.runReal()
-	c.exit(2)
-	c.has("MACOS_SETUP_REPO_PATH " + c.cfg + " is not a git repository")
-	c.check("nothing written", !exists(c.home+"/.config"))
+	c.exit(0)
+	c.check("macos.toml at the fixed path", hasLine(c.values, "format = 2"))
 }
 
-func caseConfigNotGit(c *mcase) {
-	c.remove(c.cfg + "/.git")
+// caseConfigHome: without XDG_CONFIG_HOME, macos.toml is at
+// ~/.config/bootstrap/macos.toml.
+func caseConfigHome(c *mcase) {
+	c.setEnv("XDG_CONFIG_HOME")
 	c.runReal()
-	c.exit(2)
-	c.has("MACOS_SETUP_REPO_PATH " + c.cfg + " is not a git repository")
-	c.check("nothing written", !exists(c.home+"/.config"))
-}
-
-func caseConfigUnset(c *mcase) {
-	c.setEnv("MACOS_SETUP_REPO_PATH")
-	c.runReal()
-	c.exit(2)
-	c.has("MACOS_SETUP_REPO_PATH is not set")
-	c.check("nothing written", !exists(c.home+"/.config"))
+	c.exit(0)
+	c.check("macos.toml below HOME", hasLine(c.home+"/.config/bootstrap/macos.toml", "format = 2"))
+	c.check("no macos.toml below XDG_CONFIG_HOME", !exists(c.values))
 }
 
 func caseUnknownFlag(c *mcase) {
@@ -241,7 +236,7 @@ func caseRequiredTable(c *mcase) {
 	before := catT(c.values)
 	c.runDry()
 	c.exit(0)
-	c.has("[tools.mise] would be added to config/macos.toml")
+	c.has("[tools.mise] would be added to xdg/config/bootstrap/macos.toml")
 	c.check("a dry run writes no table", catT(c.values) == before)
 	c.mac("check")
 	c.exit(0)
@@ -249,11 +244,11 @@ func caseRequiredTable(c *mcase) {
 	c.check("check writes no table", catT(c.values) == before)
 	c.runReal()
 	c.exit(0)
-	c.has("[tools.mise] added to config/macos.toml")
+	c.has("[tools.mise] added to xdg/config/bootstrap/macos.toml")
 	c.check("the table of mise is written", hasLine(c.values, "[tools.mise]"))
 	c.runReal()
 	c.exit(0)
-	c.lacks("added to config/macos.toml")
+	c.lacks("added to xdg/config/bootstrap/macos.toml")
 }
 
 // ---- mise (the check of the install) ----------------------------------------
@@ -488,7 +483,7 @@ func caseContext(c *mcase) {
 	c.runReal()
 	c.exit(0)
 	c.file(c.home+"/.config/context/context.txt", synced("context/files/.config/context/context.txt.tmpl")+
-		"\ncli_dir="+tree+"/cli\nconfig="+c.cfg)
+		"\ncli_dir="+tree+"/cli\nhome="+c.home)
 }
 
 // ---- symlinks ---------------------------------------------------------------

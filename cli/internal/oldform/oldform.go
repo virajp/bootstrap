@@ -53,6 +53,15 @@ var Migrating bool
 // Hint ends each message of an old form of the repo side.
 const Hint = "run bootstrap migrate"
 
+// OldConfigPath is the old answer of the Mac tool mise that named the
+// repository of macos.toml. macos.toml now has a fixed place, and the
+// repository is the backup clone: the key backup.
+const OldConfigPath = "config_path"
+
+// oldConfigPath tells if the Mac values <raw> have the old answer
+// config_path in [tools.mise].
+func oldConfigPath(raw *source.Obj) bool { return hasKey(raw, "mise", OldConfigPath) }
+
 // MacHint ends each message of an old form of the Mac side.
 const MacHint = "run bootstrap mac migrate"
 
@@ -98,6 +107,9 @@ func Mac(raw *source.Obj, shown string) error {
 	var probs []*fail.Error
 	if t, ok := raw.Get("tools").(*source.Obj); ok && t.Has(OldMacTool) {
 		probs = append(probs, usage("[tools.%s] in %s is the old form - %s", OldMacTool, shown, MacHint))
+	}
+	if oldConfigPath(raw) {
+		probs = append(probs, usage("%s of [tools.mise] in %s is the old form - %s", OldConfigPath, shown, MacHint))
 	}
 	probs = append(probs, formatProblems(raw, shown, MacHint, Format)...)
 	if len(probs) == 0 {
@@ -314,6 +326,16 @@ func MigrateMac(values string) (*Change, error) {
 			".tools.mise = ((.tools.mise // {}) * .tools["+q(OldMacTool)+"])",
 			"del(.tools["+q(OldMacTool)+"])")
 		notes = append(notes, "[tools."+OldMacTool+"] to [tools.mise]")
+	}
+	if oldConfigPath(raw) || hasKey(raw, OldMacTool, OldConfigPath) {
+		// The clone of the old macos.toml becomes the backup clone, unless
+		// the file already names one. The move of the old tool above runs
+		// first, so the answer is in [tools.mise] here.
+		if !raw.Has("backup") {
+			exprs = append(exprs, ".backup = .tools.mise."+OldConfigPath)
+		}
+		exprs = append(exprs, "del(.tools.mise."+OldConfigPath+")")
+		notes = append(notes, OldConfigPath+" of [tools.mise] to backup")
 	}
 	if len(exprs) == 0 {
 		return nil, nil

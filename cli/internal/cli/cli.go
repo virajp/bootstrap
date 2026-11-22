@@ -81,10 +81,9 @@ Repository
   version, --version   print the version
 
 Mac
-  mac migrate          migrate for the Mac, in the current folder (the
-                       repository of macos.toml)
+  mac migrate          migrate for the Mac: ~/.config/bootstrap/macos.toml
   mac tui              open the TUI on macos.toml
-  mac sync             sync the Mac from MACOS_SETUP_REPO_PATH
+  mac sync             sync the Mac from ~/.config/bootstrap/macos.toml
   mac check            show what mac sync changes, and write nothing
   mac questions [tool...]
                        the questions of the Mac tools
@@ -126,8 +125,6 @@ Flags
   --url <url>          each command except version and contract: the clone URL
   --clone <path>       each command except version and contract: a clone of
                        bootstrap, with no fetch
-  --repo-path <path>   each mac command except mac migrate, and settings: the
-                       repository of macos.toml
 `
 
 // argsOf gives the arguments of a command in its usage line.
@@ -140,8 +137,8 @@ var argsOf = map[string]string{
 // flagUsage gives each flag of a usage line, by the name of the flag.
 var flagUsage = map[string]string{
 	"answer": "[--answer <tool>.<key>=<value>]", "jobs": "[--jobs <n>]",
-	"repo-path": "[--repo-path <path>]", "exclude": "[--exclude <member>]",
-	"format": "[--format json|yaml|toml]",
+	"exclude": "[--exclude <member>]",
+	"format":  "[--format json|yaml|toml]",
 }
 
 // usageLine gives the usage line of a command: its arguments and its own
@@ -177,7 +174,7 @@ var allowed = map[string]string{
 	"replace":   "dry-run yes answer jobs verbose json",
 	"detect":    "dry-run add yes answer jobs verbose json",
 	"list":      "",
-	"settings":  "jobs repo-path",
+	"settings":  "jobs",
 	"config":    "format json",
 	"contract":  "json",
 	"catalog":   "json",
@@ -395,9 +392,6 @@ func (a *app) run(args []string) fail.Code {
 	if cmd != "version" && cmd != "contract" {
 		flags += " config cache-dir url clone"
 	}
-	if mac && cmd != "migrate" {
-		flags += " repo-path"
-	}
 	if cmd == "migrate" {
 		// --no-tui is an old flag of migrate, which never opens the TUI
 		// now: it stays out of the help, and does nothing.
@@ -551,7 +545,7 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 			return o, fmt.Errorf("%s has no flag %s", cmd, arg)
 		}
 		takes := name == "answer" || name == "exclude" || name == "jobs" || name == "config" || name == "cache-dir" ||
-			name == "url" || name == "clone" || name == "repo-path" || name == "format"
+			name == "url" || name == "clone" || name == "format"
 		if takes && !withValue {
 			if i+1 >= len(args) {
 				return o, fmt.Errorf("%s needs a value", arg)
@@ -591,7 +585,7 @@ func parse(cmd string, args []string, flags string, names bool) (opts, error) {
 			}
 			// applySettings sets BOOTSTRAP_JOBS, which the script runner reads.
 			o.values[name] = value
-		case "config", "cache-dir", "url", "clone", "repo-path":
+		case "config", "cache-dir", "url", "clone":
 			if value == "" {
 				return o, fmt.Errorf("--%s needs a value", name)
 			}

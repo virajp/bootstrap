@@ -13,7 +13,7 @@
 # USAGE flag "--verbose" help="list each file, also an unchanged one"
 
 # `bootstrap mac sync` fetches the bootstrap clone into ~/.cache/bootstrap/,
-# examines its version and syncs the Mac from MACOS_SETUP_REPO_PATH.
+# examines its version and syncs the Mac from ~/.config/bootstrap/macos.toml.
 # BOOTSTRAP_BIN, a local build, replaces the bootstrap of mise.
 #
 # The task is standalone: it imports no library, so it runs before the first
