@@ -26,18 +26,9 @@ import (
 
 // The old names.
 const (
-	// OldRepoTool is the old tool of the repo entry. The tool mise has the
-	// entry now.
-	OldRepoTool = "repo-sync"
 	// OldMacTool is the old tool of the Mac entry. The Mac tool mise has the
 	// entry now.
 	OldMacTool = "macos-setup"
-	// OldPrecommit is the old file of the own hooks of a repository.
-	OldPrecommit = ".config/repo-sync/pre-commit.yaml"
-	// OldGitignore is the older file of the own .gitignore lines.
-	OldGitignore = ".config/repo-sync/gitignore"
-	// precommit is the shared file that gets the own hooks.
-	precommit  = ".config/pre-commit-config.yaml"
 	extensions = ".vscode/extensions.json"
 	gitignore  = ".gitignore"
 )
@@ -46,8 +37,8 @@ const (
 var movedKeys = []string{"branch", "claude", "commit_scopes", "extensions", "worktree_files"}
 
 // Migrating is true while `bootstrap migrate` plans the sync after a migration
-// that it did not write yet: the old file of the own hooks is then not an
-// error, because the migration removes it.
+// that it did not write yet: an old form that the migration removes is then
+// not an error.
 var Migrating bool
 
 // Hint ends each message of an old form of the repo side.
@@ -78,19 +69,10 @@ func Repo(root string, raw *source.Obj, shown string) error {
 				probs = append(probs, usage("%s in %s is the old form - %s", k, shown, Hint))
 			}
 		}
-		if t, ok := raw.Get("tools").(*source.Obj); ok && t.Has(OldRepoTool) {
-			probs = append(probs, usage("[tools.%s] in %s is the old form - %s", OldRepoTool, shown, Hint))
-		}
 		if o, ok := raw.Get("overrides").(*source.Obj); ok && o.Has("gitignore") {
 			probs = append(probs, usage("[overrides.gitignore] in %s is the old form - %s", shown, Hint))
 		}
 		probs = append(probs, formatProblems(raw, shown, Hint, schema.Format)...)
-	}
-	if !Migrating && isFile(root+"/"+OldPrecommit) {
-		probs = append(probs, usage("%s is the old form - %s", OldPrecommit, Hint))
-	}
-	if isFile(root + "/" + OldGitignore) {
-		probs = append(probs, usage("%s is no longer used - move its lines into .gitignore, then delete it (M18 of docs/sync/migrate.md)", OldGitignore))
 	}
 	if len(probs) == 0 {
 		return nil
@@ -252,10 +234,6 @@ func MigrateRepo(root, values string) ([]Change, error) {
 		exprs = append(exprs, "del(.claude)")
 		notes = append(notes, "[claude.plugins.*] to [tools.claude.plugins.*]")
 	}
-	if t, ok := raw.Get("tools").(*source.Obj); ok && t.Has(OldRepoTool) {
-		exprs = append(exprs, "del(.tools["+q(OldRepoTool)+"])")
-		notes = append(notes, "[tools."+OldRepoTool+"] removed")
-	}
 	if o, ok := raw.Get("overrides").(*source.Obj); ok && o.Has("gitignore") {
 		g, _ := o.Get("gitignore").(*source.Obj)
 		if g != nil {
@@ -289,13 +267,6 @@ func MigrateRepo(root, values string) ([]Change, error) {
 		}
 		exprs = append(exprs, "del(.extensions)")
 		notes = append(notes, "extensions to "+extensions)
-	}
-	if isFile(root + "/" + OldPrecommit) {
-		c, err := addHooks(root+"/"+precommit, root+"/"+OldPrecommit)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, c, Change{Path: root + "/" + OldPrecommit, Remove: true, Note: "its hooks move to " + precommit})
 	}
 	if len(exprs) > 0 {
 		next, err := editTOML(in, exprs)
@@ -427,39 +398,6 @@ func addExtensions(path string, ids []string) (*Change, error) {
 	}
 	v.Format()
 	return &Change{Path: path, Content: v.Pack(), Note: "add the old top-level extensions"}, nil
-}
-
-// addHooks gives the YAML file <path> with the `repos` blocks of the old file
-// <old> at the end of its `repos`, so its comments stay. The old file holds
-// its blocks in `repos`, or is a list of the blocks. A hook whose id is
-// already in <path> is not added.
-func addHooks(path, old string) (Change, error) {
-	note := "add the hooks of " + OldPrecommit
-	if !isFile(path) {
-		b, err := os.ReadFile(old)
-		if err != nil {
-			return Change{}, usage("cannot read %s", old)
-		}
-		tag, stderr, err := format.YQ("-p", "yaml", "-o", "yaml", "tag", old)
-		if err != nil {
-			return Change{}, usage("cannot read the hooks of %s: %s", OldPrecommit, strings.TrimSpace(stderr))
-		}
-		if strings.TrimSpace(tag) == "!!seq" {
-			out, stderr, err := format.YQ("-p", "yaml", "-o", "yaml", `{"repos": .}`, old)
-			if err != nil {
-				return Change{}, usage("cannot read the hooks of %s: %s", OldPrecommit, strings.TrimSpace(stderr))
-			}
-			b = []byte(out)
-		}
-		return Change{Path: path, Content: b, Note: note}, nil
-	}
-	// The old sync already wrote these hooks into the config, so a hook whose
-	// id is there is not added again, and a block with no new hook goes.
-	out, stderr, err := format.YQ("-p", "yaml", "-o", "yaml", "(load("+q(old)+`) | if tag == "!!seq" then . else (.repos // []) end) as $h | (.repos // []) as $r | [$r[].hooks[].id] as $ids | .repos = ($r + [$h[] | .hooks |= [.[] | select(.id as $i | ($ids | any_c(. == $i)) | not)] | select(.hooks | length > 0)])`, path)
-	if err != nil {
-		return Change{}, usage("cannot add the hooks of %s to %s: %s", OldPrecommit, path, strings.TrimSpace(stderr))
-	}
-	return Change{Path: path, Content: []byte(out), Note: note}, nil
 }
 
 // Apply writes each change. A removal also removes its folder when the folder

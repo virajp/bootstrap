@@ -770,12 +770,10 @@ user fixes the values file by hand, then runs `migrate` again.
 `docs/sync/migrate.md` names the old entry tool and its old files. These old
 items are not migrated:
 
-| Old item                                   | Effect                                                                                                                     |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| The old file of the own `.gitignore` lines | Stops the sync: move its lines into `.gitignore`, then delete it.                                                          |
-| `[overrides.graphifyignore]`               | Stops the sync: remove the table.                                                                                          |
-| `core_tools`                               | Not used. The sync prints a message: delete it. The `env` of each entry, else `default_envs`, decides the environments.    |
-| `.config/repo-config.toml`                 | The oldest name of the values file. Nothing reads it: rename it to `.config/bootstrap.toml`, then run `bootstrap migrate`. |
+| Old item                     | Effect                                                                                                                  |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `[overrides.graphifyignore]` | Stops the sync: remove the table.                                                                                       |
+| `core_tools`                 | Not used. The sync prints a message: delete it. The `env` of each entry, else `default_envs`, decides the environments. |
 
 ### The own test tasks
 

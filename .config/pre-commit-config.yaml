@@ -2,8 +2,8 @@
 # Shared with bootstrap: repo/tools/pre-commit/files/.config/pre-commit-config.yaml.merge.toml.
 # A change in this file stays. A removed bootstrap item comes back at the next
 # sync, unless .config/bootstrap/tools.toml has an override for it.
-# The pre-commit config. repo_sync renders it from the `[[precommit]]` entries
-# of the selected tools, then the entries of `.config/repo-sync/pre-commit.yaml`.
+# The pre-commit config. The sync merges the hooks of the selected tools into
+# it, and the own hooks of the repository stay.
 #
 # pre-commit does not find a config under `.config/`. `setup:precommit` installs
 # the hooks with the path, so `git commit` needs no flag. `pre-commit run` needs

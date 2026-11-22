@@ -124,7 +124,7 @@ func TestMac(t *testing.T) {
 		{"symlinks: a symlinked folder", caseLinkFolder},
 		{"symlinks: a stale file through a link", caseLinkStale},
 		{"stale: removed with its empty parents, kept without the header", caseStale},
-		{"stale: a listed file with the old header", caseStaleOldHeader},
+		{"stale: a listed file with the old header is kept", caseStaleOldHeader},
 		{"stale: a tool no longer selected", caseStaleDeselected},
 		{"manifest: its first line, the sorted rows, a second run", caseGenerated},
 		{"first setup: migrate writes the init stage and runs mise bootstrap", caseFirstSetup},

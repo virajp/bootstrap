@@ -10,7 +10,7 @@ import (
 	rc "github.com/virajp/bootstrap/e2e/internal/repocase"
 )
 
-// oldValues and oldFiles are the old form of a values file and of its files.
+// oldValues is the old form of a values file.
 const oldValues = `environments = [ "dev" ]
 commit_scopes = [ "api" ]
 worktree_files = [ ".env" ]
@@ -27,11 +27,6 @@ add = [ "docs/prompts/" ]
 remove = [ "*.log" ]`
 
 const msgOldForm = ".config/bootstrap.toml is the old form of the values of the repository - run bootstrap migrate"
-
-func oldFiles(c *rc.Case) {
-	harness.WriteFile(c.T, c.Path(".config/repo-sync/pre-commit.yaml"), harness.Lines(
-		"repos:", "  - repo: https://example.com/own-hooks", "    rev: v1", "    hooks:", "      - id: own"))
-}
 
 func fileHas(path, s string) bool { return rc.FileHas(path, s) }
 
@@ -94,7 +89,7 @@ func TestAdd(t *testing.T) {
 		return c.Engine("add", "tool", "--yes", "go")
 	}, Message: "is not there - run bootstrap migrate first"})
 	rc.Run(t, rc.Spec{Name: "add on the old form: run bootstrap migrate", Code: 2, NoFormat: true, Values: oldValues,
-		Change: oldFiles, Call: func(c *rc.Case) int { return c.Engine("add", "tool", "--yes", "go") }, Message: msgOldForm})
+		Call: func(c *rc.Case) int { return c.Engine("add", "tool", "--yes", "go") }, Message: msgOldForm})
 }
 
 func removeTool(tool string) func(c *rc.Case) int { return engineCall("remove", "tool", "--yes", tool) }

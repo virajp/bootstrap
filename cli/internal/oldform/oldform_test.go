@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/virajp/bootstrap/cli/internal/format"
 	"github.com/virajp/bootstrap/cli/internal/source"
 )
 
@@ -23,25 +22,19 @@ func write(t *testing.T, path, content string) {
 func TestRepoFindsEachOldForm(t *testing.T) {
 	root := t.TempDir()
 	values := root + "/.config/bootstrap.toml"
-	write(t, values, "commit_scopes = [\"a\"]\nextensions = [\"x.y\"]\n[tools.repo-sync]\n[overrides.gitignore]\nadd = [\"a/\"]\n")
-	write(t, root+"/"+OldPrecommit, "repos: []\n")
+	write(t, values, "commit_scopes = [\"a\"]\nextensions = [\"x.y\"]\n[overrides.gitignore]\nadd = [\"a/\"]\n")
 	raw, err := source.ReadTOML(values)
 	if err != nil {
 		t.Fatal(err)
 	}
 	msgs := source.Messages(Repo(root, raw, "v.toml"))
-	if len(msgs) != 6 {
+	if len(msgs) != 4 {
 		t.Fatalf("messages = %v", msgs)
 	}
 	for _, m := range msgs {
 		if !strings.HasSuffix(m.Error(), "is the old form - run bootstrap migrate") {
 			t.Errorf("message = %q", m.Error())
 		}
-	}
-	Migrating = true
-	defer func() { Migrating = false }()
-	if n := len(source.Messages(Repo(root, raw, "v.toml"))); n != 5 {
-		t.Errorf("messages while migrating = %d, want 5", n)
 	}
 }
 
@@ -70,8 +63,6 @@ remove = [ "*.log" ]
 [tools.repo-sync]
 `)
 	write(t, root+"/.gitignore", "node_modules/\n")
-	write(t, root+"/"+OldPrecommit, "repos:\n  - repo: https://example.com/own\n    hooks:\n      - id: own\n")
-	write(t, root+"/"+precommit, "# Kept.\nrepos:\n  - repo: https://example.com/base\n    hooks:\n      - id: base\n")
 	t.Setenv("BOOTSTRAP_CLONE", repoClone(t, nil))
 	changes, err := MigrateRepo(root, values)
 	if err != nil {
@@ -121,13 +112,6 @@ remove = [ "*.log" ]
 	}
 	if b, _ := os.ReadFile(root + "/" + extensions); !strings.Contains(string(b), `"foo.bar"`) {
 		t.Errorf("extensions.json = %q", b)
-	}
-	b, _ = os.ReadFile(root + "/" + precommit)
-	if !strings.Contains(string(b), "# Kept.") || !strings.Contains(string(b), "https://example.com/own") || !strings.Contains(string(b), "https://example.com/base") {
-		t.Errorf("pre-commit config = %s", b)
-	}
-	if isFile(root + "/" + OldPrecommit) {
-		t.Error("the old hook file stays")
 	}
 	again, err := MigrateRepo(root, values)
 	if err != nil || len(again) != 0 {
@@ -364,47 +348,4 @@ func TestFormatFirst(t *testing.T) {
 			t.Errorf("formatFirst(%q) = %q, want %q", c.in, got, c.want)
 		}
 	}
-}
-
-func TestAddHooks(t *testing.T) {
-	cfg := "# The config.\nrepos:\n  - repo: local\n    hooks:\n      - id: a\n"
-	list := "# Own hooks.\n- repo: local\n  hooks:\n    - id: own\n"
-	asMap := "repos:\n  - repo: local\n    hooks:\n      - id: own\n"
-	ids := func(t *testing.T, b []byte) string {
-		t.Helper()
-		out, stderr, err := format.YQ("-p", "yaml", "-o", "yaml", "[.repos[].hooks[].id] | join(\",\")", writeTemp(t, string(b)))
-		if err != nil {
-			t.Fatalf("yq: %s", stderr)
-		}
-		return strings.TrimSpace(out)
-	}
-	for _, c := range []struct{ name, cfg, old, want string }{
-		{"map into the config", cfg, asMap, "a,own"},
-		{"list into the config", cfg, list, "a,own"},
-		{"hooks already in the config", cfg + "  - repo: local\n    hooks:\n      - id: own\n", list, "a,own"},
-		{"map, no config", "", asMap, "own"},
-		{"list, no config", "", list, "own"},
-	} {
-		dir := t.TempDir()
-		path := filepath.Join(dir, "pre-commit-config.yaml")
-		old := filepath.Join(dir, "pre-commit.yaml")
-		write(t, old, c.old)
-		if c.cfg != "" {
-			write(t, path, c.cfg)
-		}
-		ch, err := addHooks(path, old)
-		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
-		}
-		if got := ids(t, ch.Content); got != c.want {
-			t.Errorf("%s: hooks %q, want %q:\n%s", c.name, got, c.want, ch.Content)
-		}
-	}
-}
-
-func writeTemp(t *testing.T, content string) string {
-	t.Helper()
-	p := filepath.Join(t.TempDir(), "f.yaml")
-	write(t, p, content)
-	return p
 }

@@ -334,7 +334,7 @@ func caseMiseDeselected(c *mcase) {
 
 func caseBlockerHeader(c *mcase) {
 	c.useConfig("ok")
-	c.headerFile(c.home+"/.config/core", "old")
+	c.newHeaderFile(c.home+"/.config/core", "old")
 	c.runReal()
 	c.exit(0)
 	c.has("removed    home/.config/core (a folder replaces it)")
@@ -519,7 +519,7 @@ func caseLinkStale(c *mcase) {
 	c.mkdir(c.home + "/.config")
 	c.mkdir(c.user + "/linked")
 	c.symlink(c.user+"/linked", c.home+"/.config/linked")
-	c.headerFile(c.user+"/linked/stale.txt", "stale")
+	c.newHeaderFile(c.user+"/linked/stale.txt", "stale")
 	c.seedManifest("core\t.config/linked/stale.txt")
 	c.runReal()
 	c.exit(0)
@@ -544,11 +544,11 @@ func caseStale(c *mcase) {
 
 func caseStaleOldHeader(c *mcase) {
 	c.useConfig("ok")
-	c.headerFile(c.home+"/.config/old/stale.txt", "stale")
+	c.oldHeaderFile(c.home+"/.config/old/stale.txt", "stale")
 	c.seedManifest("core\t.config/old/stale.txt")
 	c.runReal()
 	c.exit(0)
-	c.check("the file with the old header is removed", !exists(c.home+"/.config/old/stale.txt"))
+	c.check("the file with the old header is kept", isFile(c.home+"/.config/old/stale.txt"))
 }
 
 func caseStaleDeselected(c *mcase) {
@@ -884,7 +884,7 @@ func caseDryRun(c *mcase) {
 	c.mkdir(c.home + "/.config/core")
 	c.write(c.user+"/values.txt", "old\n")
 	c.symlink(c.user+"/values.txt", c.home+"/.config/core/values.txt")
-	c.headerFile(c.home+"/.config/old/stale.txt", "stale")
+	c.newHeaderFile(c.home+"/.config/old/stale.txt", "stale")
 	c.seedManifest("core\t.config/old/stale.txt")
 	before := snapshot(c.home, c.user, c.cfg, c.manifest)
 	c.runDry()
