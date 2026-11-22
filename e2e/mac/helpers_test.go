@@ -190,7 +190,8 @@ func newCase(t *testing.T, name string) *mcase {
 	c.xdgCfg = filepath.Join(d, "xdg", "config")
 	c.tmpdir = filepath.Join(d, "tmp")
 	c.cache = filepath.Join(c.xdgCache, "bootstrap")
-	c.cfg = filepath.Join(d, "config")
+	// The fixed folder of macos.toml: $XDG_CONFIG_HOME/bootstrap.
+	c.cfg = filepath.Join(c.xdgCfg, "bootstrap")
 	c.values = filepath.Join(c.cfg, "macos.toml")
 	c.manifest = filepath.Join(c.cache, "macos-generated.tsv")
 	for _, p := range []string{c.home, c.xdgCache, c.xdgCfg, filepath.Join(d, "xdg", "state"),
@@ -204,12 +205,11 @@ func newCase(t *testing.T, name string) *mcase {
 		"XDG_CACHE_HOME="+c.xdgCache, "XDG_CONFIG_HOME="+c.xdgCfg,
 		"XDG_STATE_HOME="+filepath.Join(d, "xdg", "state"), "XDG_DATA_HOME="+filepath.Join(d, "xdg", "data"),
 		"BOOTSTRAP_CACHE="+c.cache,
-		"MACOS_SETUP_REPO_PATH="+c.cfg,
 		"GIT_CONFIG_GLOBAL="+gitconfig, "GIT_CONFIG_NOSYSTEM=1",
 		"TMPDIR="+c.tmpdir,
 		"MISE_DATA_DIR="+miseData, "MISE_CACHE_DIR="+miseCache,
 		"BOOTSTRAP_BIN="+harness.Bin,
-		"BOOTSTRAP_URL", "BOOTSTRAP_CLONE", "MISE_ENV",
+		"BOOTSTRAP_URL", "BOOTSTRAP_CLONE", "BOOTSTRAP_VALUES", "MACOS_SETUP_REPO_PATH", "MISE_ENV",
 	)
 	c.git("init", "--quiet", c.cfg)
 	return c

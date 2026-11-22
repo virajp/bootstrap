@@ -38,7 +38,7 @@ func engineSeq(c *rc.Case, calls ...[]string) int {
 // unsetSettings removes the variables of the settings of the engine from the
 // environment of the case.
 func unsetSettings(c *rc.Case) {
-	c.Env = harness.SetEnv(c.Env, "BOOTSTRAP_CACHE", "BOOTSTRAP_CLONE", "BOOTSTRAP_JOBS", "MACOS_SETUP_REPO_PATH")
+	c.Env = harness.SetEnv(c.Env, "BOOTSTRAP_CACHE", "BOOTSTRAP_CLONE", "BOOTSTRAP_JOBS")
 }
 
 // configHas tells whether a line of the output, with each run of spaces as
@@ -185,7 +185,6 @@ func TestConfigFile(t *testing.T) {
 			c.CheckThat("config: a value of the file, ~/ expanded", configHas(c, "cache_dir", home+"/cache-from-file", "file"))
 			c.CheckThat("config: a variable over the file", configHas(c, "url", "https://example.com/variable.git", "variable", "BOOTSTRAP_URL"))
 			c.CheckThat("config: a default with no value", configHas(c, "clone", "-", "default"))
-			c.CheckThat("config: mac.repo_path by default", configHas(c, "mac.repo_path", "-", "default"))
 		}})
 	rc.Run(t, rc.Spec{Name: "config --config over BOOTSTRAP_CONFIG", Values: devValues,
 		Call: func(c *rc.Case) int {

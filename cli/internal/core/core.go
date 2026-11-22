@@ -95,29 +95,21 @@ func CmdWord(mac bool, cmd string) string {
 }
 
 // Prepare is the preflight of a command of the side: it finds its folder and
-// its values file. <initCmd> is init, which runs in the current folder <pwd>
-// on the Mac, and which tells the user to create a git repository. It sets
-// MISE_PROJECT_ROOT or MACOS_SETUP_REPO_PATH, which the front-ends read.
+// its values file. <initCmd> is init. On the repo side, it sets
+// MISE_PROJECT_ROOT, which the front-end reads. On the Mac, the folder is the
+// fixed folder of macos.toml (macos.ValuesDir).
 func Prepare(mac, initCmd bool, pwd string, getenv func(string) string) (Side, error) {
 	sd := Side{Mac: mac, Pwd: pwd}
 	if _, err := exec.LookPath("mise"); err != nil {
 		return sd, problem(fail.Usage, "mise is not available", "install it from https://mise.run")
 	}
 	if mac {
-		dir := getenv("MACOS_SETUP_REPO_PATH")
-		if initCmd {
-			dir = pwd
-		} else if dir == "" {
-			return sd, problem(fail.Usage, "MACOS_SETUP_REPO_PATH is not set", "set it to the repository of macos.toml, or run bootstrap mac migrate in that repository")
+		// macos.toml has one fixed place on the Mac, from any folder.
+		dir := macos.ValuesDir(getenv)
+		if dir == "" {
+			return sd, problem(fail.Usage, "HOME is not set", "")
 		}
-		if _, ok := Toplevel(dir); !ok {
-			if initCmd {
-				return sd, problem(fail.Usage, dir+" is not a git repository", "create one with git init, then run bootstrap mac migrate again")
-			}
-			return sd, problem(fail.Usage, "MACOS_SETUP_REPO_PATH "+dir+" is not a git repository", "")
-		}
-		_ = os.Setenv("MACOS_SETUP_REPO_PATH", dir)
-		sd.Root, sd.Values = dir, strings.TrimSuffix(dir, "/")+"/macos.toml"
+		sd.Root, sd.Values = dir, dir+"/macos.toml"
 		return sd, nil
 	}
 	root := getenv("MISE_PROJECT_ROOT")

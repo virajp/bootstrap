@@ -124,6 +124,8 @@ func (c *mcase) oldMacValues() {
 		`config_path = "~/macos-setup"`, "", "[tools.opt]"))
 	c.git("-C", c.cfg, "add", "-A")
 	c.git("-C", c.cfg, "commit", "--quiet", "--no-verify", "-m", "old")
+	// mac migrate moves config_path to backup: the clone must be a folder.
+	c.mkdir(c.home + "/macos-setup")
 }
 
 func caseSyncOldForm(c *mcase) {
@@ -140,7 +142,8 @@ func caseInitMigrate(c *mcase) {
 	c.exit(0)
 	c.has("[tools.macos-setup] to [tools.mise]")
 	c.check("no [tools.macos-setup]", !hasStr(c.values, "macos-setup]"))
-	c.check("config_path in [tools.mise]", hasLine(c.values, `config_path = "~/macos-setup"`))
+	c.has("config_path of [tools.mise] to backup")
+	c.check("config_path is the key backup", hasLine(c.values, `backup = "~/macos-setup"`) && !hasStr(c.values, "config_path"))
 	c.check("the [tools.mise] table", hasLine(c.values, "[tools.mise]"))
 	c.check("the header comment stays", hasLine(c.values, "# My Mac."))
 	c.check("init writes no file of a tool", !exists(c.home+"/.config/opt/opt.txt"))
@@ -186,12 +189,16 @@ func caseInitNames(c *mcase) {
 	c.check("no macos.toml", !exists(c.values))
 }
 
-func caseInitNotGit(c *mcase) {
-	c.useConfig("-")
-	c.remove(c.cfg + "/.git")
-	c.mac("init", "--yes", "--no-bootstrap")
-	c.exit(2)
-	c.has("is not a git repository - create one with git init, then run bootstrap mac migrate again")
+// caseInitOtherRepo: mac migrate in some other git repository writes
+// macos.toml at the fixed path, never in the current folder.
+func caseInitOtherRepo(c *mcase) {
+	c.remove(c.cfg)
+	c.git("init", "--quiet", c.user)
+	env := harness.SetEnv(c.env, "BOOTSTRAP_CLONE="+c.clone)
+	c.execIn(c.user, env, harness.Bin, "mac", "init", "--yes", "--no-bootstrap")
+	c.exit(0)
+	c.check("macos.toml at the fixed path", hasLine(c.values, "format = 2"))
+	c.check("no macos.toml in the current folder", !exists(c.user+"/macos.toml"))
 }
 
 func caseInitNothing(c *mcase) {
@@ -652,15 +659,6 @@ func caseEntryMiseRun(c *mcase) {
 	c.check(fmt.Sprintf("mise run rejects an unknown flag itself (exit %d)", c.rc), c.rc != 0)
 }
 
-func caseEntryConfigUnset(c *mcase) {
-	c.entrySetup()
-	c.setEnv("MACOS_SETUP_REPO_PATH")
-	c.entryReal()
-	c.exit(2)
-	c.has("MACOS_SETUP_REPO_PATH is not set")
-	c.check("no clone made", !exists(c.repo))
-}
-
 func caseEntryNested(c *mcase) {
 	c.entrySetup()
 	c.setEnv("_UPDATEALL_CONFIGS_RUNNING=1")
@@ -719,4 +717,16 @@ func caseEntryLeftovers(c *mcase) {
 	c.exit(2)
 	c.has("colour is not a key of")
 	c.check("after a bad macos.toml: no lock, no temp copy", c.noLeftovers())
+}
+
+// caseInitBackup: mac migrate --backup writes the key backup, and the first
+// setup links the files into the clone.
+func caseInitBackup(c *mcase) {
+	c.useConfig("-")
+	clone := filepath.Join(c.dir, "backup")
+	c.mkdir(clone)
+	c.mac("init", "--backup", clone, "--yes", "--no-bootstrap")
+	c.exit(0)
+	c.check("the key backup", hasLine(c.values, `backup = "`+clone+`"`))
+	c.check("~/.config/mise is a link into the clone", linkOf(c.home+"/.config/mise") == clone+"/dotfiles/.config/mise")
 }

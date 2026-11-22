@@ -48,12 +48,11 @@ mise x github:virajp/bootstrap@latest -- bootstrap <command>
 In this file, `bootstrap` is short for this command. The CLI gets its own clone
 of `bootstrap` in `~/.cache/bootstrap/`.
 
-The symlink model has no task `updateall:configs`, and no
-`MACOS_SETUP_REPO_PATH` in its mise env. Thus step 6 and step 8 run
-`bootstrap mac sync`, and give the variable inline:
+The symlink model has no task `updateall:configs`. Thus step 6 and step 8 run
+`bootstrap mac sync`:
 
 ```text
-MACOS_SETUP_REPO_PATH=<clone> bootstrap mac sync
+bootstrap mac sync
 ```
 
 Step 6 runs the binary of the CLI without `mise x`. See
@@ -164,8 +163,12 @@ in each entry.
 
 ## Step 4: Write `macos.toml`
 
-Write `macos.toml` at the root of `<clone>`. Use `macos/examples/macos.toml` as
-the model, with its `format = 2` and the tables of the members of `base`. Use
+Write `macos.toml` at `<clone>/dotfiles/.config/bootstrap/macos.toml`, then
+link the folder: `ln -s <clone>/dotfiles/.config/bootstrap ~/.config/bootstrap`.
+The engine reads `macos.toml` only at `~/.config/bootstrap/`, and the link puts
+it in the backup clone. Write `backup = "<clone>"` as a top-level key, before
+the first table. Use `macos/examples/macos.toml` as the model, with its
+`format = 2` and the tables of the members of `base`. Use
 the answers of steps 2 and 3. The migration writes this file by
 hand, because step 6 needs it before the first `bootstrap mac migrate`. Move the
 values of `[vars]` of
@@ -185,8 +188,8 @@ values of `[vars]` of
 
 `identity.toml` has no value for two more answers:
 
-- `config_path` of `[tools.mise]`: the path of `<clone>`. The sync writes it to
-  the mise env as `MACOS_SETUP_REPO_PATH`.
+- `backup`, the top-level key: the path of `<clone>`. The sync links the
+  synced files into `<clone>/dotfiles/`.
 - `dock_orientation` of `[tools.macos-defaults]`. The pack `base` always adds
   that tool, so this answer is always necessary. Ask the owner.
 
@@ -196,7 +199,7 @@ values.
 Then list the questions of the selected tools:
 
 ```text
-MACOS_SETUP_REPO_PATH=<clone> bootstrap mac questions --json
+bootstrap mac questions --json
 ```
 
 **Pass:** The command exits 0. It prints one JSON envelope, and `data` is the
@@ -238,16 +241,15 @@ installs nothing:
 ```text
 env -u XDG_CONFIG_HOME -u XDG_CACHE_HOME -u XDG_STATE_HOME -u XDG_DATA_HOME -u MISE_ENV \
   HOME=<scratch> MISE_DATA_DIR="$HOME/.local/share/mise" MISE_CACHE_DIR="$HOME/.cache/mise" \
-  MACOS_SETUP_REPO_PATH=<clone> \
   "$bin" mac sync
 ```
 
-The `XDG_*` variables stay out of the command, because otherwise the run writes
-to the real cache. The command runs the CLI without `mise x`. The run writes a
-mise config into `<scratch>`, and that config sets `MACOS_SETUP_REPO_PATH` from
-`config_path`. `mise x` with the scratch `HOME` loads that config, and expands
-`~` to `<scratch>`. That value then replaces the inline value, and a later run
-with `mise x` stops with exit 2. The scratch `HOME` has no manifest, so the run
+Before the command, copy `macos.toml` to
+`<scratch>/.config/bootstrap/macos.toml`, and remove its `backup` line in the
+copy. With `backup`, the scratch run moves the scratch files into the real
+clone. The `XDG_*` variables stay out of the command, because otherwise the run
+writes to the real cache and reads the real `macos.toml`. The command runs the
+CLI without `mise x`. The scratch `HOME` has no manifest, so the run
 also prints the warning `no sync finished on this Mac yet`. That is correct.
 **Pass:** The run exits 0.
 
@@ -334,7 +336,7 @@ Mac had at the start.
 Run the sync with `--dry-run`, and read the output with the owner:
 
 ```text
-MACOS_SETUP_REPO_PATH=<clone> bootstrap mac sync --dry-run
+bootstrap mac sync --dry-run
 ```
 
 **Pass:** The owner accepts each change. The run writes nothing. The run exits 1
@@ -357,7 +359,7 @@ rm dotfiles/.config/mise/conf.d/*.toml
 rm dotfiles/.config/mise/tasks/updateall
 rm <each obsolete file of step 3>
 git add -u dotfiles
-git add macos.toml
+git add dotfiles/.config/bootstrap/macos.toml
 git commit -m "ops: delete the old mise fragments and the obsolete dotfiles"
 ```
 
@@ -389,7 +391,7 @@ bootstrap mac migrate --yes
 
 It writes `macos.toml` and does not sync. On a Mac where no sync finished, it
 does the first setup: it writes the shells, Homebrew and mise, with the task
-`updateall:configs` and `MACOS_SETUP_REPO_PATH`, runs `mise bootstrap`, and
+`updateall:configs`, runs `mise bootstrap`, and
 stops with exit 4. Then open a new terminal. In each case, then run
 `bootstrap mac sync`. For the other exit codes, see
 [`index.md`](index.md#exit-codes).
@@ -401,7 +403,7 @@ Then, in `<clone>`, commit `macos.toml` and the files that the sync wrote
 through the links. Ask the owner, then push them to the private repo:
 
 ```shell
-git add macos.toml dotfiles
+git add dotfiles
 git commit -m "ops: move the Mac to macos.toml"
 git push
 ```

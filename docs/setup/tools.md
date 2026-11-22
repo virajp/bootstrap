@@ -218,6 +218,9 @@ either one.
   - `~/.claude/settings.json` — merge
 - **Tasks:**
   - `~/.config/mise/tasks/upgrade/ai.py`
+- **Runtime:** `~/.claude/history.jsonl`, `~/.claude/projects`,
+  `~/.claude/sessions`. Thus the backup clone links the synced files of
+  `~/.claude` one by one.
 - **Defaults:** `settings`, `lists`
 - **Mise sections:** none
 - **Settings:** The merge spec adds only `$schema`, the install keys of `env`
@@ -432,6 +435,8 @@ login shell.
   - `~/.config/fish/conf.d/fish_frozen_theme.fish` — seed
   - `~/.config/fish/config.fish` — copy
   - `~/.config/fish/functions/fish_title.fish` — seed
+- **Runtime:** `~/.config/fish/fish_variables`. Thus the backup clone links
+  `conf.d/`, `functions/` and `config.fish`, not `~/.config/fish`.
 - **Defaults:** `login_shell`
 - **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.bootstrap.user]`,
@@ -743,7 +748,7 @@ and the entry tasks of the Mac sync.
   - `~/.config/mise/tasks/upgrade/macos/upgrade.py`
   - `~/.config/mise/tasks/upgrade/power.py`
 - **Contributes to `visual-studio-code`:** `extensions`
-- **Mise sections:** `[mise.env]`, `[mise.tools]`, `[mise.bootstrap.packages]`,
+- **Mise sections:** `[mise.tools]`, `[mise.bootstrap.packages]`,
   `[mise.shell_alias]`
 - **CA certificates:** `[mise.bootstrap.packages]` installs
   `brew:ca-certificates`.
@@ -785,12 +790,9 @@ and the entry tasks of the Mac sync.
 - **Self-update:** `self_update.auto = true` lets mise install a new release
   before an interactive command. `self_update.minimum_release_age = "0h"` means
   that mise does not wait after a release.
-- **Question `config_path`:**
-  [`macos/tools/mise/tools.toml`](../../macos/tools/mise/tools.toml). The answer
-  is the folder of `macos.toml`. The sync writes it to the mise env as
-  `MACOS_SETUP_REPO_PATH`, and `~` at the start becomes `$HOME`. Each
-  `bootstrap mac` command except `mac migrate` finds `macos.toml` through this
-  variable, or through `--repo-path <path>`.
+- **The place of `macos.toml`:** fixed, at `~/.config/bootstrap/macos.toml`.
+  The old question `config_path` is gone: `mac migrate` moves its answer to the
+  key `backup`. See [mac.md](../design/mac.md#the-place-of-macostoml).
 
 ### `network`
 
@@ -998,6 +1000,8 @@ agent that other tools contribute.
   - `~/.ssh/config` — template, format `text`, `dir_perm` `700`
   - `~/.ssh/config.identity` — template, `dir_perm` `700`
 - **Folder mode:** `dir_perm` keeps the folder `~/.ssh` at mode 700.
+- **Runtime:** `~/.ssh/known_hosts`, `~/.ssh/known_hosts.old`. Thus the backup
+  clone links the synced files of `~/.ssh` one by one.
 - **Question `user`:**
   [`macos/tools/ssh/tools.toml`](../../macos/tools/ssh/tools.toml)
 

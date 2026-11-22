@@ -91,8 +91,12 @@ type Manifest struct {
 	Selectable bool
 	// Hosts are the hosts of `hosts` (repo side): macos, linux or windows.
 	// Nil means each host.
-	Hosts       []string
-	Stage       string   // Mac side: "init", or empty.
+	Hosts []string
+	Stage string // Mac side: "init", or empty.
+	// Runtime holds the paths of `runtime` (Mac side), relative to $HOME:
+	// the files that the program of the tool writes, which the backup clone
+	// must not hold.
+	Runtime     []string
 	Depends     []string // The tool names of `depends`.
 	DefaultEnvs []string // Repo side.
 	// Formatter is the [formatter] table of a repo tool, or nil.
@@ -189,6 +193,13 @@ func (s Source) LoadManifest(tool string) (*Manifest, error) {
 	}
 	if v, ok := raw.Get("stage").(string); ok {
 		m.Stage = v
+	}
+	if l, ok := raw.Get("runtime").([]any); ok {
+		for _, e := range l {
+			if p, ok := e.(string); ok {
+				m.Runtime = append(m.Runtime, p)
+			}
+		}
 	}
 	if s.Side == Repo {
 		if err := m.repoLines(); err != nil {

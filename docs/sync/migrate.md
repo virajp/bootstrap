@@ -58,6 +58,7 @@ into `.config/bootstrap/`.
 | An own task that bumps a version, commits a release or makes a release tag, for example `p:release`                                 | M53, after the release with the release tasks.                                                                                                             |
 | `type = "local"` in a `[release.<project>.<kind>]` table of `.config/bootstrap/repo.toml`                                           | M54, before the next sync.                                                                                                                                 |
 | `settings` or `lists` in `[tools.claude-cli]` of `macos.toml`, or a `~/.claude/CLAUDE.md` that bootstrap wrote as a seed            | M55, before the next Mac sync.                                                                                                                             |
+| `macos.toml` at the root of a clone, `config_path` in `[tools.mise]`, or `MACOS_SETUP_REPO_PATH` in a script                        | M56, before the next Mac sync.                                                                                                                             |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1706,3 +1707,44 @@ keeps no record of a pack, so this name matters only to `mac add pack`.
    old part each line that the section already has, and keep the own rules of
    the owner.
 4. Run `bootstrap mac sync` again, and make sure that it changes nothing.
+
+## M56: `macos.toml` has a fixed place, and the backup clone
+
+`macos.toml` is now at `~/.config/bootstrap/macos.toml` (below
+`$XDG_CONFIG_HOME` when it is set). Each `mac` command reads it there, from any
+folder. The flag `--repo-path`, the variable `MACOS_SETUP_REPO_PATH`, the
+setting `mac.repo_path` and the question `config_path` of the Mac tool `mise`
+are gone. The new top-level key `backup` names a git clone: the sync links the
+synced files into `<backup>/dotfiles/` and writes through the links, and the
+owner commits them. The Mac tools `fish`, `claude` and `ssh` declare their
+runtime files with the new key `runtime`, so the sync links their synced
+files, not their folders. See `docs/design/mac.md` ("The place of
+`macos.toml`" and "The backup clone").
+
+1. Move `macos.toml` from the root of the clone to
+   `~/.config/bootstrap/macos.toml`. Make the folder when it does not exist.
+   Do not copy it into the clone: the sync of step 4 moves the folder
+   `~/.config/bootstrap/` into the clone and links it.
+2. Run `bootstrap mac migrate --dry-run`. It moves the answer `config_path` of
+   `[tools.mise]` to the key `backup`. Make sure that `backup` names the clone,
+   then run `bootstrap mac migrate --yes`.
+3. If the clone has `dotfiles/.config/bootstrap/` from an earlier try, remove
+   it, else the sync of step 4 compares the two folders. A clone of the old
+   symlink model also has the old mise templates of the files that the Mac
+   sync renders, with `{{ vars.<name> }}` in them, for example
+   `dotfiles/.config/git/identity` and `dotfiles/.ssh/config.identity`. They
+   differ from the files in `$HOME`, so step 4 stops on them. They are
+   obsolete: remove them from the clone with `git rm`.
+4. Run `bootstrap mac sync --dry-run`. Read each `would move` and `would link`
+   line. A conflict stops the run with code 2 and names the file: fix it by
+   hand. A file that differs from its copy in the clone needs a decision of the
+   owner. A link to a different place, or a link of a folder that the rule now
+   splits (for example a link of `~/.config/fish`), must become the correct
+   link or a real folder.
+5. Run `bootstrap mac sync`, and make sure that it exits 0. Run it again, and
+   make sure that it changes nothing.
+6. Remove each use of `MACOS_SETUP_REPO_PATH` and `--repo-path` from your own
+   scripts and from the old mise config of the clone.
+7. In the clone, examine `git status`, and commit the moved files, the removal
+   of the old `macos.toml` at the root and
+   `dotfiles/.config/bootstrap/macos.toml`.

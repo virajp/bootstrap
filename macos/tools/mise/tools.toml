@@ -14,16 +14,9 @@ depends = [ "cli", "python", "uv" ]
 description = "mise: its user-level config, its activation in bash, zsh and fish, ~/.zprofile, and the entry tasks of the Mac sync"
 summary = "mise, its config and the Mac sync tasks"
 
-[questions.config_path]
-example = "~/Projects/github.com/janedoe/macos-setup"
-question = "Which folder holds your macos.toml (the root of your private macos-setup clone)?"
-
 # The VS Code extensions of the tool, when visual-studio-code is selected.
 [contributes.visual-studio-code]
 extensions = [ "hverlin.mise-vscode", "redhat.vscode-yaml", "tamasfe.even-better-toml" ]
-
-[mise.env]
-MACOS_SETUP_REPO_PATH = "<% index .config `config_path` | required `mise: set config_path in [tools.mise] of macos.toml` | regexp.Replace `^~` .env.HOME %>"
 
 # MISE tools
 [mise.tools.usage]

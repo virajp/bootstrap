@@ -128,6 +128,7 @@ kind word.
 | `--yes`, `-y`                   | `migrate`, `add`, `remove`, `replace`, `detect --add`                                                                                              | Writes the changes without a prompt.                                                                                                     |
 | `--add`                         | `detect`                                                                                                                                           | Adds each matched tool that is not selected, after the consent.                                                                          |
 | `--exclude <member>`            | `add pack`                                                                                                                                         | Leaves out a member of the pack, as the packs file writes it. The flag can repeat. It needs exactly one pack name.                       |
+| `--backup <path>`               | `mac migrate`                                                                                                                                      | The backup clone: the key `backup` of `macos.toml`. See [mac.md](mac.md#the-backup-clone).                                               |
 | `--answer <tool>.<key>=<value>` | `migrate`, `sync`, `add`, `replace`, `detect --add`                                                                                                | The answer of a question. The flag can repeat. `--answer <tool>.<key>=` gives an empty answer, only for an optional or a group question. |
 | `--json`                        | `contract`, `catalog`, `describe`, `lsp`, `check`, `questions`, `mac questions`, `config`, `migrate`, `sync`, `add`, `remove`, `replace`, `detect` | Prints one JSON envelope on stdout, and each other line on stderr, for an AI agent. See [The JSON contract](#the-json-contract).         |
 | `--format json\|yaml\|toml`     | `config get`, `config show`                                                                                                                        | The output format. The default is `json` when stdout is not a terminal, else `toml`. With `--json`, it is a usage error (code 2).        |
@@ -138,7 +139,6 @@ kind word.
 | `--cache-dir <path>`            | each command except `version` and `contract`                                                                                                       | The cache folder. It sets `BOOTSTRAP_CACHE`.                                                                                             |
 | `--url <url>`                   | each command except `version` and `contract`                                                                                                       | The clone URL. It sets `BOOTSTRAP_URL`.                                                                                                  |
 | `--clone <path>`                | each command except `version` and `contract`                                                                                                       | A clone of bootstrap, with no lock and no fetch. It sets `BOOTSTRAP_CLONE`.                                                              |
-| `--repo-path <path>`            | each `mac` command except `mac migrate`, and `settings`                                                                                            | The repository of `macos.toml`. It sets `MACOS_SETUP_REPO_PATH`.                                                                         |
 
 A flag of a repo command also applies to the same `mac` command, for example
 `mac sync --verbose`. A flag with a value takes `--flag value` and
@@ -169,16 +169,16 @@ examines these items. A failure stops it with code 2. `config` examines only
 the git repository and the values folder.
 
 - `mise` is on `PATH`.
-- The folder is in a git repository. The repo side uses `MISE_PROJECT_ROOT`,
-  else the git top level of the current folder. `mac migrate` uses the current
-  folder. Each other `mac` command uses `--repo-path` or
-  `MACOS_SETUP_REPO_PATH`: see [mac.md](mac.md). `mac tui` then uses the
-  current folder.
+- On the repo side, the folder is in a git repository: `MISE_PROJECT_ROOT`,
+  else the git top level of the current folder. The Mac side needs no git
+  repository.
 - The values are the folder `.config/bootstrap/` of the repository, or the
-  folder of `BOOTSTRAP_VALUES`. On the Mac, they are `macos.toml` of the
-  repository of `macos.toml`.
+  folder of `BOOTSTRAP_VALUES`. On the Mac, they are the fixed file
+  `~/.config/bootstrap/macos.toml` (below `$XDG_CONFIG_HOME` when it is set),
+  from any folder: see [mac.md](mac.md#the-place-of-macostoml).
 
-`migrate` outside a git repository tells the user to create one with `git init`.
+`migrate` outside a git repository tells the user to create one with `git init`
+(the repo side only).
 On
 the repo side, each command except `migrate`, `contract` and `catalog` needs the
 values folder with its `repo.toml` and `tools.toml`: without them, it stops with
@@ -432,8 +432,7 @@ change list.
 
 - `tui` and `mac tui` take the flags of `migrate` and `mac migrate` except
   `--yes`, `--dry-run`, `--answer` and `--json`. They take no names.
-  `mac tui` finds `macos.toml` with `--repo-path`, then
-  `MACOS_SETUP_REPO_PATH`, then the current folder.
+  `mac tui` opens the fixed `macos.toml`.
 - Without a terminal, `tui` stops with code 2 and the hint
   `use: bootstrap add tool, bootstrap remove tool or bootstrap migrate` (the
   `mac` commands on the Mac).
@@ -1170,22 +1169,21 @@ See [repo.md](repo.md) and [mac.md](mac.md).
 
 ## The engine variables
 
-| Variable                | Use                                                                                                                                                                                                                           |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BOOTSTRAP_CLONE`       | A folder with a clone of bootstrap. The command uses it, with no lock and no fetch. The gate `code:lint:60-bootstrap` sets it.                                                                                                |
-| `BOOTSTRAP_URL`         | The clone URL. A test uses it for a change that is not pushed.                                                                                                                                                                |
-| `BOOTSTRAP_CACHE`       | The cache folder. A test uses it.                                                                                                                                                                                             |
-| `BOOTSTRAP_VERBOSE`     | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run).                                                                                                                 |
-| `BOOTSTRAP_BIN`         | The path of a build of the engine. The entry tasks, the gate, the tool scripts and the tests run it in place of the `bootstrap` of mise. The engine exports its own path in it to each script and task that it runs.          |
-| `BOOTSTRAP_JOBS`        | The jobs at a time. `--jobs` sets it.                                                                                                                                                                                         |
-| `BOOTSTRAP_VALUES`      | The values folder of the repo side. The default is `.config/bootstrap/`. `migrate` and the sync set it to the folder of the planned values, so `config` reads the new keys; with it, `config` skips the stop of the old form. |
-| `BOOTSTRAP_HOME`        | The home repository of a member. `setup:configs` sets it for the sync of a member, which writes `[home]`.                                                                                                                     |
-| `BOOTSTRAP_MEMBER`      | The name of the member in the `[members.*]` tables of its home. `setup:configs` sets it with `BOOTSTRAP_HOME`.                                                                                                                |
-| `MACOS_SETUP_REPO_PATH` | The repository of `macos.toml`. See [mac.md](mac.md).                                                                                                                                                                         |
-| `BOOTSTRAP_CONFIG`      | The config file. See [The config file](#the-config-file). The tests set it to a missing path.                                                                                                                                 |
+| Variable            | Use                                                                                                                                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BOOTSTRAP_CLONE`   | A folder with a clone of bootstrap. The command uses it, with no lock and no fetch. The gate `code:lint:60-bootstrap` sets it.                                                                                                                                                  |
+| `BOOTSTRAP_URL`     | The clone URL. A test uses it for a change that is not pushed.                                                                                                                                                                                                                  |
+| `BOOTSTRAP_CACHE`   | The cache folder. A test uses it.                                                                                                                                                                                                                                               |
+| `BOOTSTRAP_VERBOSE` | `1` prints the log line of each target in place of the list. See [The output of a run](#the-output-of-a-run).                                                                                                                                                                   |
+| `BOOTSTRAP_BIN`     | The path of a build of the engine. The entry tasks, the gate, the tool scripts and the tests run it in place of the `bootstrap` of mise. The engine exports its own path in it to each script and task that it runs.                                                            |
+| `BOOTSTRAP_JOBS`    | The jobs at a time. `--jobs` sets it.                                                                                                                                                                                                                                           |
+| `BOOTSTRAP_VALUES`  | The values folder. The default is `.config/bootstrap/` of the repository, and on the Mac the fixed folder of `macos.toml`. `migrate` and the sync set it to the folder of the planned values, so `config` reads the new keys; with it, `config` skips the stop of the old form. |
+| `BOOTSTRAP_HOME`    | The home repository of a member. `setup:configs` sets it for the sync of a member, which writes `[home]`.                                                                                                                                                                       |
+| `BOOTSTRAP_MEMBER`  | The name of the member in the `[members.*]` tables of its home. `setup:configs` sets it with `BOOTSTRAP_HOME`.                                                                                                                                                                  |
+| `BOOTSTRAP_CONFIG`  | The config file. See [The config file](#the-config-file). The tests set it to a missing path.                                                                                                                                                                                   |
 
 A flag sets its variable for the run: `--jobs`, `--cache-dir`, `--url`,
-`--clone`, `--repo-path`, `--config` and `--verbose` (`BOOTSTRAP_VERBOSE=1`).
+`--clone`, `--config` and `--verbose` (`BOOTSTRAP_VERBOSE=1`).
 The config file sets `BOOTSTRAP_JOBS`, `BOOTSTRAP_CACHE`, `BOOTSTRAP_URL` and
 `BOOTSTRAP_CLONE` when no flag and no variable sets them. See
 [The config file](#the-config-file).
@@ -1237,8 +1235,9 @@ The rules of the file:
   a variable as it is.
 - The file is for the repo side and for the Mac side. A `[mac]` table is for the
   keys of the Mac side only. The table has no key now, so a key in it is an
-  unknown key. An empty `[mac]` table is valid. The file has no key for
-  `MACOS_SETUP_REPO_PATH`: see [mac.md](mac.md).
+  unknown key. An empty `[mac]` table is valid. The place of `macos.toml` is
+  fixed, so
+  the file has no key for it: see [mac.md](mac.md#the-place-of-macostoml).
 - `verbose` is a flag only. A `verbose` key is an unknown key.
 - The file holds only the settings of the engine, never the config of a tool.
   No sync, no seed and no tool writes the file. Only the user writes it.
@@ -1259,8 +1258,7 @@ no git repository, no mise and no clone. The first line is `file`, the path of
 the file and its source (`flag --config`, `variable BOOTSTRAP_CONFIG` or
 `default`), with `(missing)` after the path of a missing file. Then each key has
 one line with its value and its source: `flag --<name>`, `variable <NAME>`,
-`file` or `default`. `-` is no value. The line `mac.repo_path` shows the value
-of `--repo-path` or `MACOS_SETUP_REPO_PATH`. For example:
+`file` or `default`. `-` is no value. For example:
 
 ```text
 file           /Users/me/.config/bootstrap/config.toml  default
@@ -1268,7 +1266,6 @@ jobs           4                                        flag --jobs
 cache_dir      /Users/me/.cache/bootstrap               default
 url            https://github.com/virajp/bootstrap.git  default
 clone          -                                        default
-mac.repo_path  /Users/me/Projects/macos-setup           variable MACOS_SETUP_REPO_PATH
 ```
 
 Only the engine reads the file. The gate `code:lint:60-bootstrap` and the
@@ -2159,8 +2156,7 @@ and 5. Code 4 is only for the Mac side: see
 **Code 2, only on the Mac side:**
 
 - A `mise` that is not at `~/.local/bin/mise`.
-- A `MACOS_SETUP_REPO_PATH` (or `--repo-path`) that is not set, is not a folder
-  or is not a git repository. Without a path, `mac tui` uses the current folder.
+- A `HOME` that is not set.
 - A `BOOTSTRAP_CLONE` without `cli/` or `macos/tools/`.
 - A `macos.toml` that breaks a rule, also a `[overrides.mise_env.*]` table.
 - A nested run of `updateall:configs`.

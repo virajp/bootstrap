@@ -105,28 +105,23 @@ func migrateTree(c *mcase) {
 
 // ---- config -----------------------------------------------------------------
 
+// caseConfigMissing: with no folder of macos.toml, a clean sync creates the
+// folder and the file at the fixed path. The folder needs no git.
 func caseConfigMissing(c *mcase) {
 	c.remove(c.cfg)
 	c.runReal()
-	c.exit(2)
-	c.has("MACOS_SETUP_REPO_PATH " + c.cfg + " is not a git repository")
-	c.check("nothing written", !exists(c.home+"/.config"))
+	c.exit(0)
+	c.check("macos.toml at the fixed path", hasLine(c.values, "format = 2"))
 }
 
-func caseConfigNotGit(c *mcase) {
-	c.remove(c.cfg + "/.git")
+// caseConfigHome: without XDG_CONFIG_HOME, macos.toml is at
+// ~/.config/bootstrap/macos.toml.
+func caseConfigHome(c *mcase) {
+	c.setEnv("XDG_CONFIG_HOME")
 	c.runReal()
-	c.exit(2)
-	c.has("MACOS_SETUP_REPO_PATH " + c.cfg + " is not a git repository")
-	c.check("nothing written", !exists(c.home+"/.config"))
-}
-
-func caseConfigUnset(c *mcase) {
-	c.setEnv("MACOS_SETUP_REPO_PATH")
-	c.runReal()
-	c.exit(2)
-	c.has("MACOS_SETUP_REPO_PATH is not set")
-	c.check("nothing written", !exists(c.home+"/.config"))
+	c.exit(0)
+	c.check("macos.toml below HOME", hasLine(c.home+"/.config/bootstrap/macos.toml", "format = 2"))
+	c.check("no macos.toml below XDG_CONFIG_HOME", !exists(c.values))
 }
 
 func caseUnknownFlag(c *mcase) {
@@ -241,7 +236,7 @@ func caseRequiredTable(c *mcase) {
 	before := catT(c.values)
 	c.runDry()
 	c.exit(0)
-	c.has("[tools.mise] would be added to config/macos.toml")
+	c.has("[tools.mise] would be added to xdg/config/bootstrap/macos.toml")
 	c.check("a dry run writes no table", catT(c.values) == before)
 	c.mac("check")
 	c.exit(0)
@@ -249,11 +244,11 @@ func caseRequiredTable(c *mcase) {
 	c.check("check writes no table", catT(c.values) == before)
 	c.runReal()
 	c.exit(0)
-	c.has("[tools.mise] added to config/macos.toml")
+	c.has("[tools.mise] added to xdg/config/bootstrap/macos.toml")
 	c.check("the table of mise is written", hasLine(c.values, "[tools.mise]"))
 	c.runReal()
 	c.exit(0)
-	c.lacks("added to config/macos.toml")
+	c.lacks("added to xdg/config/bootstrap/macos.toml")
 }
 
 // ---- mise (the check of the install) ----------------------------------------
@@ -488,7 +483,7 @@ func caseContext(c *mcase) {
 	c.runReal()
 	c.exit(0)
 	c.file(c.home+"/.config/context/context.txt", synced("context/files/.config/context/context.txt.tmpl")+
-		"\ncli_dir="+tree+"/cli\nconfig="+c.cfg)
+		"\ncli_dir="+tree+"/cli\nhome="+c.home)
 }
 
 // ---- symlinks ---------------------------------------------------------------
@@ -1338,4 +1333,70 @@ func caseMergeContrib(c *mcase) {
 	c.runReal()
 	c.exit(0)
 	c.check("the shared files of a deselected tool stay", isFile(c.mDir()+"/m.json") && isFile(c.mDir()+"/m.yaml"))
+}
+
+// ---- backup -----------------------------------------------------------------
+
+// useBackup selects the fixture context with the key backup, and gives the
+// folder of the files in the backup clone.
+func (c *mcase) useBackup() string {
+	c.useConfig("context")
+	clone := filepath.Join(c.dir, "backup")
+	c.mkdir(clone)
+	c.write(c.values, "backup = \""+clone+"\"\n"+harness.ReadFile(c.values))
+	return clone + "/dotfiles"
+}
+
+// linkOf gives the target of the link <p>, or "" when <p> is not a link.
+func linkOf(p string) string {
+	to, err := os.Readlink(p)
+	if err != nil {
+		return ""
+	}
+	return to
+}
+
+func caseBackupLinks(c *mcase) {
+	root := c.useBackup()
+	c.write(c.home+"/.config/context/own.txt", "own\n")
+	c.runReal()
+	c.exit(0)
+	c.check("~/.config/mise is a folder link", linkOf(c.home+"/.config/mise") == root+"/.config/mise")
+	c.check("~/.config/context is a folder link", linkOf(c.home+"/.config/context") == root+"/.config/context")
+	c.check("the render wrote into the clone", exists(root+"/.config/context/context.txt"))
+	c.check("an own file moved into the clone", hasLine(root+"/.config/context/own.txt", "own"))
+	c.has("linked     ~/.config/context to ")
+	c.runReal()
+	c.exit(0)
+	c.lacks("linked ")
+	c.lacks("moved ")
+}
+
+func caseBackupDryRun(c *mcase) {
+	c.useBackup()
+	c.write(c.home+"/.config/context/own.txt", "own\n")
+	c.runDry()
+	c.exit(0)
+	c.has("would link ~/.config/context to ")
+	c.has("would move ~/.config/context into the backup ")
+	c.check("no link made", linkOf(c.home+"/.config/context") == "")
+}
+
+func caseBackupConflict(c *mcase) {
+	root := c.useBackup()
+	c.write(c.home+"/.config/context/own.txt", "home\n")
+	c.write(root+"/.config/context/own.txt", "clone\n")
+	c.write(c.home+"/.zshrc", "z\n")
+	c.runReal()
+	c.exit(2)
+	c.has("backup: ~/.config/context/own.txt and " + root + "/.config/context/own.txt differ - fix it by hand")
+	c.check("nothing moved", hasLine(c.home+"/.config/context/own.txt", "home") && linkOf(c.home+"/.config/mise") == "")
+}
+
+func caseBackupMissing(c *mcase) {
+	c.useBackup()
+	c.remove(filepath.Join(c.dir, "backup"))
+	c.runReal()
+	c.exit(2)
+	c.has("the backup clone " + filepath.Join(c.dir, "backup") + " is not a folder")
 }

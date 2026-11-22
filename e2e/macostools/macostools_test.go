@@ -7,8 +7,8 @@
 // the first real run exits 4 when a tool has `stage = "init"`, else 0, the
 // second run exits 0, the example selects each tool of macos/tools/, and each
 // .json, .yaml/.yml and .toml file of the temporary HOME parses. The missing
-// question case: the example without the answer `config_path` of mise exits
-// 2. The init case: `bootstrap mac migrate` migrates the old form of the
+// question case: the example without the answer `ssh_vault` of 1password
+// exits 2. The init case: `bootstrap mac migrate` migrates the old form of the
 // example, then `bootstrap mac sync` runs. The git cases: the git tool needs
 // one email only. The drift cases: a mise tool on both sides of repo/tools/
 // and macos/tools/ has one version and one `depends`, a mise setting on both
@@ -95,8 +95,8 @@ type macCase struct {
 // example in a git config folder.
 func newCase(t *testing.T, name string) *macCase {
 	dir := harness.Dir(t)
-	c := &macCase{t: t, name: name, dir: dir, home: filepath.Join(dir, "home"), config: filepath.Join(dir, "config")}
-	for _, d := range []string{"home", "xdg/cache", "xdg/config", "xdg/state", "xdg/data", "tmp", "config"} {
+	c := &macCase{t: t, name: name, dir: dir, home: filepath.Join(dir, "home"), config: filepath.Join(dir, "xdg/config/bootstrap")}
+	for _, d := range []string{"home", "xdg/cache", "xdg/config", "xdg/state", "xdg/data", "tmp", "xdg/config/bootstrap"} {
 		if err := os.MkdirAll(filepath.Join(dir, d), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -104,14 +104,13 @@ func newCase(t *testing.T, name string) *macCase {
 	gitconfig := filepath.Join(dir, "gitconfig")
 	harness.WriteFile(t, gitconfig, "")
 	c.env = harness.SetEnv(harness.Env(), append([]string{
-		"MISE_ENV", "BOOTSTRAP_URL", "BOOTSTRAP_CLONE",
+		"MISE_ENV", "BOOTSTRAP_URL", "BOOTSTRAP_CLONE", "BOOTSTRAP_VALUES", "MACOS_SETUP_REPO_PATH",
 		"HOME=" + c.home,
 		"XDG_CACHE_HOME=" + filepath.Join(dir, "xdg/cache"),
 		"XDG_CONFIG_HOME=" + filepath.Join(dir, "xdg/config"),
 		"XDG_STATE_HOME=" + filepath.Join(dir, "xdg/state"),
 		"XDG_DATA_HOME=" + filepath.Join(dir, "xdg/data"),
 		"BOOTSTRAP_CACHE=" + filepath.Join(dir, "xdg/cache/bootstrap"),
-		"MACOS_SETUP_REPO_PATH=" + c.config,
 		"GIT_CONFIG_GLOBAL=" + gitconfig,
 		"GIT_CONFIG_NOSYSTEM=1",
 		"TMPDIR=" + filepath.Join(dir, "tmp"),
@@ -307,14 +306,6 @@ func testRender(t *testing.T) {
 	c.runReal()
 	c.checkExit(0)
 
-	// mise does not expand ~ in [env], so the answer of the example reaches
-	// it with $HOME in its place.
-	miseConfig := filepath.Join(c.home, ".config/mise/conf.d/mise/mise.toml")
-	c.check(strings.Contains(harness.ReadFile(miseConfig),
-		`MACOS_SETUP_REPO_PATH = "`+c.home+`/Projects/github.com/janedoe/macos-setup"`),
-		"a ~ at the start of config_path becomes $HOME",
-		miseConfig+" does not have config_path with $HOME in place of ~")
-
 	var files []string
 	err = filepath.WalkDir(c.home, func(p string, e os.DirEntry, err error) error {
 		if err != nil {
@@ -362,15 +353,15 @@ func testMissingQuestion(t *testing.T) {
 	c := newCase(t, "missing question")
 	var keep []string
 	for _, l := range strings.SplitAfter(harness.ReadFile(example), "\n") {
-		if !strings.HasPrefix(l, "config_path = ") {
+		if !strings.HasPrefix(l, "ssh_vault = ") {
 			keep = append(keep, l)
 		}
 	}
 	harness.WriteFile(t, filepath.Join(c.config, "macos.toml"), strings.Join(keep, ""))
 	c.runReal()
 	c.checkExit(2)
-	c.check(strings.Contains(c.logText(), "the question mise.config_path has no answer in macos.toml"),
-		"the message names the question", "the message does not name the question 'mise.config_path'")
+	c.check(strings.Contains(c.logText(), "the question 1password.ssh_vault has no answer in macos.toml"),
+		"the message names the question", "the message does not name the question '1password.ssh_vault'")
 }
 
 // hasLine tells whether <text> has the line <line>.

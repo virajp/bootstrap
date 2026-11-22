@@ -5,36 +5,36 @@ the front-end `internal/macos` of the engine. The front-end renders the selected
 tools of `macos/tools/` into `$HOME`. It installs nothing: `updateall` runs
 `mise bootstrap`. Only the first setup of a Mac, which `mac migrate` runs, runs
 `mise bootstrap` once. This document holds the rules that only the Mac has: the
-repository of `macos.toml`, the entry tasks, `macos.toml`, the first setup and
+place of `macos.toml`, the entry tasks, `macos.toml`, the first setup and
 exit 4, the place of mise and the symlink resolve.
 
 See also: [cli.md](cli.md) for the command line, the shared
 rules and the other exit codes, [packs.md](packs.md), [tools.md](tools.md) and
 [mise.md](mise.md).
 
-## The repository of `macos.toml`
+## The place of `macos.toml`
 
-`macos.toml` is in a git repository of the user: the private `macos-setup`
-clone. Each `mac` command needs that repository.
+`macos.toml` has one fixed place on a Mac:
+`$XDG_CONFIG_HOME/bootstrap/macos.toml`, or
+`~/.config/bootstrap/macos.toml` when `XDG_CONFIG_HOME` is not set. The engine
+config file `config.toml` is in the same folder. Each `mac` command uses this
+path from any folder, `mac migrate` too. Thus a `mac migrate` in a different
+folder, for example in a clone of a project, never writes a second
+`macos.toml`.
 
-- `bootstrap mac migrate` runs in the current folder, which must be a git
-  repository. Else it tells the user to create one with `git init`.
-- Each other `mac` command runs from any folder, and uses `--repo-path <path>`
-  or `MACOS_SETUP_REPO_PATH`. The flag sets the variable for the run. A path
-  that is not set, or that does not name a git repository, stops the command
-  with code 2. The one exception is `mac tui`: without a path, it uses the
-  current folder.
+The folder needs no git repository. A clean real run creates the folder when
+it is not there. The backup of `macos.toml` in git comes from the key `backup`:
+the sync links `~/.config/bootstrap/` into the backup clone. See
+[The backup clone](#the-backup-clone).
 
-The Mac tool `mise` writes `MACOS_SETUP_REPO_PATH` in its `[mise.env]`, from
-the answer `config_path` of `[tools.mise]`. `~` at the start becomes `$HOME`.
-Thus the variable is set in each shell after the first sync. Before the first
-sync, `mac migrate` sets it for its own run.
+The engine sets `BOOTSTRAP_VALUES` to a temporary folder for the plan of a
+change, as on the repo side. Thus the dry run of a plan reads the planned
+`macos.toml`. A user does not set this variable.
 
-The config file of the engine has no key for the repository of `macos.toml`.
-The mise env exports `MACOS_SETUP_REPO_PATH` in each shell, so the variable
-always comes before a key of the file. `bootstrap settings` shows the line
-`mac.repo_path` with the value of `--repo-path` or of the variable. See
-[cli.md](cli.md#the-config-file).
+Old forms: the flag `--repo-path`, the variable `MACOS_SETUP_REPO_PATH`, the
+setting `mac.repo_path` and the answer `config_path` of `[tools.mise]` are
+gone. `mac migrate` moves the answer `config_path` to the key `backup`. See
+`docs/sync/migrate.md` (M56).
 
 ## The entry tasks
 
@@ -110,13 +110,16 @@ command line sets it. See
 
 ## `macos.toml`
 
-`macos.toml` is the values file of the Mac side. It is at the root of the
-repository of `macos.toml`. `macos/examples/macos.toml` is the sample. Its
+`macos.toml` is the values file of the Mac side. It is at the fixed place of
+[The place of `macos.toml`](#the-place-of-macostoml).
+`macos/examples/macos.toml`
+is the sample. Its
 overrides file is `macos.overrides.toml` next to it. See
 [cli.md](cli.md#the-values-of-a-tool).
 
 | Key                       | Meaning                                                                                                                          |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `backup`                  | A string, not empty. The backup clone. `~` at the start is `$HOME`. See [The backup clone](#the-backup-clone).                   |
 | `format`                  | The integer `2`, the form of the file. A file without it is an old form: run `bootstrap mac migrate`.                            |
 | `bootstrap_commit`        | A string. The commit of the last clean run that changed a file. The sync writes it. See [cli.md](cli.md#bootstrap_commit).       |
 | `[tools.<name>]`          | A table. It selects the tool, and each key is a value of the tool. See [cli.md](cli.md#the-values-of-a-tool).                    |
@@ -130,11 +133,13 @@ These stop the sync:
 - `env` in a `[tools.<name>]` table: the Mac side has no environments.
 - A `format` other than `2`.
 - `[overrides.mise_env]`, and any other key of `[overrides]`.
-- A `[tools.<name>]` that is not a table, a `[mise]` that is not a table, and a
-  `bootstrap_commit` that is not a string.
+- A `[tools.<name>]` that is not a table, a `[mise]` that is not a table, a
+  `bootstrap_commit` that is not a string, and a `backup` that is not a string
+  or is empty.
 - An old form: run `bootstrap mac migrate`. The old forms are a file without
   `format = 2`, a `[packs.<name>]` table or a `packs` key, and the table of
-  the old Mac entry tool, whose values go to `[tools.mise]`.
+  the old Mac entry tool, whose values go to `[tools.mise]`, and the answer
+  `config_path` of `[tools.mise]`, which goes to `backup`.
   `docs/sync/migrate.md` names the old tool. `mac migrate` migrates them as on
   the repo side: see
   [bootstrap-config.md](bootstrap-config.md#old-forms).
@@ -177,7 +182,7 @@ keeps no record of a pack: `mac add pack` writes the tables of its members.
 | `.config`  | The values of the tool of the template.                   |
 | `.all`     | The values of each selected tool, by name.                |
 | `.tools`   | The names of the selected tools.                          |
-| `.env`     | `HOME`, `USER` and `MACOS_SETUP_REPO_PATH`.               |
+| `.env`     | `HOME` and `USER`.                                        |
 | `.cli_dir` | The absolute path of the `cli/` folder of the clone copy. |
 
 A TOML, JSON or YAML template of a Mac tool encodes a string value with
@@ -195,7 +200,7 @@ Two Mac sources do not follow this rule, each from its old copy:
 
 ## The run order
 
-1. The front-end examines its flags, mise, the clone and the repository of
+1. The front-end examines its flags, mise and the clone, and finds the place of
    `macos.toml`.
 2. It reads `macos.toml` and each `tools.toml`, and it resolves the selection.
 3. It merges the values of the tools, with the derive scripts. A question of a
@@ -210,7 +215,9 @@ Two Mac sources do not follow this rule, each from its old copy:
 6. It makes the file plan: each file of a selected tool, relative to `$HOME`,
    with the `.config/mise/` files first and the generated mise files first of
    all.
-7. It writes each file of the plan in one pass, and applies the stale rule.
+7. It makes the links of the backup clone (see
+   [The backup clone](#the-backup-clone)), then writes each file of the plan in
+   one pass, and applies the stale rule.
 8. It writes the manifest, runs the `after` scripts, and sets
    `bootstrap_commit`. It runs no `mise bootstrap`.
 
@@ -233,7 +240,7 @@ linked file.
 The first setup installs what `mise bootstrap` and the entry tasks need on a
 new Mac: Homebrew, the shells, mise, `uv` and Python. A Mac needs it when no
 sync finished on it: the cache has no manifest `macos-generated.tsv`. The
-manifest is per Mac, so a second Mac with a clone of `macos-setup` also needs
+manifest is per Mac, so a second Mac with a clone of the backup also needs
 it.
 
 `bootstrap mac migrate` runs no sync. It writes `macos.toml`, and on a Mac with
@@ -319,6 +326,69 @@ missing. A symlink loop fails that target.
 The repo side never follows a link, because a link can point outside the
 repository. This difference is on purpose.
 
+## The backup clone
+
+The key `backup` of `macos.toml` names a git clone of the user, for example the
+private `macos-setup` clone. The clone holds the backup of the synced files
+below `<backup>/dotfiles/`, with the same paths as in `$HOME`. The sync links
+the targets into the clone, and then writes through the links (see
+[Symlinks](#symlinks)). bootstrap never commits: the user examines the clone
+with git and commits the changes. Without `backup`, the sync writes real files
+and makes no link.
+
+The link rule picks the level of each link:
+
+1. Link a folder when no selected tool declares a runtime file in it.
+2. Else do not link the folder. Link each child that holds a synced file: a
+   child folder with the same rule, and a child file as a file.
+3. `~` and `~/.config` are never linked, so their children are linked one by
+   one. `~/.config/bootstrap/` is a folder link, so `macos.toml` is in the
+   backup.
+
+A runtime file is a file that the program of a tool writes, which must not go
+into git, for example `.config/fish/fish_variables`. The key `runtime` of the
+`tools.toml` of a Mac tool names them: a list of paths relative to `$HOME`,
+with no `~`, no `..` and no `/` at the start or the end.
+
+The engine makes the links itself, also the link `~/.config/mise`. It writes
+no `[mise.dotfiles]` entry for them: mise reads its entries from
+`~/.config/mise`, and it refuses an entry whose source is missing. The own
+`[mise.dotfiles]` entries of the user in `macos.toml` stay with mise.
+
+Each run with `backup` (`mac sync`, and the first setup of `mac migrate`)
+does these steps before it writes a file:
+
+1. It stops with code 2 when the clone is not a folder.
+2. It makes the list of links from the targets of the plan, the generated
+   mise files and `macos.toml` (when its folder is below `$HOME`).
+3. It examines each link. The run stops with code 2 before any change when one
+   link has a conflict, and each conflict has one error line with the fix
+   `fix it by hand, then run the sync again`.
+4. It does the steps of the safe cases, then makes each missing link. A folder
+   link with no folder in the clone gets an empty folder there.
+
+| State of the target in `$HOME`                                                      | Action                                                    |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| The link to its place in the clone                                                  | none                                                      |
+| Nothing                                                                             | the link                                                  |
+| A real file or folder, and the clone has nothing there                              | move it into the clone, then the link                     |
+| A real file with the same bytes as the clone                                        | remove the real file, then the link                       |
+| A link that resolves to its place in the clone (for example a link of an old level) | remove that link, then the link                           |
+| A real folder, and the clone has a folder there                                     | the same rules for each item of the folder, then the link |
+| A real file that differs from the clone                                             | conflict                                                  |
+| A link to a different place                                                         | conflict                                                  |
+| A file and a folder at the same place                                               | conflict                                                  |
+| A folder above the link is a link (the rule now splits that folder)                 | conflict: replace the link with a folder                  |
+
+A dry run examines the links, stops on a conflict, and shows
+`would move <path> into the backup <clone path>` and
+`would link <path> to <clone path>`. It changes nothing, so the render of the
+dry run compares the targets at their place of today. A real run shows
+`moved <path> into the backup` and `linked <path> to <clone path>`.
+
+A link stays when its tool is no longer selected: the files in the clone are
+the user's backup. bootstrap never commits and never runs git in the clone.
+
 ## The manifest
 
 The manifest is `macos-generated.tsv` of the cache. It is outside the clone, so
@@ -336,6 +406,8 @@ the rows of each tool, also of a tool that is not selected.
 ## Where the Mac side writes
 
 - `$HOME`, and the sources that its symlinks point to.
+- The backup clone: the moves and the empty folders of the links, below
+  `<backup>/dotfiles/`.
 - The cache: the clone, the lock and `macos-generated.tsv`.
 - `macos.toml`: `bootstrap_commit`, the tables of the required members of
   `base`, and the writes of `mac migrate`, `mac add`, `mac remove`,

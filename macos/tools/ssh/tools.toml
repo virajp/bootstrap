@@ -6,6 +6,9 @@
 
 category = "system"
 description = "the ssh client config: Host * defaults, the default user, the includes and the agent that other tools contribute"
+# ssh writes the known hosts here, so the backup clone links the synced files
+# of ~/.ssh one by one.
+runtime = [ ".ssh/known_hosts", ".ssh/known_hosts.old" ]
 summary = "The ssh client config"
 
 [questions.user]

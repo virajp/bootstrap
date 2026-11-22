@@ -190,7 +190,6 @@ func (s *state) context(tool string) (any, error) {
 	env := source.NewObj()
 	env.Set("HOME", s.getenv("HOME"))
 	env.Set("USER", s.getenv("USER"))
-	env.Set("MACOS_SETUP_REPO_PATH", s.getenv("MACOS_SETUP_REPO_PATH"))
 	o := source.NewObj()
 	o.Set("config", s.all.Get(tool))
 	o.Set("all", s.all)

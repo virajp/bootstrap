@@ -164,8 +164,11 @@ func TestMigrateMac(t *testing.T) {
 		t.Errorf("the old form stays: %v", err)
 	}
 	mise := raw.Get("tools").(*source.Obj).Get("mise").(*source.Obj)
-	if mise.Get("config_path") != "~/m" || mise.Get("x") == nil {
-		t.Errorf("[tools.mise] = %s", source.JSON(mise))
+	if mise.Has("config_path") || mise.Get("x") == nil || raw.Get("backup") != "~/m" {
+		t.Errorf("[tools.mise] = %s, backup = %v", source.JSON(mise), raw.Get("backup"))
+	}
+	if b, _ := os.ReadFile(values); !strings.Contains(string(b), "backup = \"~/m\"\n") || strings.Index(string(b), "backup") > strings.Index(string(b), "[tools.") {
+		t.Errorf("backup is not a top-level line before the tables:\n%s", b)
 	}
 	// The frozen base and the frozen pack ai: uv is not required in the new
 	// base, and devtools is not in the clone.

@@ -3,8 +3,8 @@
 // clone of bootstrap into $HOME, then runs `mise bootstrap`.
 //
 // Run reads this environment: BOOTSTRAP_CLONE,
-// BOOTSTRAP_CACHE, MACOS_SETUP_REPO_PATH, BOOTSTRAP_VERBOSE, HOME, USER,
-// TMPDIR, XDG_CACHE_HOME, PATH, PWD and the style variables FORCE_COLOR,
+// BOOTSTRAP_CACHE, BOOTSTRAP_VALUES, BOOTSTRAP_VERBOSE, HOME, USER,
+// TMPDIR, XDG_CACHE_HOME, XDG_CONFIG_HOME, PATH, PWD and the style variables FORCE_COLOR,
 // NO_COLOR and TERM.
 //
 // Contract: docs/design/mac.md.
@@ -73,6 +73,22 @@ func ManifestFile(getenv func(string) string) string {
 		cache = xdg + "/bootstrap"
 	}
 	return cache + "/macos-generated.tsv"
+}
+
+// ValuesDir is the folder of macos.toml: BOOTSTRAP_VALUES, else
+// $XDG_CONFIG_HOME/bootstrap, else ~/.config/bootstrap. It is empty when
+// HOME is not set. The engine sets BOOTSTRAP_VALUES for the plan of a change.
+func ValuesDir(getenv func(string) string) string {
+	if v := getenv("BOOTSTRAP_VALUES"); v != "" {
+		return strings.TrimSuffix(v, "/")
+	}
+	if x := getenv("XDG_CONFIG_HOME"); x != "" {
+		return strings.TrimSuffix(x, "/") + "/bootstrap"
+	}
+	if h := getenv("HOME"); h != "" {
+		return strings.TrimSuffix(h, "/") + "/.config/bootstrap"
+	}
+	return ""
 }
 
 // NeedsFirstSetup tells if no sync finished on this Mac: it has no manifest.
@@ -224,13 +240,9 @@ func (s *state) run(args []string) fail.Code {
 		s.log("BOOTSTRAP_CLONE is not a clone of bootstrap - run mise run updateall:configs")
 		return fail.Usage
 	}
-	cfg := s.getenv("MACOS_SETUP_REPO_PATH")
+	cfg := ValuesDir(s.getenv)
 	if cfg == "" {
-		s.log("MACOS_SETUP_REPO_PATH is not set - set it to the repository of macos.toml")
-		return fail.Usage
-	}
-	if !isDir(cfg) {
-		s.log("the folder %s does not exist - set MACOS_SETUP_REPO_PATH to the repository of macos.toml", cfg)
+		s.log("HOME is not set")
 		return fail.Usage
 	}
 
@@ -317,11 +329,22 @@ func (s *state) run(args []string) fail.Code {
 		s.r.Clone("bootstrap " + short + " · " + strconv.Itoa(len(s.res.Tools)) + " tools")
 	}
 	// The tables of the required members of the pack base, before the files.
+	// A new Mac has no folder of macos.toml yet.
+	if !dryRun && os.MkdirAll(s.config, 0o755) != nil {
+		s.log("cannot create the folder %s", s.e.Show(s.config))
+		s.r.Summary(1)
+		return fail.Other
+	}
 	s.e.DryRun = dryRun
 	code := s.requiredTables()
 	s.e.DryRun = false
 	if code != fail.OK {
 		s.r.Summary(int(code))
+		return code
+	}
+	// The links of the backup clone, before any file: the render writes
+	// through them.
+	if code := s.backup(dryRun); code != fail.OK {
 		return code
 	}
 	firstRun := !exists(manifestFile)

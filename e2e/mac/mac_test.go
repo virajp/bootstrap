@@ -4,7 +4,7 @@
 // test:mac (.config/mise/tasks/test/mac, all 2,499 lines).
 //
 // Each case has its own temporary HOME, XDG_* folders, cache, TMPDIR, git
-// config and config folder (MACOS_SETUP_REPO_PATH). MISE_DATA_DIR and
+// config and folder of macos.toml ($XDG_CONFIG_HOME/bootstrap). MISE_DATA_DIR and
 // MISE_CACHE_DIR stay the folders of the user, so a real `mise x` finds its
 // tools with no download.
 package mac
@@ -28,8 +28,7 @@ func TestMac(t *testing.T) {
 	}
 	cases := []tc{
 		{"config: a missing config folder", caseConfigMissing},
-		{"config: a config folder that is not a git repository", caseConfigNotGit},
-		{"config: MACOS_SETUP_REPO_PATH unset", caseConfigUnset},
+		{"config: macos.toml below HOME", caseConfigHome},
 		{"config: an unknown flag, with the usage", caseUnknownFlag},
 		{"config: sync migrates an unknown tool in a [tools.<name>] table away", expect("unknown-tool", 0, "[tools.nope] removed: bootstrap no longer has the tool", nil)},
 		{"config: an [overrides.mise.<path>] that no selected tool has", expect("unknown-override", 2, "no selected tool has", nil)},
@@ -37,16 +36,16 @@ func TestMac(t *testing.T) {
 		{"config: a tools key that is a string, the old format", expect("tools-string", 2, "tools = [...] is the old format", nil)},
 		{"config: a tools item that is not a name, the old format", expect("tools-number", 2, "tools = [...] is the old format", nil)},
 		{"config: a tools list, the old format", expect("tools-list", 2, "tools = [...] is the old format", nil)},
-		{"config: an unknown top-level key", expect("bad-key", 2, "colour is not a key of config/macos.toml", nil)},
-		{"config: an [overrides.<tool>] table", expect("bad-override", 2, "[overrides.opt] in config/macos.toml is not valid - write [tools.<name>] for template values and [overrides.mise.<path>] for mise config", nil)},
+		{"config: an unknown top-level key", expect("bad-key", 2, "colour is not a key of xdg/config/bootstrap/macos.toml", nil)},
+		{"config: an [overrides.<tool>] table", expect("bad-override", 2, "[overrides.opt] in xdg/config/bootstrap/macos.toml is not valid - write [tools.<name>] for template values and [overrides.mise.<path>] for mise config", nil)},
 		{"config: a [tools.<name>] table with env", expect("env-opt", 2, "[tools.opt] env is for repo tools only", nil)},
-		{"config: an [overrides.mise_env.<env>.<path>] table", expect("override-env", 2, "[overrides.mise_env] in config/macos.toml: the Mac side has no environments", nil)},
+		{"config: an [overrides.mise_env.<env>.<path>] table", expect("override-env", 2, "[overrides.mise_env] in xdg/config/bootstrap/macos.toml: the Mac side has no environments", nil)},
 		{"config: a tool folder with no tools.toml", expect("ok", 2, "macos/tools/bad has no tools.toml", addBadTool)},
 		{"config: a repo with no macos/packs.toml", expect("ok", 3, "base is not a bootstrap pack (named in macos/packs.toml)", noPacks)},
 		{"config: a packs.toml with no [pack.base]", expect("ok", 3, "base is not a bootstrap pack (named in macos/packs.toml)", noBase)},
 		{"config: required = true in a pack other than base", expect("ok", 2, "macos/packs.toml: [pack.more] opt: required = true is only for a tool of pack base", packs("[pack.more]", "opt = { required = true }"))},
 		{"config: the old member key default", expect("ok", 2, "macos/packs.toml: [pack.more] opt has the entry key 'default', the old form - each member is a default: write opt = {}", packs("[pack.more]", "opt = { default = true }"))},
-		{"config: an unknown key in a tools.toml", expect("ok", 2, "macos/tools/opt/tools.toml: depend is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]", prepend("opt", `depend = [ "core" ]`))},
+		{"config: an unknown key in a tools.toml", expect("ok", 2, "macos/tools/opt/tools.toml: depend is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, runtime, [defaults], [questions], [contributes], [files], [tasks] and [mise]", prepend("opt", `depend = [ "core" ]`))},
 		{"config: a stage that is not init", expect("ok", 2, `macos/tools/opt/tools.toml: stage = "login" - the only stage is "init"`, prepend("opt", `stage = "login"`))},
 		{"config: the old stage = shell", expect("ok", 2, `macos/tools/opt/tools.toml: stage = "shell" is the old name - write stage = "init"`, prepend("opt", `stage = "shell"`))},
 		{"config: the old seed key", expect("ok", 2, `macos/tools/core/tools.toml: seed is the old key - write a [files."<target>"] table with mode = "seed"`, prepend("core", `seed = [ ".config/core/seeded.toml" ]`))},
@@ -103,7 +102,7 @@ func TestMac(t *testing.T) {
 		{"mise: the [mise.shell_alias] of macos.toml", caseMiseUser},
 		{"mise: an [overrides.mise.<path>] changes a key", caseMiseOverride},
 		{"mise: an override path that no selected tool has", expect("override-none", 2, "no selected tool has", nil)},
-		{"mise: an [overrides.gitignore] table", expect("override-gitignore", 2, "[overrides.gitignore] in config/macos.toml is not valid", nil)},
+		{"mise: an [overrides.gitignore] table", expect("override-gitignore", 2, "[overrides.gitignore] in xdg/config/bootstrap/macos.toml is not valid", nil)},
 		{"mise: a tool no longer selected loses its mise config", caseMiseDeselected},
 		{"blockers: a file with the header where a folder must be", caseBlockerHeader},
 		{"blockers: a file without the header where a folder must be", caseBlockerPlain},
@@ -116,6 +115,10 @@ func TestMac(t *testing.T) {
 		{"render: a seed", caseSeed},
 		{"render: a generated file overwritten", caseOverwrite},
 		{"context: .cli_dir and .env", caseContext},
+		{"backup: links the files into the clone", caseBackupLinks},
+		{"backup: a dry run shows the links", caseBackupDryRun},
+		{"backup: a conflict stops the sync", caseBackupConflict},
+		{"backup: a missing clone", caseBackupMissing},
 		{"symlinks: a link to a file", caseLinkFile},
 		{"symlinks: a symlinked folder", caseLinkFolder},
 		{"symlinks: a stale file through a link", caseLinkStale},
@@ -193,7 +196,8 @@ func TestMac(t *testing.T) {
 		{"init: a macos.toml with changes that are not committed", caseInitDirtyValues},
 		{"init: a new macos.toml", caseInitNew},
 		{"init: tool names", caseInitNames},
-		{"init: a folder that is not a git repository", caseInitNotGit},
+		{"init: from another git repository", caseInitOtherRepo},
+		{"init: --backup writes the key and links", caseInitBackup},
 		{"init: nothing to change", caseInitNothing},
 
 		{"entry clone: a first clone", caseEntryCloneFirst},
@@ -208,7 +212,6 @@ func TestMac(t *testing.T) {
 		{"entry engine: a VERSION that is not MAJOR.MINOR.PATCH", caseEntryBadVersion},
 		{"entry flags: an unknown flag directly", caseEntryUnknownFlag},
 		{"entry flags: --dry-run directly and under mise run", caseEntryMiseRun},
-		{"entry config: MACOS_SETUP_REPO_PATH unset", caseEntryConfigUnset},
 		{"entry: a nested run", caseEntryNested},
 		{"entry legacy: the old list moves, the old cache goes", caseEntryLegacyMove},
 		{"entry legacy: an existing manifest stays", caseEntryLegacyKeepManifest},

@@ -261,6 +261,17 @@ func (x *Index) macosRules(tool string) []*fail.Error {
 			}
 		case "summary", "category", "selectable":
 			// See catalogRules.
+		case "runtime":
+			l, ok := v.([]any)
+			if !ok {
+				bad("runtime must be a list of paths relative to $HOME")
+				break
+			}
+			for _, e := range l {
+				if p, ok := e.(string); !ok || !RuntimePathOK(p) {
+					bad("runtime has %s - each entry is a path relative to $HOME, with no ~, no .. and no / at the start or the end", JSON(e))
+				}
+			}
 		case "defaults":
 			if _, ok := v.(*Obj); !ok {
 				bad("[defaults] must be a table")
@@ -324,7 +335,7 @@ func (x *Index) macosRules(tool string) []*fail.Error {
 		case "default_envs", "root_only", "mise_env", "formatter", "hosts":
 			bad("%s is for repo tools only", k)
 		default:
-			bad("%s is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, [defaults], [questions], [contributes], [files], [tasks] and [mise]", k)
+			bad("%s is not a key of tools.toml - the keys are description, summary, category, selectable, stage, depends, parent, runtime, [defaults], [questions], [contributes], [files], [tasks] and [mise]", k)
 		}
 	}
 	return out
@@ -381,4 +392,18 @@ func QuestionTypes(q string, e *Obj) []string {
 		}
 	}
 	return out
+}
+
+// RuntimePathOK tells if <p> is a path of `runtime`: relative to $HOME, not
+// empty, with no ~, no . or .. part, and no / at the start or the end.
+func RuntimePathOK(p string) bool {
+	if p == "" || strings.HasPrefix(p, "/") || strings.HasSuffix(p, "/") || strings.HasPrefix(p, "~") {
+		return false
+	}
+	for _, part := range strings.Split(p, "/") {
+		if part == "" || part == "." || part == ".." {
+			return false
+		}
+	}
+	return true
 }

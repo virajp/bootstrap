@@ -110,7 +110,7 @@ python
 // resets them after the test, and points BOOTSTRAP_CONFIG at <config>.
 func setupEnv(t *testing.T, config string) {
 	t.Helper()
-	for _, v := range []string{"BOOTSTRAP_JOBS", "BOOTSTRAP_CACHE", "BOOTSTRAP_URL", "BOOTSTRAP_CLONE", "MACOS_SETUP_REPO_PATH", "BOOTSTRAP_VERBOSE"} {
+	for _, v := range []string{"BOOTSTRAP_JOBS", "BOOTSTRAP_CACHE", "BOOTSTRAP_URL", "BOOTSTRAP_CLONE", "BOOTSTRAP_VALUES", "BOOTSTRAP_VERBOSE"} {
 		t.Setenv(v, "")
 	}
 	t.Setenv("BOOTSTRAP_CONFIG", config)
@@ -162,7 +162,6 @@ func TestSettingsSources(t *testing.T) {
 		want(lines, "cache_dir", "/xc/bootstrap", "default")
 		want(lines, "url", core.DefaultURL, "default")
 		want(lines, "clone", "-", "default")
-		want(lines, "mac.repo_path", "-", "default")
 	})
 	t.Run("file", func(t *testing.T) {
 		setupEnv(t, file)
@@ -178,25 +177,22 @@ func TestSettingsSources(t *testing.T) {
 		setupEnv(t, file)
 		t.Setenv("BOOTSTRAP_JOBS", "abc")
 		t.Setenv("BOOTSTRAP_CACHE", "/c")
-		t.Setenv("MACOS_SETUP_REPO_PATH", "/r")
 		lines := configLines(t, "settings")
 		want(lines, "jobs", "abc", "variable BOOTSTRAP_JOBS")
 		want(lines, "cache_dir", "/c", "variable BOOTSTRAP_CACHE")
-		want(lines, "mac.repo_path", "/r", "variable MACOS_SETUP_REPO_PATH")
 	})
 	t.Run("flag", func(t *testing.T) {
 		setupEnv(t, "/nonexistent/bootstrap/config.toml")
 		t.Setenv("BOOTSTRAP_JOBS", "4")
 		t.Setenv("BOOTSTRAP_CACHE", "/c")
 		lines := configLines(t, "settings", "--config", file, "--jobs", "5", "--cache-dir=/f",
-			"--url", "/u", "--clone", "/k", "--repo-path", "/r")
+			"--url", "/u", "--clone", "/k")
 		want(lines, "file", file, "flag --config")
 		want(lines, "jobs", "5", "flag --jobs")
 		want(lines, "cache_dir", "/f", "flag --cache-dir")
 		want(lines, "url", "/u", "flag --url")
 		want(lines, "clone", "/k", "flag --clone")
-		want(lines, "mac.repo_path", "/r", "flag --repo-path")
-		if os.Getenv("BOOTSTRAP_CONFIG") != file || os.Getenv("BOOTSTRAP_JOBS") != "5" || os.Getenv("MACOS_SETUP_REPO_PATH") != "/r" {
+		if os.Getenv("BOOTSTRAP_CONFIG") != file || os.Getenv("BOOTSTRAP_JOBS") != "5" {
 			t.Error("a flag does not set its variable")
 		}
 	})
@@ -219,7 +215,7 @@ func TestConfigErrors(t *testing.T) {
 		{"config with an unknown subcommand", []string{"config", "list"}, "", "config has no subcommand list"},
 		{"format of config set", []string{"config", "set", "repo.repo_name", "x", "--format", "json"}, "", "config set has no flag --format"},
 		{"a bad format", []string{"config", "get", "repo.repo_name", "--format", "xml"}, "", "--format needs json, yaml or toml, not xml"},
-		{"repo-path of mac init, the alias of mac migrate", []string{"mac", "init", "--repo-path", "/r"}, "", "mac migrate has no flag --repo-path"},
+		{"repo-path of mac sync, a removed flag", []string{"mac", "sync", "--repo-path", "/r"}, "", "mac sync has no flag --repo-path"},
 		{"config of version", []string{"version", "--config", "/c"}, "", "version has no flag --config"},
 	}
 	for _, c := range cases {

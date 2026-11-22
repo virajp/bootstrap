@@ -236,7 +236,7 @@ func TestMacDetectAdd(t *testing.T) {
 	}
 	setupEnv(t, "/nonexistent/bootstrap/config.toml")
 	// The sync needs mise at ~/.local/bin/mise: the fake one is there.
-	clone, cfg, home := t.TempDir(), t.TempDir(), t.TempDir()
+	clone, cfg, home := t.TempDir(), filepath.Join(t.TempDir(), "bootstrap"), t.TempDir()
 	bin := filepath.Join(home, ".local", "bin")
 	writeFile(t, filepath.Join(clone, "cli", "VERSION"), "0.0.1\n", 0o644)
 	writeFile(t, filepath.Join(clone, "macos", "categories.toml"), catalogFile, 0o644)
@@ -261,7 +261,7 @@ func TestMacDetectAdd(t *testing.T) {
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(home, ".cache"))
-	t.Setenv("MACOS_SETUP_REPO_PATH", cfg)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Dir(cfg))
 	t.Chdir(cfg)
 	t.Setenv("PWD", cfg)
 	run := func(args ...string) (fail.Code, string, string) {
