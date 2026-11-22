@@ -32,9 +32,8 @@ The migration is a one-time job. After the migration, use
 | A scratch folder  | `mktemp -d` gives an empty folder. The doc calls it `<scratch>`.                         |
 
 This guide is for a Mac that has mise and the clone. A new Mac has no
-`dotfiles/` model to move. It uses a parked step: the change of the `setup`
-script of `macos-setup` (install mise and `bootstrap`, then the Mac sync). That
-change has not landed.
+`dotfiles/` model to move. It uses the script `macos/setup` of bootstrap
+instead: see [mac.md](../design/mac.md#the-entry-tasks).
 
 ## The sync command
 
