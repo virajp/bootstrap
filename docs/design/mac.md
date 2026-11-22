@@ -402,7 +402,8 @@ so a `git switch` changes the live files of the Mac at once, for example
 `~/.config/mise`, `~/.config/git` and `~/.ssh/config.identity`. A branch with
 an old or a broken file can then stop git and ssh. Make each change in a git
 worktree with its own branch (`git worktree add`), commit it there, land it
-with `git:merge:<branch>` from the main checkout, then remove the worktree.
+with `git:merge:<branch>` in the worktree (the task merges in the main
+checkout), then remove the worktree.
 
 ## The manifest
 
