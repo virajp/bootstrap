@@ -34,11 +34,6 @@ const msgOldForm = ".config/bootstrap.toml is the old form of the values of the 
 // msgMigrateFirst is the line of a sync that runs migrate first.
 const msgMigrateFirst = "bootstrap migrate has a change to make: it runs before the sync"
 
-func oldFiles(c *rc.Case) {
-	writeLines(c, c.Path(".config/repo-sync/pre-commit.yaml"), "repos:", "  - repo: https://example.com/own-hooks",
-		"    rev: v1", "    hooks:", "      - id: own")
-}
-
 // step is one command of the engine. The output of a quiet step is lost.
 type step struct {
 	args  []string
@@ -90,7 +85,6 @@ func initNew(c *rc.Case) int {
 func checkValuesUnchanged(c *rc.Case) {
 	c.CheckThat("the old form stays", reIn(c.OldFile, "^commit_scopes"))
 	c.CheckThat("no values folder", !exists(c.RepoValues))
-	c.CheckThat("the old hook file stays", exists(c.Path(".config/repo-sync/pre-commit.yaml")))
 }
 
 func checkInitMigrated(c *rc.Case) {
@@ -108,8 +102,6 @@ func checkInitMigrated(c *rc.Case) {
 	c.CheckThat("init: the remove line of .gitignore", c.TomlQ(`.tools.git.files[".gitignore"]["*.log"]["$mode"] == "remove"`, ""))
 	c.CheckThat("init: the add line in .gitignore", lineIn(c.Path(".gitignore"), "docs/prompts/"))
 	c.CheckThat("init: the extension", rc.FileHas(c.Path(".vscode/extensions.json"), `"foo.bar"`))
-	c.CheckThat("init: the own hook", rc.FileHas(c.Path(".config/pre-commit-config.yaml"), "https://example.com/own-hooks"))
-	c.CheckThat("init: the old hook file is gone", !exists(c.Path(".config/repo-sync/pre-commit.yaml")))
 	c.CheckThat("init: bootstrap_commit", reIn(rv, `^bootstrap_commit = "[0-9a-f]{40}"`))
 	c.CheckThat("init: the manifest in the folder", isFile(filepath.Join(c.Values, "repo-generated.tsv")))
 	c.CheckThat("init: the sync after init", c.LogHas("Synced: "))
@@ -120,25 +112,24 @@ func checkInitMigrated(c *rc.Case) {
 
 func TestMigrateOldForm(t *testing.T) {
 	rc.Run(t, rc.Spec{Name: "init migrates the old form, then sync runs", NoFormat: true, Values: oldValues,
-		Change: oldFiles, Call: engineSeq(run("migrate", "--yes"), run("sync")), Check: checkInitMigrated})
+		Call: engineSeq(run("migrate", "--yes"), run("sync")), Check: checkInitMigrated})
 	rc.Run(t, rc.Spec{Name: "init without --yes and without a terminal", Code: 2, NoFormat: true, Values: oldValues,
-		Change: oldFiles, Call: engineSeq(run("migrate")), Message: "changes need --yes", Check: checkValuesUnchanged})
-	rc.Run(t, rc.Spec{Name: "init --dry-run", NoFormat: true, Values: oldValues, Change: oldFiles,
+		Call: engineSeq(run("migrate")), Message: "changes need --yes", Check: checkValuesUnchanged})
+	rc.Run(t, rc.Spec{Name: "init --dry-run", NoFormat: true, Values: oldValues,
 		Call: engineSeq(run("migrate", "--dry-run")), Message: "changes, nothing written", Check: func(c *rc.Case) {
 			checkValuesUnchanged(c)
 			c.CheckThat("init --dry-run: the values file in the list", reIn(c.Log, `consumer/\.config/bootstrap\.toml +moved to \.config/bootstrap/`))
-			c.CheckThat("init --dry-run: the old hook file in the list", reIn(c.Log, `consumer/\.config/repo-sync/pre-commit\.yaml +its hooks move`))
 		}})
 	rc.Run(t, rc.Spec{Name: "sync on the old form: migrate first", NoFormat: true, Values: oldValues,
-		Change: oldFiles, Call: syncOldForm, Message: msgMigrateFirst, Check: checkInitMigrated})
+		Call: syncOldForm, Message: msgMigrateFirst, Check: checkInitMigrated})
 	rc.Run(t, rc.Spec{Name: "check on the old form: run bootstrap migrate", Code: 2, NoFormat: true, Values: oldValues,
-		Change: oldFiles, Call: checkOldForm, Message: msgOldForm, Check: checkValuesUnchanged})
+		Call: checkOldForm, Message: msgOldForm, Check: checkValuesUnchanged})
 	rc.Run(t, rc.Spec{Name: "sync on the old form with format = 2: migrate first", OldValues: true,
 		Values: devValues, Call: syncOldForm, Message: msgMigrateFirst})
 	rc.Run(t, rc.Spec{Name: "check on the old form with format = 2: run bootstrap migrate", Code: 2, OldValues: true,
 		Values: devValues, Call: checkOldForm, Message: msgOldForm})
 	rc.Run(t, rc.Spec{Name: "init stops on a values file with changes that are not committed", Code: 2, NoFormat: true,
-		Values: oldValues, Change: oldFiles, Call: func(c *rc.Case) int {
+		Values: oldValues, Call: func(c *rc.Case) int {
 			appendLines(c, c.OldFile, "# a change that is not committed")
 			return c.Engine("migrate", "--yes")
 		}, Message: ".config/bootstrap.toml has changes that are not committed", Check: checkValuesUnchanged})

@@ -244,7 +244,7 @@ func tablesOf(raw *source.Obj, shown string, side source.Side, idx *source.Index
 	if tools != nil {
 		var gone []string
 		for _, t := range tools.Keys() {
-			if idx.Manifests[t] == nil && t != OldRepoTool && t != OldMacTool {
+			if idx.Manifests[t] == nil && t != OldMacTool {
 				exprs = append(exprs, "del(.tools["+q(t)+"])")
 				gone = append(gone, "[tools."+t+"]")
 			}
