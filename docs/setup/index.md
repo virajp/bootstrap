@@ -138,11 +138,13 @@ Examine each item, in this sequence. If an item fails, tell the owner, and stop.
    git clone --quiet --filter=blob:none https://github.com/virajp/bootstrap.git "$tmp"
    ```
 
-A new Mac with no mise and no clone cannot pass these items. It uses the parked
-change of the `setup` script of `macos-setup`: the script installs mise and
-`bootstrap`, then runs the Mac sync. If the `setup` script of the clone does not
-have this change, it installs the old `dotfiles/` model. Do not run it. Tell the
-owner that this step is parked, and stop.
+A new Mac with no mise and no clone cannot pass these items. Tell the owner to
+run the script `macos/setup` of bootstrap in a terminal, then stop. See
+[mac.md](../design/mac.md#the-entry-tasks) for its steps:
+
+```shell
+BACKUP_REPO= < owner > / < repo > curl -fsSL https://raw.githubusercontent.com/virajp/bootstrap/main/macos/setup | sh
+```
 
 ## Which path
 

@@ -95,12 +95,36 @@ fail the sync.
 message and stops at once with exit 4. It runs its other upgrade steps only when
 `updateall:configs` returns 0.
 
-A new Mac has no mise and no clone. The `setup` script of the user's
-`macos-setup` repository installs mise and `bootstrap`
-(`mise use -g github:virajp/bootstrap`). Then `bootstrap mac migrate` does the
-first setup, and after a new terminal, `bootstrap mac sync` writes the rest.
+A new Mac has no mise and no clone. The script `macos/setup` of bootstrap
+prepares it:
+
+```shell
+BACKUP_REPO= < owner > / < repo > curl -fsSL https://raw.githubusercontent.com/virajp/bootstrap/main/macos/setup | sh
+```
+
+1. It installs Homebrew (with the Xcode Command Line Tools and git) and the
+   standalone mise, each only when it is missing.
+2. It reads the backup repository from `BACKUP_REPO`, else it asks for it.
+   The clone goes to `${PROJECTS_DIR:-~/Projects}/github.com/<owner>/<repo>`.
+3. When gh has no login, it runs `gh auth login` through `mise x`. It clones
+   the private repository with the token of gh for that one clone, and sets
+   the remote to the ssh URL. The token is not written to the clone.
+4. When the clone has `dotfiles/.config/bootstrap/macos.toml`, it links
+   `~/.config/bootstrap` to that folder and runs `bootstrap mac migrate`. The
+   file already has `backup`. Else it runs
+   `bootstrap mac migrate --backup <clone>`, which writes a new `macos.toml`
+   and asks the questions in the terminal. It stops with code 2 when
+   `~/.config/bootstrap` exists and is not that link.
+5. It runs the engine with `mise x github:virajp/bootstrap@latest --`, so no
+   mise config is written before the backup step makes the link
+   `~/.config/mise`.
+6. On exit 4 of the first setup, it tells the owner to open a new terminal and
+   run `mise run updateall`, then parks the old terminal.
+
 After that, the Mac tool `mise` keeps `bootstrap` as a mise tool, and the
-version check applies.
+version check applies. A Mac with configs of its own, or with the old
+`dotfiles/` links, is not a new Mac: [the adoption
+prompt](../setup/index.md) handles it.
 
 ## mise
 

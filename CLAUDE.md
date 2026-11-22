@@ -55,6 +55,8 @@ files are for this repository only:
 - `.config/mise/tasks/vorssaint/diff.py`: the task `vorssaint:diff`. It compares
   a Vorssaint backup file with the defaults of `macos/tools/vorssaint/`, and
   exits 1 when a key differs or is missing.
+- `macos/setup`: the bash script that prepares a new Mac, which the owner runs
+  with `curl … | sh`. See `docs/design/mac.md` ("The entry tasks").
 - `macos/fixtures/`: the fixtures of `e2e/mac`.
 - `macos/examples/macos.toml`: the sample values file of the Mac side, and the
   model of `e2e/macostools`. A change to a Mac tool also changes this file

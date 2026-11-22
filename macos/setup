@@ -1,0 +1,131 @@
+#!/bin/bash
+##############################################################################
+# The setup of a new Mac with the Mac sync of bootstrap.
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/virajp/bootstrap/main/macos/setup | sh
+#   BACKUP_REPO=<owner>/<repo> curl -fsSL … | sh
+#
+# Variables:
+#   BACKUP_REPO   The private GitHub repository of the backup clone, as
+#                 <owner>/<repo>. Without it, the script asks for it.
+#   PROJECTS_DIR  The projects folder (default ~/Projects). The clone goes to
+#                 ${PROJECTS_DIR}/github.com/<owner>/<repo>.
+#
+# Steps:
+#   1. Install Homebrew when it is missing. This also installs the Xcode
+#      Command Line Tools, which have git.
+#   2. Install the standalone mise at ~/.local/bin/mise when it is missing.
+#   3. Log in to GitHub with gh when gh has no login.
+#   4. Clone the backup repository when the clone is missing. The token of gh
+#      goes to this one clone only, and the remote is the ssh URL.
+#   5. If the clone has dotfiles/.config/bootstrap/macos.toml, link
+#      ~/.config/bootstrap to that folder and run `bootstrap mac migrate`.
+#      Else run `bootstrap mac migrate --backup <clone>`, which writes a new
+#      macos.toml and asks the questions.
+#   6. `bootstrap mac migrate` makes the links into the clone and does the
+#      first setup. It ends with exit 4: open a new terminal, then run
+#      `mise run updateall`.
+#
+# The script is one function that the last line calls, so the shell reads the
+# whole file before a command runs. This is necessary for `curl | sh`: the
+# shell reads the script from stdin, and a command that reads stdin (the
+# Homebrew installer, sudo, gh) would get the rest of the script.
+# /bin/bash runs it, because a new Mac always has it.
+##############################################################################
+
+set -euo pipefail
+
+main() {
+  local projects_dir="${PROJECTS_DIR:-${HOME}/Projects}"
+  local repo="${BACKUP_REPO:-}"
+  local mise="${HOME}/.local/bin/mise"
+
+  # Give stdin back to the terminal, so each prompt works under `curl | sh`.
+  if [[ ! -t 0 ]] && { : < /dev/tty; } 2> /dev/null; then
+    exec < /dev/tty
+  fi
+
+  if [[ -z "${repo}" ]]; then
+    read -r -p "The backup repository (<owner>/<repo>, for example virajp/macos-setup): " repo
+  fi
+  if [[ ! "${repo}" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+    echo "error: the backup repository must be <owner>/<repo>, not '${repo}'" >&2
+    return 2
+  fi
+  local clone="${projects_dir}/github.com/${repo}"
+
+  if ! command -v brew > /dev/null 2>&1 && [[ ! -x /opt/homebrew/bin/brew ]]; then
+    echo "Installing Homebrew ..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+
+  if [[ ! -x "${mise}" ]]; then
+    echo "Installing mise ..."
+    curl -fsSL https://mise.run | sh
+  fi
+  export PATH="${HOME}/.local/bin:${PATH}"
+
+  if ! mise x gh@latest -- gh auth status > /dev/null 2>&1; then
+    echo "Logging in to GitHub ..."
+    mise x gh@latest -- gh auth login --hostname github.com --web --git-protocol ssh --skip-ssh-key
+  fi
+
+  if [[ ! -d "${clone}" ]]; then
+    echo "Cloning ${repo} into ${clone} ..."
+    mkdir -p "$(dirname "${clone}")"
+    local token
+    token="$(mise x gh@latest -- gh auth token)"
+    # shellcheck disable=SC2016 # the helper reads CLONE_TOKEN when git runs it
+    CLONE_TOKEN="${token}" git \
+      -c credential.helper= \
+      -c 'credential.helper=!f() { echo username=x-access-token; echo "password=${CLONE_TOKEN}"; }; f' \
+      clone "https://github.com/${repo}.git" "${clone}"
+    git -C "${clone}" remote set-url origin "git@github.com:${repo}.git"
+  elif ! git -C "${clone}" rev-parse --git-dir > /dev/null 2>&1; then
+    echo "error: ${clone} exists and is not a git repository" >&2
+    return 2
+  fi
+
+  local values="${clone}/dotfiles/.config/bootstrap"
+  local link="${HOME}/.config/bootstrap"
+  local args=()
+  if [[ -f "${values}/macos.toml" ]]; then
+    if [[ -L "${link}" && "$(readlink "${link}")" == "${values}" ]]; then
+      :
+    elif [[ -e "${link}" || -L "${link}" ]]; then
+      echo "error: ${link} exists: move it away, then run the setup again" >&2
+      return 2
+    else
+      echo "Linking ${link} to ${values} ..."
+      mkdir -p "${HOME}/.config"
+      ln -s "${values}" "${link}"
+    fi
+  else
+    args=(--backup "${clone}")
+  fi
+
+  echo "Running bootstrap mac migrate ..."
+  cd "${HOME}"
+  local rc=0
+  mise x github:virajp/bootstrap@latest -- bootstrap mac migrate "${args[@]+"${args[@]}"}" || rc=$?
+  if [[ ${rc} -ne 4 ]]; then
+    if [[ ${rc} -eq 0 ]]; then
+      echo "The first setup did not run: this Mac already has a sync. Run: mise run updateall"
+    fi
+    return "${rc}"
+  fi
+
+  echo ""
+  echo "The first setup is done. Next:"
+  echo "  1. Close this terminal and open a new one (the login shell changed)."
+  echo "  2. Run: mise run updateall"
+  echo "  3. Examine the changes in ${clone} with git status, then commit them."
+  echo ""
+  echo "WARNING: do not use this terminal any more. It has the old login shell and PATH."
+  while :; do sleep 3600; done
+}
+
+main "$@"
+exit "$?"
