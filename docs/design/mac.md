@@ -396,6 +396,14 @@ dry run compares the targets at their place of today. A real run shows
 A link stays when its tool is no longer selected: the files in the clone are
 the user's backup. bootstrap never commits and never runs git in the clone.
 
+Keep the main checkout of the backup clone on its default branch. Do not
+create a branch in it and do not switch it. `$HOME` links into this checkout,
+so a `git switch` changes the live files of the Mac at once, for example
+`~/.config/mise`, `~/.config/git` and `~/.ssh/config.identity`. A branch with
+an old or a broken file can then stop git and ssh. Make each change in a git
+worktree with its own branch (`git worktree add`), commit it there, land it
+with `git:merge:<branch>` from the main checkout, then remove the worktree.
+
 ## The manifest
 
 The manifest is `macos-generated.tsv` of the cache. It is outside the clone, so
