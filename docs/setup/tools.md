@@ -486,6 +486,8 @@ aliases.
 - **Depends:** `git`
 - **Files:**
   - `~/.config/gh/config.yml` — merge
+- **Runtime:** `~/.config/gh/hosts.yml`. Thus the backup clone links
+  `config.yml`, not `~/.config/gh`.
 - **Mise sections:** `[mise.bootstrap.packages]`
 - **Question `editor`:**
   [`macos/tools/gh/tools.toml`](../../macos/tools/gh/tools.toml)

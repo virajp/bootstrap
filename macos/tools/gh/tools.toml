@@ -4,6 +4,9 @@
 category = "dev"
 depends = [ "git" ]
 description = "the GitHub CLI (gh) and its config: ssh as git protocol, the editor, the aliases"
+# gh writes the hosts of its login here, so the backup clone links config.yml,
+# not ~/.config/gh.
+runtime = [ ".config/gh/hosts.yml" ]
 summary = "The GitHub CLI and its config"
 
 [questions.editor]
