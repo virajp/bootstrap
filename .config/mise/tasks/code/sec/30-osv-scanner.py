@@ -13,7 +13,6 @@
 
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -24,25 +23,14 @@ sys.path.insert(0, f"{os.environ['MISE_PROJECT_ROOT']}/.config/mise/tasks/_scrip
 import helpers  # noqa: E402
 
 
-def submodules(root):
-  """The path of each submodule of root, nested ones included."""
-  try:
-    result = subprocess.run(
-      ["git", "-C", root, "submodule", "--quiet", "foreach", "--recursive", "echo $displaypath"],
-      stdout=subprocess.PIPE,
-      stderr=subprocess.DEVNULL,
-      text=True,
-      check=False,
-    )
-  except OSError:
-    return []
-  return [line for line in result.stdout.split("\n") if line]
+def tracked_files(root):
+  """The path of each file that git tracks in root, relative to root.
 
-
-def aube_lockfiles(root):
-  """The path of each aube-lock.yaml that git tracks in root, submodules excluded."""
+  git does not list the files of a submodule, so a submodule is not in the
+  list: it is a separate repository with its own `code:sec`.
+  """
   result = subprocess.run(
-    ["git", "-C", root, "-c", "core.quotePath=off", "ls-files", "-z", "--", "aube-lock.yaml", "*/aube-lock.yaml"],
+    ["git", "-C", root, "-c", "core.quotePath=off", "ls-files", "-z"],
     stdout=subprocess.PIPE,
     text=True,
     errors="surrogateescape",
@@ -50,7 +38,7 @@ def aube_lockfiles(root):
   )
   if result.returncode != 0:
     sys.exit(result.returncode)
-  return sorted(f"{root}/{path}" for path in result.stdout.split("\0") if path)
+  return [path for path in result.stdout.split("\0") if path]
 
 
 def compose_images(root, docker):
@@ -102,20 +90,22 @@ def main():
     return 0
 
   root = os.environ["MISE_PROJECT_ROOT"]
-  # A git submodule is a separate repository with its own `code:sec`. Thus
-  # osv-scanner skips each submodule here, nested ones included.
-  excludes = []
-  for submodule in submodules(root):
-    # osv-scanner matches the regex against the full path of each directory.
-    escaped = re.sub(r"[][\\.*^$()+?{}|]", lambda m: "\\" + m.group(0), submodule)
-    excludes += ["--x-exclude", f"r:(^|/){escaped}$"]
+  files = tracked_files(root)
+  # osv-scanner applies each .gitignore above the repository too (osv-scanner
+  # issue 209). In a worktree below an ignored folder, for example .worktrees/,
+  # a recursive scan thus finds nothing. So git decides the files: the task
+  # gives each folder with a tracked file, without --recursive, and
+  # --no-ignore stops the .gitignore check of osv-scanner. The paths are
+  # relative to the root, so a large tree fits on the command line.
+  folders = sorted({os.path.dirname(path) or "." for path in files})
 
   # osv-scanner has no parser of its own for aube-lock.yaml. The file has the
   # format of pnpm-lock.yaml, so the pnpm parser reads it. A later aube format
   # that the parser cannot read stops the scan with an error.
   lockfiles = []
-  for path in aube_lockfiles(root):
-    lockfiles += ["--lockfile", f"pnpm-lock.yaml:{path}"]
+  for path in files:
+    if os.path.basename(path) == "aube-lock.yaml":
+      lockfiles += ["--lockfile", f"pnpm-lock.yaml:{path}"]
 
   config = f"{root}/.config/osv-scanner.toml"
   verbosity = "info" if os.environ.get("usage_debug", "false") == "true" else "warn"
@@ -126,15 +116,16 @@ def main():
     "osv-scanner",
     "scan",
     "source",
-    "--recursive",
     "--allow-no-lockfiles",
-    *excludes,
+    "--no-ignore",
     *lockfiles,
     "--config",
     config,
     "--verbosity",
     verbosity,
-    root,
+    "--",
+    *(folders or ["."]),
+    cwd=root,
   )
   code = result.returncode
 
