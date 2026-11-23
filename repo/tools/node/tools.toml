@@ -7,6 +7,12 @@ description = "The Node.js runtime. A repository with a package.json also select
 root_only = false
 summary = "The Node.js runtime"
 
+# The audit of the dependencies. "osv-scanner" (the default): the
+# code:sec:30-osv-scanner task of the base pack scans the lockfiles.
+# "package-manager" runs the audit of pnpm or aube in setup:deps too.
+[defaults]
+audit = "osv-scanner"
+
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]
 extensions = [ "christian-kohler.npm-intellisense", "meganrogge.template-string-converter" ]

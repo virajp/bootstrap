@@ -1748,3 +1748,28 @@ files, not their folders. See `docs/design/mac.md` ("The place of
 7. In the clone, examine `git status`, and commit the moved files, the removal
    of the old `macos.toml` at the root and
    `dotfiles/.config/bootstrap/macos.toml`.
+
+## M57: osv-scanner is the default audit of the dependencies
+
+`setup:deps:40-node` no longer runs `pnpm audit` or `aube audit`, and
+`setup:deps:25-go` no longer runs `govulncheck`. `code:sec:30-osv-scanner` of
+the `base` pack scans the lockfiles instead: it also reads `aube-lock.yaml`,
+with the pnpm parser. The new value `audit` of `[tools.node]` and `[tools.go]`
+keeps the old audit: `"package-manager"` for `node`, `"govulncheck"` for `go`.
+The task also scans the images of `.tools/docker-compose.yaml` and of the new
+value `images` of `[tools.osv-scanner]`, and an image that it cannot scan fails
+it. See `docs/sync/tools/osv-scanner.md`.
+
+1. Find the audit exceptions of the repository: `audit.ignore` (or
+   `auditConfig.ignoreGhsas`) of `pnpm-workspace.yaml` or
+   `aube-workspace.yaml`. For each one, add an `[[IgnoredVulns]]` entry with
+   `id`, `reason` and, when it has an end, `ignoreUntil` to
+   `.config/osv-scanner.toml`. Remove the old entry.
+2. If the repository must keep its old audit, set `audit = "package-manager"`
+   in `[tools.node]` or `audit = "govulncheck"` in `[tools.go]` of
+   `.config/bootstrap/tools.toml`. Keep the old exceptions for that audit.
+3. If the repository builds container images, list them in `images` of
+   `[tools.osv-scanner]`: an image name, or the path of an image archive.
+4. Run `mise run setup:configs`, then `mise run code:sec`. Add an
+   `[[IgnoredVulns]]` entry, with a reason, for each finding that the
+   repository accepts. Fix each other finding.

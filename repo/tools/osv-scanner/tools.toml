@@ -1,10 +1,17 @@
-# osv-scanner: the dependency scanner, and code:sec:30-osv-scanner.
+# osv-scanner: the dependency and image scanner, and code:sec:30-osv-scanner.
 category = "security"
 default_envs = [ "dev", "ci" ]
 depends = [ "_security_base" ]
-description = "osv-scanner examines the dependencies against the OSV vulnerability database. It adds the code:sec:30-osv-scanner task."
+description = "osv-scanner examines the dependencies and the container images against the OSV vulnerability database. It adds the code:sec:30-osv-scanner task."
 root_only = false
-summary = "Scans the dependencies with the OSV database"
+summary = "Scans dependencies and images with OSV"
+
+# The container images that the repository builds, for code:sec:30-osv-scanner:
+# an image name, for example "app:dev", or the path of an image archive from
+# the root, for example "dist/app.tar". The task also scans the images of the
+# services of .tools/docker-compose.yaml.
+[defaults]
+images = []
 
 # The mise config, generated into .config/mise/conf.d/osv-scanner/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.
