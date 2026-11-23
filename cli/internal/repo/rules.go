@@ -2,6 +2,7 @@ package repo
 
 import (
 	"os"
+	"slices"
 	"sort"
 	"strings"
 
@@ -313,17 +314,9 @@ func (s *state) coreTools() {
 // submodules from `git submodule --quiet foreach --recursive 'echo
 // $displaypath'`, which finds only the initialized ones.
 func (s *state) submodules() string {
-	index, ok := git(s.root, "ls-files", "-z", "--stage")
-	if !ok {
-		return ""
-	}
 	nested, _ := git(s.root, "submodule", "--quiet", "foreach", "--recursive", "echo $displaypath")
 	var out []string
-	for _, entry := range strings.Split(index, "\x00") {
-		meta, path, found := strings.Cut(entry, "\t")
-		if !found || !strings.HasPrefix(meta, "160000 ") {
-			continue
-		}
+	for _, path := range s.gitlinks() {
 		out = append(out, path)
 		for _, n := range bashLines(nested) {
 			if strings.HasPrefix(n, path+"/") {
@@ -332,6 +325,114 @@ func (s *state) submodules() string {
 		}
 	}
 	return strings.Join(out, "\n")
+}
+
+// gitlinks gives the paths of the gitlinks of the index of the root (`git
+// ls-files --stage`, mode 160000), in the order of the index.
+func (s *state) gitlinks() []string {
+	index, ok := git(s.root, "ls-files", "-z", "--stage")
+	if !ok {
+		return nil
+	}
+	var out []string
+	for _, entry := range strings.Split(index, "\x00") {
+		meta, path, found := strings.Cut(entry, "\t")
+		if found && strings.HasPrefix(meta, "160000 ") {
+			out = append(out, path)
+		}
+	}
+	return out
+}
+
+// gitmodule is one `[submodule "<name>"]` section of .gitmodules.
+type gitmodule struct{ name, path, url string }
+
+// configSubmodules reads the `submodule.<name>.<key>` values of `git config
+// <args>` into sections, in the order of the file.
+func (s *state) configSubmodules(args ...string) []gitmodule {
+	out, _ := git(s.root, append([]string{"config", "-z"}, append(args, "--get-regexp", `^submodule\.`)...)...)
+	var list []gitmodule
+	at := map[string]int{}
+	for _, entry := range strings.Split(out, "\x00") {
+		key, value, _ := strings.Cut(entry, "\n")
+		rest, ok := strings.CutPrefix(key, "submodule.")
+		dot := strings.LastIndex(rest, ".")
+		if !ok || dot < 0 {
+			continue
+		}
+		name, field := rest[:dot], rest[dot+1:]
+		i, seen := at[name]
+		if !seen {
+			i = len(list)
+			at[name] = i
+			list = append(list, gitmodule{name: name})
+		}
+		switch field {
+		case "path":
+			list[i].path = value
+		case "url":
+			list[i].url = value
+		}
+	}
+	return list
+}
+
+// checkSubmodules examines the git submodules of the root: each gitlink of
+// the index has an entry in .gitmodules, each entry has a gitlink, a url and
+// a path that is its name, and the url of an initialized submodule in
+// .git/config is the url of .gitmodules. A relative url of .gitmodules is
+// not compared, because git makes it absolute at the init. A submodule that
+// is not initialized is valid. <name> starts each message. It gives 2, after
+// a message for each problem, when a submodule breaks a rule.
+func (s *state) checkSubmodules(name string) fail.Code {
+	links := s.gitlinks()
+	var modules []gitmodule
+	if isFile(s.root + "/.gitmodules") {
+		modules = s.configSubmodules("-f", ".gitmodules")
+	}
+	if len(links) == 0 && len(modules) == 0 {
+		return fail.OK
+	}
+	code := fail.OK
+	bad := func(text string) {
+		s.log(name + ": " + text)
+		code = fail.Usage
+	}
+	paths := map[string]bool{}
+	for _, m := range modules {
+		paths[m.path] = true
+	}
+	for _, link := range links {
+		if !paths[link] {
+			bad("the submodule " + link + " is not in .gitmodules - add it with git submodule add, or remove the gitlink with git rm --cached " + link)
+		}
+	}
+	local := map[string]string{}
+	for _, m := range s.configSubmodules("--local") {
+		local[m.name] = m.url
+	}
+	for _, m := range modules {
+		switch {
+		case m.path == "":
+			bad("the submodule '" + m.name + "' of .gitmodules has no path - add the path, or remove the entry")
+			continue
+		case !slices.Contains(links, m.path):
+			bad("the submodule '" + m.name + "' of .gitmodules has the path " + m.path + ", but the index has no submodule there - add it with git submodule add, or remove the entry")
+			continue
+		}
+		if m.name != m.path {
+			bad("the submodule '" + m.name + "' of .gitmodules has the path " + m.path + " - the name and the path of a submodule must be the same")
+		}
+		if m.url == "" {
+			bad("the submodule '" + m.name + "' of .gitmodules has no url - add the url")
+			continue
+		}
+		relative := strings.HasPrefix(m.url, "./") || strings.HasPrefix(m.url, "../")
+		if u, ok := local[m.name]; ok && !relative && u != m.url {
+			bad("the submodule '" + m.name + "' has the url " + u + " in .git/config, but " + m.url + " in .gitmodules - run git submodule sync")
+		}
+	}
+	return code
 }
 
 // lineIn is `grep -qxF -- <s> <<< <list>`.
@@ -363,6 +464,9 @@ func (s *state) memberURL(name string) string {
 // whose folder is not there is left out, after an info line. <name> starts
 // each message. It gives 2, after a message, when a member breaks a rule.
 func (s *state) members(name string) ([]member, fail.Code) {
+	if code := s.checkSubmodules(name); code != fail.OK {
+		return nil, code
+	}
 	submodules := ""
 	if isFile(s.root + "/.gitmodules") {
 		submodules = s.submodules()
