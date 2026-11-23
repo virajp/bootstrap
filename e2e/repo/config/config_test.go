@@ -454,6 +454,14 @@ func addSubmodule(c *rc.Case, path string) {
 // consumerWithSubmodule: a git submodule `sub` in the consumer.
 func consumerWithSubmodule(c *rc.Case) { addSubmodule(c, "sub") }
 
+// consumerUninitSubmodule: a git submodule `sub` that is not initialized, as
+// in a new worktree: .gitmodules and the gitlink are there, the folder is
+// empty.
+func consumerUninitSubmodule(c *rc.Case) {
+	addSubmodule(c, "sub")
+	harness.Git(c.T, c.Consumer, "submodule", "--quiet", "deinit", "--force", "--", "sub")
+}
+
 // subRepoName: the member names. A submodule without a table gets the
 // repo_name of its own values file, else its path with each `/` changed to
 // `_`.
@@ -599,6 +607,12 @@ type = "repo"`, Change: memberFolder, Message: "has the type 'repo'"})
 	check(t, rc.Spec{Name: "--check, [members.sub], type folder on a submodule", Code: 2, Values: `environments = [ "dev" ]
 [members.sub]
 type = "folder"`, Change: consumerWithSubmodule, Message: "has type folder, but sub is a submodule"})
+	check(t, rc.Spec{Name: "--check, [members.sub], a submodule that is not initialized", Values: `environments = [ "dev" ]
+[members.sub]
+type = "submodule"`, Change: consumerUninitSubmodule, Message: checkValid})
+	check(t, rc.Spec{Name: "--check, [members.sub], type folder on a submodule that is not initialized", Code: 2, Values: `environments = [ "dev" ]
+[members.sub]
+type = "folder"`, Change: consumerUninitSubmodule, Message: "has type folder, but sub is a submodule"})
 	check(t, rc.Spec{Name: "--check, [members.web], type submodule without a submodule", Code: 2, Values: `environments = [ "dev" ]
 [members.web]
 folder = "projects/web"

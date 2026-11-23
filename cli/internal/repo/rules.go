@@ -306,14 +306,32 @@ func (s *state) coreTools() {
 	}
 }
 
-// submodules is `git -C <root> submodule --quiet foreach --recursive 'echo
-// $displaypath'`: the paths of the git submodules, one per line.
+// submodules gives the paths of the git submodules, one per line. The
+// submodules of the root are the gitlinks of its index (`git ls-files
+// --stage`, mode 160000), so a submodule that is not initialized, as in a
+// new worktree, is also in the list. After each one come its nested
+// submodules from `git submodule --quiet foreach --recursive 'echo
+// $displaypath'`, which finds only the initialized ones.
 func (s *state) submodules() string {
-	out, ok := git(s.root, "submodule", "--quiet", "foreach", "--recursive", "echo $displaypath")
+	index, ok := git(s.root, "ls-files", "-z", "--stage")
 	if !ok {
 		return ""
 	}
-	return out
+	nested, _ := git(s.root, "submodule", "--quiet", "foreach", "--recursive", "echo $displaypath")
+	var out []string
+	for _, entry := range strings.Split(index, "\x00") {
+		meta, path, found := strings.Cut(entry, "\t")
+		if !found || !strings.HasPrefix(meta, "160000 ") {
+			continue
+		}
+		out = append(out, path)
+		for _, n := range bashLines(nested) {
+			if strings.HasPrefix(n, path+"/") {
+				out = append(out, n)
+			}
+		}
+	}
+	return strings.Join(out, "\n")
 }
 
 // lineIn is `grep -qxF -- <s> <<< <list>`.

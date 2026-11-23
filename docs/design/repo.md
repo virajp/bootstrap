@@ -137,6 +137,10 @@ next to it. The keys are in
 [`[members.<name>]`](bootstrap-config.md#membersname). No bootstrap file reads
 a vwf file for the members.
 
+The git submodules of the root are the gitlinks of its index. Thus a submodule
+that is not initialized, for example in a new git worktree, is also a
+submodule. A nested submodule is found only when its parent is initialized.
+
 - The member flags (`--all`, `--<name>`) of `setup` and `setup:configs` are
   only for the submodule and sibling members that have a `[members.<name>]`
   table. A folder member is part of the root tree. `code:format` and
@@ -179,7 +183,7 @@ names are in [bootstrap-config.md](bootstrap-config.md#reserved-names).
 | `.member_folders` | A map from each name to its folder (`folder`, default the name).                                                                                                                                                                                                                                                            |
 | `.member_types`   | A map from each name to `submodule`, `folder` or `sibling`.                                                                                                                                                                                                                                                                 |
 | `.member_tables`  | The list of the members that have a `[members.<name>]` table. A git submodule without one is a member, but gets no flag of a task.                                                                                                                                                                                          |
-| `.submodules`     | The list of the git submodules only, nested ones included. It is empty in a repository without submodules.                                                                                                                                                                                                                  |
+| `.submodules`     | The list of the git submodules only: each gitlink of the index, then the nested submodules of each initialized one. It is empty in a repository without submodules.                                                                                                                                                         |
 | `.tools`          | The list of the selected tools, with the required members of `base` and the dependencies added.                                                                                                                                                                                                                             |
 | `.cli_dir`        | The absolute path of the `cli/` folder of the clone copy of the run.                                                                                                                                                                                                                                                        |
 | `.config`, `.all` | The values of the tools. See [cli.md](cli.md#templates).                                                                                                                                                                                                                                                                    |
