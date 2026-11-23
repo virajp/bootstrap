@@ -308,6 +308,9 @@ func TestStaleRows(t *testing.T) {
 			staleFolderMember(c)
 			harness.Git(c.T, c.Path("mem"), "init", "--quiet")
 			harness.Git(c.T, c.Path("mem"), "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "nested")
+			// The commit of the case must not add the nested clone as a
+			// gitlink: a gitlink that is not in .gitmodules stops the run.
+			harness.WriteFile(c.T, c.Path(".git/info/exclude"), "mem\n")
 		},
 		Check: func(c *rc.Case) {
 			c.CheckThat("a nested clone: the row is kept", c.LogHas("kept mem/stale.txt (another repository)"))
