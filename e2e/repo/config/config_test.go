@@ -462,6 +462,42 @@ func consumerUninitSubmodule(c *rc.Case) {
 	harness.Git(c.T, c.Consumer, "submodule", "--quiet", "deinit", "--force", "--", "sub")
 }
 
+// gitmodules runs `git config -f .gitmodules <args>` in the consumer.
+func gitmodules(c *rc.Case, args ...string) {
+	harness.Git(c.T, c.Consumer, append([]string{"config", "-f", ".gitmodules"}, args...)...)
+}
+
+// submoduleNotRegistered: the gitlink `sub`, with no entry in .gitmodules.
+func submoduleNotRegistered(c *rc.Case) {
+	addSubmodule(c, "sub")
+	gitmodules(c, "--remove-section", "submodule.sub")
+}
+
+// submoduleNoGitlink: an entry `other` in .gitmodules, with no gitlink.
+func submoduleNoGitlink(c *rc.Case) {
+	addSubmodule(c, "sub")
+	gitmodules(c, "submodule.other.path", "other")
+	gitmodules(c, "submodule.other.url", "https://example.com/other.git")
+}
+
+// submoduleNoURL: the entry of `sub` in .gitmodules has no url.
+func submoduleNoURL(c *rc.Case) {
+	addSubmodule(c, "sub")
+	gitmodules(c, "--unset", "submodule.sub.url")
+}
+
+// submoduleOtherName: the entry of the submodule `sub` has the name `lib`.
+func submoduleOtherName(c *rc.Case) {
+	harness.Git(c.T, c.Consumer, "-c", "protocol.file.allow=always", "submodule", "--quiet", "add", "--name", "lib", "--", rc.BaseClone, "sub")
+}
+
+// submoduleOtherURL: the url of `sub` in .git/config is not the url of
+// .gitmodules.
+func submoduleOtherURL(c *rc.Case) {
+	addSubmodule(c, "sub")
+	harness.Git(c.T, c.Consumer, "config", "submodule.sub.url", "https://example.com/other.git")
+}
+
 // subRepoName: the member names. A submodule without a table gets the
 // repo_name of its own values file, else its path with each `/` changed to
 // `_`.
@@ -613,6 +649,16 @@ type = "submodule"`, Change: consumerUninitSubmodule, Message: checkValid})
 	check(t, rc.Spec{Name: "--check, [members.sub], type folder on a submodule that is not initialized", Code: 2, Values: `environments = [ "dev" ]
 [members.sub]
 type = "folder"`, Change: consumerUninitSubmodule, Message: "has type folder, but sub is a submodule"})
+	check(t, rc.Spec{Name: "--check, a gitlink that is not in .gitmodules", Code: 2, Values: devValues, Change: submoduleNotRegistered,
+		Message: "the submodule sub is not in .gitmodules"})
+	check(t, rc.Spec{Name: "--check, a .gitmodules entry without a gitlink", Code: 2, Values: devValues, Change: submoduleNoGitlink,
+		Message: "the submodule 'other' of .gitmodules has the path other, but the index has no submodule there"})
+	check(t, rc.Spec{Name: "--check, a .gitmodules entry without a url", Code: 2, Values: devValues, Change: submoduleNoURL,
+		Message: "the submodule 'sub' of .gitmodules has no url"})
+	check(t, rc.Spec{Name: "--check, a .gitmodules entry with a name that is not its path", Code: 2, Values: devValues, Change: submoduleOtherName,
+		Message: "the submodule 'lib' of .gitmodules has the path sub"})
+	check(t, rc.Spec{Name: "--check, a .git/config url that is not the .gitmodules url", Code: 2, Values: devValues, Change: submoduleOtherURL,
+		Message: "the submodule 'sub' has the url https://example.com/other.git in .git/config"})
 	check(t, rc.Spec{Name: "--check, [members.web], type submodule without a submodule", Code: 2, Values: `environments = [ "dev" ]
 [members.web]
 folder = "projects/web"

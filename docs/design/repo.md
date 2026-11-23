@@ -141,6 +141,23 @@ The git submodules of the root are the gitlinks of its index. Thus a submodule
 that is not initialized, for example in a new git worktree, is also a
 submodule. A nested submodule is found only when its parent is initialized.
 
+Before it reads the members, the engine examines the git submodules of the
+root. `check`, `sync` and each other command that reads the members stop with
+code 2, and give one message for each problem, when one of these rules is
+broken:
+
+1. Each gitlink of the index has an entry in `.gitmodules`.
+2. Each entry of `.gitmodules` has a path, and the index has a gitlink at that
+   path.
+3. Each entry of `.gitmodules` has a url, and its name is its path.
+4. The url of an initialized submodule in `.git/config` is the url of
+   `.gitmodules`. `git submodule sync` makes them the same. The engine does not
+   compare a relative url (`./` or `../`) of `.gitmodules`, because
+   `git submodule init` makes it absolute.
+
+A submodule that is not initialized is valid. The engine does not examine the
+nested submodules: each submodule has its own check.
+
 - The member flags (`--all`, `--<name>`) of `setup` and `setup:configs` are
   only for the submodule and sibling members that have a `[members.<name>]`
   table. A folder member is part of the root tree. `code:format` and
