@@ -40,12 +40,16 @@ Always. The `base` pack adds this tool, and the sync writes an empty
 
 `code:sec` of the `mise` tool runs this task. It does these steps:
 
-1. It scans the lockfiles of the tree with `osv-scanner scan source
-   --recursive`. osv-scanner has no parser for `aube-lock.yaml`, so the task
-   gives each `aube-lock.yaml` that git tracks with
-   `--lockfile pnpm-lock.yaml:<path>`: the file has the format of
-   `pnpm-lock.yaml`. If a later aube format does not parse, the scan stops with
-   an error.
+1. It scans the lockfiles of each folder that has a file that git tracks,
+   with `osv-scanner scan source --no-ignore` and no `--recursive`. Thus git
+   decides which files to scan, and the scan does not go into a submodule.
+   osv-scanner also applies each `.gitignore` above the repository (its
+   issue 209), so a recursive scan of a worktree below an ignored folder, for
+   example `.worktrees/`, finds nothing. osv-scanner has no parser for
+   `aube-lock.yaml`, so the task gives each `aube-lock.yaml` that git tracks
+   with `--lockfile pnpm-lock.yaml:<path>`: the file has the format of
+   `pnpm-lock.yaml`. If a later aube format does not parse, the scan stops
+   with an error.
 2. It scans each image of `.tools/docker-compose.yaml` (the services with an
    `image`; a service with only a `build` has no image) and each entry of the
    value `images`. The task saves an image name with `docker save` (with
