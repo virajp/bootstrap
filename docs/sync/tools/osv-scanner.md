@@ -1,7 +1,9 @@
 # The `osv-scanner` tool
 
-osv-scanner: the dependency scanner, and `code:sec:30-osv-scanner`. A
-required member of the `base` pack. `bootstrap remove tool <tool…>` refuses it.
+osv-scanner: the dependency and container image scanner, and
+`code:sec:30-osv-scanner`. It is the default audit of the dependencies of each
+language that it reads. A required member of the `base` pack. `bootstrap remove
+tool <tool…>` refuses it.
 
 | Property     | Value                      |
 | ------------ | -------------------------- |
@@ -32,11 +34,29 @@ Always. The `base` pack adds this tool, and the sync writes an empty
 
 ## Tasks
 
-| Task                      | Use                                                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `code:sec:30-osv-scanner` | Scan the dependencies of the tree, without the git submodules. `--staged` does nothing. `--debug` raises the verbosity to `info`. |
+| Task                      | Use                                                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `code:sec:30-osv-scanner` | Scan the dependencies of the tree, without the git submodules, then each container image. `--staged` does nothing. `--debug` raises the verbosity to `info`. |
 
-`code:sec` of the `mise` tool runs this task.
+`code:sec` of the `mise` tool runs this task. It does these steps:
+
+1. It scans the lockfiles of the tree with `osv-scanner scan source
+   --recursive`. osv-scanner has no parser for `aube-lock.yaml`, so the task
+   gives each `aube-lock.yaml` that git tracks with
+   `--lockfile pnpm-lock.yaml:<path>`: the file has the format of
+   `pnpm-lock.yaml`. If a later aube format does not parse, the scan stops with
+   an error.
+2. It scans each image of `.tools/docker-compose.yaml` (the services with an
+   `image`; a service with only a `build` has no image) and each entry of the
+   value `images`. The task saves an image name with `docker save` (with
+   `DOCKER_DEFAULT_PLATFORM` when it is set), and pulls it first when docker
+   has no copy. Then osv-scanner reads the archive with
+   `osv-scanner scan image --archive`. An entry that ends in `.tar` is an image
+   archive, and docker is not necessary for it.
+
+A vulnerability fails the task. An image that the task cannot scan also fails
+it: docker is not installed, the pull fails, or the archive is missing.
+`.config/osv-scanner.toml` holds the exceptions (`[[IgnoredVulns]]`).
 
 ## Scripts
 
@@ -49,7 +69,12 @@ task.
 
 ## Values
 
-Only `env`. No questions.
+| Key      | Default | Use                                                                                                                                                                                 |
+| -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `images` | `[]`    | The container images that the repository builds: an image name, for example `"app:dev"`, or the path of an image archive from the root, for example `"dist/app.tar"`. No questions. |
+
+The `node` and `go` tools have the value `audit`: osv-scanner is their
+default audit.
 
 ## Files the repository supplies
 

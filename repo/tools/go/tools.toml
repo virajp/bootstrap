@@ -1,11 +1,18 @@
 # Go. In a repository with a go.mod, also golangci-lint and govulncheck, for
-# code:lint:40-go and setup:deps:25-go. dprint formats the Go files with gofmt.
+# code:lint:40-go and setup:deps:25-go (govulncheck only with
+# audit = "govulncheck"). dprint formats the Go files with gofmt.
 category = "languages"
 default_envs = [ "dev", "ci" ]
 depends = []
-description = "Go, with golangci-lint, the go.mod check, setup:deps:25-go with govulncheck, and gofmt through dprint."
+description = "Go, with golangci-lint, the go.mod check, setup:deps:25-go, and gofmt through dprint. osv-scanner audits the modules, or govulncheck with audit = \"govulncheck\"."
 root_only = false
 summary = "Go, with golangci-lint, govulncheck and gofmt"
+
+# The audit of the dependencies. "osv-scanner" (the default): the
+# code:sec:30-osv-scanner task of the base pack scans the lockfiles.
+# "govulncheck" runs govulncheck in setup:deps:25-go too.
+[defaults]
+audit = "osv-scanner"
 
 # The VS Code extensions of the tool, in .vscode/extensions.json.
 [contributes.vscode]

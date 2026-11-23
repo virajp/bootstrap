@@ -46,6 +46,11 @@ None. The tool uses the Docker of the machine.
 `setup:external:pull`, `start`, `stop` and `update` apply only when
 `MISE_ENV` is `dev`. In another environment, they print nothing and exit 0.
 
+`code:sec:30-osv-scanner` of the `base` pack scans the image of each service
+of `.tools/docker-compose.yaml` that has an `image`, in each environment. It
+needs docker for this file, also in CI, and fails without it. See
+[`osv-scanner.md`](osv-scanner.md).
+
 **WARNING:** `setup:external:stop` removes the volumes of the services, and
 `setup:external:update` runs it at most once a week. Tell the user before a
 service keeps data that is not in a different location.

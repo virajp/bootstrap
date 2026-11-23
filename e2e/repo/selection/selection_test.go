@@ -300,7 +300,7 @@ func TestConfigGet(t *testing.T) {
 		Message: `{"key":"repo.branches.main","value":{"landing":"pr"},"source":"file"}`})
 	// A whole tool table carries env: the file value, else default_envs.
 	rc.Run(t, rc.Spec{Name: "config get of a tool table, with env", Values: devValues + "\n[tools.node]", Call: configCmd("get tools.node"),
-		Message: `{"key":"tools.node","value":{"env":["dev","ci"]},"source":"file"}`})
+		Message: `{"key":"tools.node","value":{"audit":"osv-scanner","env":["dev","ci"]},"source":"file"}`})
 	rc.Run(t, rc.Spec{Name: "config get of env, default_envs", Values: devValues + "\n[tools.node]", Call: configCmd("get tools.node.env"),
 		Message: `{"key":"tools.node.env","value":["dev","ci"],"source":"default"}`})
 	// A tool that the catalog does not have, or that is not selected: value

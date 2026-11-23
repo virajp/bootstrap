@@ -1,7 +1,8 @@
 # The `go` tool
 
-Go, with golangci-lint, the `go.mod` check, `setup:deps:25-go` and
-`govulncheck`. dprint formats the Go files with `gofmt`.
+Go, with golangci-lint, the `go.mod` check and `setup:deps:25-go`.
+`osv-scanner` of the `base` pack audits the modules, or `govulncheck` with
+`audit = "govulncheck"`. dprint formats the Go files with `gofmt`.
 
 | Property     | Value   |
 | ------------ | ------- |
@@ -56,11 +57,11 @@ resolves.
 
 ## Tasks
 
-| Task                 | Use                                                                                                                      |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `code:lint:40-go`    | Run `golangci-lint run ./...` in each Go module. `--fix` applies the fixes that it can make.                             |
-| `code:lint:45-gomod` | Run `go mod tidy -diff` in each Go module. It fails when `go.mod` or `go.sum` is not tidy. `--fix` runs `go mod tidy`.   |
-| `setup:deps:25-go`   | Download and verify the modules, report the outdated ones, and audit them with `govulncheck`. `--upgrade` upgrades them. |
+| Task                 | Use                                                                                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code:lint:40-go`    | Run `golangci-lint run ./...` in each Go module. `--fix` applies the fixes that it can make.                                                          |
+| `code:lint:45-gomod` | Run `go mod tidy -diff` in each Go module. It fails when `go.mod` or `go.sum` is not tidy. `--fix` runs `go mod tidy`.                                |
+| `setup:deps:25-go`   | Download and verify the modules, report the outdated ones, and with `audit = "govulncheck"` audit them with `govulncheck`. `--upgrade` upgrades them. |
 
 `code:lint` runs the two gates, and `setup` runs `setup:deps:25-go`. Without
 the tool of a task, the task prints nothing and exits 0. A gate with no module
@@ -80,9 +81,12 @@ in its list also prints nothing.
   decides the versions. `--upgrade` runs `go get -u ./...` and `go mod tidy`.
   `-u` never changes a major version, because the major version is part of the
   module path. The report lists each direct dependency with a newer version.
-  `govulncheck ./...` stops the setup when the code calls a vulnerable
-  function. `osv-scanner` of `code:sec` also reads `go.mod`, but only by
-  version.
+  The value `audit` selects the audit. With `"osv-scanner"` (the default),
+  the task does no audit: `code:sec:30-osv-scanner` reads `go.mod`, and its
+  call analysis (the library of `govulncheck`, with the `go` of mise) hides a
+  vulnerability that the code does not call. With `"govulncheck"`, the task
+  also runs `govulncheck ./...`, which stops the setup when the code calls a
+  vulnerable function.
 
 dprint formats the `.go` files: the tool adds an `exec` command for `gofmt` to
 the shared `dprint.jsonc` (see "Contributions"). `code:format:05-dprint` runs
@@ -105,7 +109,11 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Values
 
-Only `env`. No questions. The keys of the values file are in
+| Key     | Default         | Use                                                                                                                                              |
+| ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `audit` | `"osv-scanner"` | The audit of the modules: `"osv-scanner"`, or `"govulncheck"` for `govulncheck` in `setup:deps:25-go`. Another value stops the task with code 2. |
+
+No questions. The keys of the values file are in
 [`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies

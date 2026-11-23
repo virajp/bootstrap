@@ -65,9 +65,9 @@ The tool also sets:
 
 ## Tasks
 
-| Task                 | Use                                                                                                         |
-| -------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `setup:deps:40-node` | Install from the lockfile, then report the outdated and vulnerable dependencies. `--upgrade` upgrades them. |
+| Task                 | Use                                                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `setup:deps:40-node` | Install from the lockfile, then report the outdated dependencies, and with `audit = "package-manager"` the vulnerable ones. `--upgrade` upgrades them. |
 
 The task finds the package manager from `.config/mise/conf.d/`:
 
@@ -80,7 +80,12 @@ The task finds the package manager from `.config/mise/conf.d/`:
 | `pnpm` and `aube`           | The task stops with a message, and the setup stops. |
 | None, with a `package.json` | The task stops with a message, and the setup stops. |
 
-A vulnerability at or above `audit.level` of the workspace file stops the setup.
+The value `audit` selects the audit of the dependencies. With `"osv-scanner"`
+(the default), the task does no audit: `code:sec:30-osv-scanner` scans
+`pnpm-lock.yaml` and `aube-lock.yaml`. With `"package-manager"`, the task also
+runs `pnpm audit` or `aube audit`, and a vulnerability at or above
+`audit.level` of the workspace file stops the setup. `aube audit` audits only
+the dependencies of the root `package.json`, not the packages of a workspace.
 The task never runs a self-update, because mise installs the package manager.
 
 `--upgrade` runs `update --recursive --no-save`. It moves the lockfile to the
@@ -105,7 +110,11 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Values
 
-Only `env`. No questions. The keys of the values file are in
+| Key     | Default         | Use                                                                                                                                                                        |
+| ------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audit` | `"osv-scanner"` | The audit of the dependencies: `"osv-scanner"`, or `"package-manager"` for `pnpm audit` or `aube audit` in `setup:deps:40-node`. Another value stops the task with code 2. |
+
+No questions. The keys of the values file are in
 [`docs/design/bootstrap-config.md`](../../design/bootstrap-config.md).
 
 ## Files the repository supplies
