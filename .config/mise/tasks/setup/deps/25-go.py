@@ -5,7 +5,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-# MISE description="Download the Go modules, then report the outdated and vulnerable ones; --upgrade upgrades them"
+# MISE description="Download the Go modules, then report the outdated ones, and with audit = \"govulncheck\" the vulnerable ones; --upgrade upgrades them"
 # MISE hide=true
 # MISE tools={uv="latest", python="3.14"}
 # USAGE flag "--upgrade" help="upgrade the dependencies to their latest minor and patch versions instead of downloading the versions of go.sum"
@@ -90,6 +90,17 @@ for folder in modules:
     "all",
     cwd=folder,
   )
+
+# The audit of the dependencies: `audit` of [tools.go]. With "osv-scanner" (the
+# default), code:sec:30-osv-scanner scans go.mod with the call analysis of
+# govulncheck, and this task does no audit. With "govulncheck", it audits here
+# too.
+audit = helpers.bootstrap_get("tools.go.audit")["value"]
+if audit == "osv-scanner":
+  sys.exit(0)
+if audit != "govulncheck":
+  helpers.print_error(f"[tools.go] audit is {audit!r}, but it must be osv-scanner or govulncheck.")
+  sys.exit(2)
 
 # The sync installs govulncheck only when it finds a go.mod. Before the first
 # sync after that, it can be missing.
