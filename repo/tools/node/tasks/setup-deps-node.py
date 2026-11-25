@@ -76,7 +76,7 @@ helpers.tool(package_manager, "outdated", "--dir", root, "--recursive", "--long"
 # The audit of the dependencies: `audit` of [tools.node]. With "osv-scanner"
 # (the default), code:sec:30-osv-scanner scans the lockfile, and this task does
 # no audit. With "package-manager", the package manager audits here too.
-audit = helpers.bootstrap_get("tools.node.audit")["value"]
+audit = helpers.tool_value("node", "audit", "osv-scanner")
 if audit == "osv-scanner":
   sys.exit(0)
 if audit != "package-manager":

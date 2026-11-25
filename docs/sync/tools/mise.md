@@ -74,6 +74,9 @@ The tool also sets:
 - The hidden task `migrate`, which makes the task scripts executable.
 - `os = "macos"` in `dev` and `os = "linux"` in `ci`, from
   `[mise_env.dev.settings]` and `[mise_env.ci.settings]`.
+- `disable_tools = [ "github:virajp/bootstrap" ]` in `ci`, so a CI with
+  `MISE_ENV=dev,ci` does not install the CLI. A task that runs in CI reads a
+  value of a tool with `helpers.tool_value`, not with `bootstrap_get`.
 
 ## Tasks
 

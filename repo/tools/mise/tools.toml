@@ -55,8 +55,12 @@ version = "latest"
 os = "macos"
 
 # CI run on Linux
-# selects Linux binaries.
+# selects Linux binaries. A CI that also loads dev (MISE_ENV=dev,ci) gets the
+# dev pin of bootstrap, so disable_tools keeps the CLI out of CI: bootstrap is
+# for a developer machine only, and a task that runs in CI reads a value with
+# tool_value of helpers.py.
 [mise_env.ci.settings]
+disable_tools = [ "github:virajp/bootstrap" ]
 os = "linux"
 
 # The files of the tool, below files/.

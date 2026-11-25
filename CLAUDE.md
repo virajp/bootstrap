@@ -195,12 +195,24 @@ differs in these points:
 - `_scripts/` contains libraries, not tasks. Each library is a Python module.
   A task imports a module (see "Python tasks" below).
   - `helpers.py`: the print functions (`print_header`, `print_success`,
-    `print_wait`, and others), `bootstrap_get`, `members`, `gate_files`,
-    `usage_files`, `tool`, `has_tool`, `has_own_task` and `own_tasks`. Use
-    these functions for all task output. `bold=True` makes a status line
-    bold, and `file=sys.stderr` writes it on stderr. Each print function
-    flushes its stream. `bootstrap_get(key, repo=None)` is the one reader of
-    a value of `.config/bootstrap/`: it returns the JSON answer of
+    `print_wait`, and others), `bootstrap_get`, `tool_value`, `members`,
+    `gate_files`, `usage_files`, `tool`, `has_tool`, `has_own_task` and
+    `own_tasks`. Use these functions for all task output. `bold=True` makes a
+    status line bold, and `file=sys.stderr` writes it on stderr. Each print
+    function flushes its stream. A value of `.config/bootstrap/` has two
+    readers. `bootstrap` is for a developer machine only, and CI does not
+    install it (`disable_tools` of the `ci` layer of the `mise` tool), so a
+    task that runs in CI uses `tool_value`.
+    `tool_value(tool, key, default=None)` reads `tools.toml` of the values
+    folder (`BOOTSTRAP_VALUES`, else `.config/bootstrap/`) with `tomllib`:
+    `[overrides.tools.<tool>]` wins over `[tools.<tool>]`, else it returns
+    `default`, which the caller gives as the `[defaults]` value of the tool.
+    It applies no contribution and no derived value. A `tools.toml` that is
+    missing or not valid TOML stops the task with `sys.exit(2)`. Today
+    `setup:deps:40-node`, `setup:deps:25-go` and `code:sec:30-osv-scanner`
+    use it. `bootstrap_get(key, repo=None)` is the reader of each other
+    value, for a task that runs on a developer machine only: it returns the
+    JSON answer of
     `bootstrap config get` as a dict (read `["value"]`), with
     `BOOTSTRAP_BIN`, else `mise x -- bootstrap`. A read failure stops the
     task with `sys.exit(1)`. No engine that answers (none, or one older than
@@ -317,8 +329,8 @@ differs in these points:
     `.config/mise/tasks/`. A hand check imports with `python -B`. ruff
     reports the `# noqa: E402` of the preamble as RUF100, so a hand ruff
     check of a task runs with `--extend-ignore RUF100`.
-  - `bootstrap_get` and `members` stop the task with `sys.exit` (code 1 or
-    2), so a task does not catch their exit.
+  - `bootstrap_get`, `tool_value` and `members` stop the task with
+    `sys.exit` (code 1 or 2), so a task does not catch their exit.
   - dprint (its ruff plugin) is the one formatter of a `.py` file. The ruff
     and pyrefly gates run only in a repository with a `pyproject.toml`, and
     skip `.config/mise/tasks/`.
