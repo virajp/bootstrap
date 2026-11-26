@@ -134,7 +134,7 @@ def main():
   # ends in .tar is an image archive, a path from the root. Each image that the
   # scan cannot read fails the task.
   docker = shutil.which("docker")
-  value = helpers.bootstrap_get("tools.osv-scanner.images")["value"]
+  value = helpers.tool_value("osv-scanner", "images", [])
   images = compose_images(root, docker) + [str(image) for image in (value or [])]
   with tempfile.TemporaryDirectory() as folder:
     for image in images:
