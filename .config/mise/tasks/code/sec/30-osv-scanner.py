@@ -45,14 +45,15 @@ def compose_images(root, docker):
   """The image of each service of .tools/docker-compose.yaml that names one.
 
   A service with only a build has no image to scan, so it is not in the list.
+  These images are for local use only, so a problem here is a warning.
   """
   compose = f"{root}/.tools/docker-compose.yaml"
   if not os.path.isfile(compose):
     return []
   if docker is None:
-    helpers.print_error(".tools/docker-compose.yaml has local services, but docker is not installed.")
-    helpers.print_warn("- install docker: osv-scanner needs it to scan the images of the services")
-    sys.exit(1)
+    helpers.print_subheader("Scanning the local images of .tools/docker-compose.yaml ...")
+    helpers.print_warn("docker is not installed, so the task cannot scan the local images.")
+    return []
   result = subprocess.run(
     [docker, "compose", "-f", compose, "config", "--format", "json"],
     stdout=subprocess.PIPE,
@@ -60,8 +61,9 @@ def compose_images(root, docker):
     check=False,
   )
   if result.returncode != 0:
-    helpers.print_error("docker compose cannot read .tools/docker-compose.yaml.")
-    sys.exit(result.returncode)
+    helpers.print_subheader("Scanning the local images of .tools/docker-compose.yaml ...")
+    helpers.print_warn("docker compose cannot read .tools/docker-compose.yaml.")
+    return []
   services = json.loads(result.stdout).get("services") or {}
   return sorted({service["image"] for service in services.values() if service.get("image")})
 
@@ -130,31 +132,44 @@ def main():
   code = result.returncode
 
   # The images: the services of .tools/docker-compose.yaml, then `images` of
-  # [tools.osv-scanner], the images that the repository builds. An entry that
-  # ends in .tar is an image archive, a path from the root. Each image that the
-  # scan cannot read fails the task.
+  # [tools.osv-scanner]. CI builds the images of `images`, so a finding in one
+  # of them, or an image that the scan cannot read, fails the task. An entry
+  # that ends in .tar is an image archive, a path from the root. The images of
+  # the services are for local use only: a clean image is preferred, but a
+  # finding or a scan problem there is only a warning.
   docker = shutil.which("docker")
   value = helpers.tool_value("osv-scanner", "images", [])
-  images = compose_images(root, docker) + [str(image) for image in (value or [])]
+  images = [(image, False) for image in compose_images(root, docker)]
+  images += [(str(image), True) for image in (value or [])]
   with tempfile.TemporaryDirectory() as folder:
-    for image in images:
-      helpers.print_subheader(f"Scanning the image {image} with osv-scanner ...")
+    for image, built in images:
+      kind = "image" if built else "local image"
+      helpers.print_subheader(f"Scanning the {kind} {image} with osv-scanner ...")
+      problem = None
       if image.endswith(".tar"):
         archive = os.path.join(root, image)
       elif docker is None:
-        helpers.print_error(f"the image {image} needs docker, but docker is not installed.")
-        code = code or 1
-        continue
+        problem = f"the {kind} {image} needs docker, but docker is not installed."
       else:
         archive = f"{folder}/image.tar"
         if not save_image(docker, image, archive):
-          helpers.print_error(f"docker cannot save the image {image} - build it, or pull it by hand.")
-          code = code or 1
-          continue
-      result = helpers.tool(
-        "osv-scanner", "scan", "image", "--config", config, "--verbosity", verbosity, "--archive", archive
-      )
-      code = code or result.returncode
+          problem = f"docker cannot save the {kind} {image} - build it, or pull it by hand."
+      if problem is None:
+        result = helpers.tool(
+          "osv-scanner", "scan", "image", "--config", config, "--verbosity", verbosity, "--archive", archive
+        )
+        if built:
+          code = code or result.returncode
+        elif result.returncode != 0:
+          problem = f"osv-scanner found vulnerabilities in the {kind} {image}, or cannot scan it."
+      if problem is None:
+        continue
+      if built:
+        helpers.print_error(problem)
+        code = code or 1
+      else:
+        helpers.print_warn(problem)
+        helpers.print_warn("- a local image does not fail the task, but a clean image is preferred")
   return code
 
 
