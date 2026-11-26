@@ -352,9 +352,11 @@ git, not worktrunk. `create` and `delete` read `core_branches` with
   branch with `--current`, else from the default branch
   (`helpers.default_branch()`, see
   [`default_branch`](bootstrap-config.md#default_branch)): the local branch
-  when it exists, else `origin/<branch>`, with `--no-track`. Then it runs `mise
-  trust` and `git:worktree:setup` in the new
-  worktree. `--no-setup` skips only the setup.
+  when it exists, else `origin/<branch>`. Each new branch gets `--no-track`,
+  so it does not track its base: `git:merge:<b>` reads the upstream of the
+  branch to find unpushed commits, and a branch that tracks `origin/<b>` shows
+  each new commit as unpushed. Then it runs `mise trust` and
+  `git:worktree:setup` in the new worktree. `--no-setup` skips only the setup.
 - `create` stops with code 2 for a core branch, for `--from` and `--current`
   together, and for `--from` or `--current` with a branch that exists. It stops
   with code 1 when the path exists, or when git refuses
