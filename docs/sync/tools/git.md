@@ -181,7 +181,9 @@ has `HEAD`. A `release:<project>:<kind>` task of a `task` kind runs its
 the level of
 `releases.<project>` of `.config/bootstrap/releases.toml`, bumps the version,
 makes one commit `ops: release <tag>` with the version file and the cleared
-level, lands it as `landing` of its branch says, and calls `git:tag`. A kind
+level, lands it as `landing` of its branch says, and calls `git:tag`. Its
+work branch `release/<tag>` gets `--no-track`, as a new worktree branch does. A
+kind
 with `from` promotes the last version of the other kind. A release commit
 without its tag gets the tag on the next run. The full rules are in
 [`docs/design/repo.md`](../../design/repo.md#the-release-tasks).

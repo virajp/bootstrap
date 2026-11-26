@@ -346,7 +346,9 @@ def release_tag(project, kind, sec, folder, push, dry_run):
   work = branch if landing == "direct-commit" else f"release/{name}"
   helpers.print_subheader(f"Committing the release {name} on {work} ...")
   if work != branch:
-    must("git", "switch", "--quiet", "-c", work)
+    # --no-track: the work branch must not track its base, because
+    # git:merge:<b> reads the upstream to find unpushed commits.
+    must("git", "switch", "--quiet", "--no-track", "-c", work)
   files = write_version(file, show(old), show(new)) if file else []
   bootstrap("config", "unset", f'releases."{project}"')
   must("git", "add", "--", *files, ".config/bootstrap")
