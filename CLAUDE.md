@@ -483,7 +483,9 @@ the module of the test (see "The test cache" below).
   `--no-setup` and `git:worktree:delete`; the LSP cases run `code:lsp:check`,
   the setup:ai cases `setup:ai`, the setup case `setup`, the
   precommit cases `code:precommit` with and without `--all`, the pull cases
-  `git:pull` with and without `--all`, and the worktree base cases; the
+  `git:pull` with and without `--all`, the worktree base cases (a new branch
+  has no upstream), and the case that lands a worktree from
+  `--from origin/main` with `git:merge:main`; the
   gate_files
   cases run the working tree's `gate_files.py` in a scratch repository with
   `--debug`; the `run_gate` cases run `code:lint:60-bootstrap`; the orchestrator
