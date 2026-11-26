@@ -58,8 +58,12 @@ Always. The `base` pack adds this tool, and the sync writes an empty
    `osv-scanner scan image --archive`. An entry that ends in `.tar` is an image
    archive, and docker is not necessary for it.
 
-A vulnerability fails the task. An image that the task cannot scan also fails
-it: docker is not installed, the pull fails, or the archive is missing.
+A vulnerability in a dependency fails the task. CI builds the images of the
+value `images`, so a vulnerability in one of them also fails the task, and so
+does an entry that the task cannot scan: docker is not installed, the pull
+fails, or the archive is missing. The images of `.tools/docker-compose.yaml`
+are for local use only. A clean local image is preferred, but a vulnerability
+in it, or a local image that the task cannot scan, is only a warning.
 `.config/osv-scanner.toml` holds the exceptions (`[[IgnoredVulns]]`).
 
 ## Scripts
