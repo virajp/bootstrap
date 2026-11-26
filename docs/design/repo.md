@@ -414,7 +414,9 @@ with code 1. It takes the first step that applies:
    `[branches.<branch>].landing` says:
    - `direct-merge`: the commit is on the local branch `release/<tag>`,
      `git:merge:<branch>` lands it, and the task deletes the branch and tags
-     the merge commit.
+     the merge commit. The task cuts the branch with `--no-track`, so it does
+     not track `branch`: `git:merge:<branch>` reads the upstream to find
+     unpushed commits.
    - `direct-commit`: the commit is on `branch`, and the task tags it. With
      `--push`, it pushes `branch` first.
    - `pr`: `git:merge:<branch>` opens the request and the task stops. A run

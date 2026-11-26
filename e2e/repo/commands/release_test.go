@@ -106,17 +106,21 @@ func TestGitTag(t *testing.T) {
 
 // A release of a tag kind: the level bumps the version file, one commit with
 // the file and the cleared level lands on main with a merge, and the merge
-// commit gets the tag. Then the promotion, the resume rule and NONE.
+// commit gets the tag. Then the promotion, the resume rule and NONE. With
+// branch.autoSetupMerge=always, the release branch tracks no upstream, so the
+// merge finds no unpushed commits.
 func TestReleaseTag(t *testing.T) {
 	rc.Run(t, rc.Spec{Name: "release: bump, land, tag, promote", Values: releaseValues,
 		Call: synced(func(c *rc.Case) int { releaseRepo(c); setLevel(c, "MINOR"); return 0 }),
 		Check: func(c *rc.Case) {
 			origin := filepath.Join(c.Dir, "origin.git")
+			git(c, c.Consumer, "config", "branch.autoSetupMerge", "always")
 			c.CheckThat("release --dry-run: exits 0", gitTask(c, "release:web:prod", "--dry-run") == 0)
 			c.CheckThat("release --dry-run: names the tag", c.LogHas("web: 1.2.0 -> 1.3.0 (MINOR), tag web-v1.3.0"))
 			c.CheckThat("release --dry-run: no tag", plainGit(c.Consumer, "tag", "--list") == "")
 
 			c.CheckThat("release: exits 0", gitTask(c, "release:web:prod", "--push") == 0)
+			c.CheckThat("release: the release branch has no upstream", c.LogLacks("Unpushed commits exist"))
 			pkg := harness.ReadFile(c.Path("web/package.json"))
 			c.CheckThat("release: the version file is bumped", strings.Contains(pkg, `"version": "1.3.0"`))
 			c.CheckThat("release: the level is cleared", !strings.Contains(harness.ReadFile(c.Path(".config/bootstrap/releases.toml")), "web"))
