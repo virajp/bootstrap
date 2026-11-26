@@ -59,6 +59,7 @@ into `.config/bootstrap/`.
 | `type = "local"` in a `[release.<project>.<kind>]` table of `.config/bootstrap/repo.toml`                                           | M54, before the next sync.                                                                                                                                 |
 | `settings` or `lists` in `[tools.claude-cli]` of `macos.toml`, or a `~/.claude/CLAUDE.md` that bootstrap wrote as a seed            | M55, before the next Mac sync.                                                                                                                             |
 | `macos.toml` at the root of a clone, `config_path` in `[tools.mise]`, or `MACOS_SETUP_REPO_PATH` in a script                        | M56, before the next Mac sync.                                                                                                                             |
+| A work branch that tracks its base, or a `git branch --unset-upstream` after `git:worktree:create` in a script or a skill           | M58, before the next `git:merge:<branch>` of that branch.                                                                                                  |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1773,3 +1774,27 @@ it. See `docs/sync/tools/osv-scanner.md`.
 4. Run `mise run setup:configs`, then `mise run code:sec`. Add an
    `[[IgnoredVulns]]` entry, with a reason, for each finding that the
    repository accepts. Fix each other finding.
+
+## M58: A new worktree branch tracks no upstream
+
+`git:worktree:create` now cuts each new branch with `--no-track`, also with
+`--from` and `--current`. Before, a branch from `--from origin/<b>` tracked
+`origin/<b>`. Then `git:merge:<b>` read that upstream, found the new commits
+as unpushed, and refused the branch. The path for a branch that is only on
+`origin` still tracks it. See `docs/sync/tools/git.md`.
+
+1. Find the work branches that track a core branch:
+
+   ```bash
+   git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/
+   ```
+
+2. For each work branch whose upstream is `origin/<core branch>` or a local
+   core branch, remove the upstream:
+
+   ```bash
+   git branch --unset-upstream <branch>
+   ```
+
+3. If a script or a skill runs `git branch --unset-upstream` after
+   `git:worktree:create`, remove that step after the sync.

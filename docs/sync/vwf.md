@@ -89,12 +89,12 @@ A plugin runs the git actions of a repository through its `git:*` tasks, not
 with raw git. `bootstrap describe --json` reports which of them the repository
 has:
 
-| Task                                                        | Action                                                                                             |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `git:merge:<branch> [<source>]`                             | Land a branch on the core branch `<branch>`, by its `landing`. The name is always the destination. |
-| `git:worktree:create <branch> [--from <base>] [--no-setup]` | Add a worktree for the branch in `.worktrees/<branch>`, then trust and set it up.                  |
-| `git:worktree:setup`                                        | Set up the worktree that it runs in.                                                               |
-| `git:worktree:delete <branch>`                              | Remove the worktree of the branch, and the branch when a core branch has each of its commits.      |
+| Task                                                        | Action                                                                                                             |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `git:merge:<branch> [<source>]`                             | Land a branch on the core branch `<branch>`, by its `landing`. The name is always the destination.                 |
+| `git:worktree:create <branch> [--from <base>] [--no-setup]` | Add a worktree for the branch in `.worktrees/<branch>`, then trust and set it up. A new branch tracks no upstream. |
+| `git:worktree:setup`                                        | Set up the worktree that it runs in.                                                                               |
+| `git:worktree:delete <branch>`                              | Remove the worktree of the branch, and the branch when a core branch has each of its commits.                      |
 
 The rules of each task are in `docs/sync/tools/git.md` of the clone.
 
