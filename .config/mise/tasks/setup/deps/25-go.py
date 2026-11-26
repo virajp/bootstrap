@@ -95,7 +95,7 @@ for folder in modules:
 # default), code:sec:30-osv-scanner scans go.mod with the call analysis of
 # govulncheck, and this task does no audit. With "govulncheck", it audits here
 # too.
-audit = helpers.bootstrap_get("tools.go.audit")["value"]
+audit = helpers.tool_value("go", "audit", "osv-scanner")
 if audit == "osv-scanner":
   sys.exit(0)
 if audit != "govulncheck":
