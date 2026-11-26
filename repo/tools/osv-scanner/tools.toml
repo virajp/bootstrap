@@ -8,8 +8,10 @@ summary = "Scans dependencies and images with OSV"
 
 # The container images that the repository builds, for code:sec:30-osv-scanner:
 # an image name, for example "app:dev", or the path of an image archive from
-# the root, for example "dist/app.tar". The task also scans the images of the
-# services of .tools/docker-compose.yaml.
+# the root, for example "dist/app.tar". A finding in one of them fails the
+# task. The task also scans the images of the services of
+# .tools/docker-compose.yaml, but these are for local use only, so a finding
+# there is only a warning.
 [defaults]
 images = []
 
