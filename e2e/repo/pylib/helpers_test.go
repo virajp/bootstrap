@@ -234,6 +234,69 @@ func TestBootstrapGet(t *testing.T) {
 	})
 }
 
+// toolsTOML is the tools.toml of the tool_value cases: a value, an override
+// that wins over a value, and a tool with no table.
+const toolsTOML = `format = 3
+
+[tools.node]
+audit = "package-manager"
+
+[tools.osv-scanner]
+images = [ "app:dev" ]
+
+[overrides.tools.osv-scanner]
+images = [ "dist/app.tar" ]
+`
+
+// TestToolValue: tool_value reads tools.toml directly, with no engine on
+// PATH: the override wins over the value, the default comes back for a key
+// that neither table has, BOOTSTRAP_VALUES names the folder, and a missing
+// tools.toml stops the task with exit 2.
+func TestToolValue(t *testing.T) {
+	const valuePy = "for args in (('node', 'audit', 'osv-scanner'), ('osv-scanner', 'images', []), ('go', 'audit', 'osv-scanner')):\n" +
+		"  print(json.dumps(helpers.tool_value(*args)))\n"
+	const want = "\"package-manager\"\n[\"dist/app.tar\"]\n\"osv-scanner\"\n"
+	// PATH has the mise shim and the system folders only, so no engine
+	// answers: the reader must not need one.
+	noEngine := func(dir, root string, kv ...string) probe {
+		return probe{dir: dir, env: env(dir, root, append([]string{"NO_COLOR=1", "PATH=" + harness.ShimDir + ":/usr/bin:/bin"}, kv...)...), merge: true}
+	}
+	write := func(t *testing.T, folder string) {
+		t.Helper()
+		if err := os.MkdirAll(folder, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(folder, "tools.toml"), []byte(toolsTOML), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("the values folder of the repository", func(t *testing.T) {
+		t.Parallel()
+		dir, root := newCase(t)
+		write(t, filepath.Join(root, ".config", "bootstrap"))
+		got := noEngine(dir, root).py(t, dir, valuePy)
+		harness.Check(t, "tool_value: the override, the value and the default", got.code == 0 && got.out == want, got.String())
+	})
+	t.Run("BOOTSTRAP_VALUES", func(t *testing.T) {
+		t.Parallel()
+		dir, root := newCase(t)
+		values := filepath.Join(dir, "values")
+		write(t, values)
+		got := noEngine(dir, root, "BOOTSTRAP_VALUES="+values).py(t, dir, valuePy)
+		harness.Check(t, "tool_value: the folder of BOOTSTRAP_VALUES", got.code == 0 && got.out == want, got.String())
+	})
+	t.Run("no tools.toml", func(t *testing.T) {
+		t.Parallel()
+		dir, root := newCase(t)
+		got := noEngine(dir, root).py(t, dir, valuePy)
+		harness.Check(t, "tool_value, no tools.toml: the error lines and exit 2",
+			got.code == 2 && strings.Contains(got.out, "[ERROR] "+filepath.Join(root, ".config", "bootstrap", "tools.toml")+" cannot be read") &&
+				strings.Contains(got.out, "[WARN] - run bootstrap migrate, then commit the values folder"),
+			got.String())
+	})
+}
+
 // TestMembers: members returns the submodule and sibling members only, with
 // the defaults and the order of the shell version (D10).
 func TestMembers(t *testing.T) {

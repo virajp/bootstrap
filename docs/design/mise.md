@@ -264,11 +264,17 @@ environment:
 os = "macos" # a developer works on macOS
 
 [mise_env.ci.settings]
+# bootstrap is for a developer machine only
+disable_tools = [ "github:virajp/bootstrap" ]
 os = "linux" # CI runs on Linux
 ```
 
 So `conf.d/mise/mise.dev.toml` gets `os = "macos"`, and
-`conf.d/mise/mise.ci.toml` gets `os = "linux"`.
+`conf.d/mise/mise.ci.toml` gets `os = "linux"` and `disable_tools`. A CI that
+also loads `dev` (`MISE_ENV=dev,ci`) gets the dev pin of `bootstrap`, and
+`disable_tools` of the `ci` layer, which mise merges last, keeps the CLI out
+of CI. A task that runs in CI reads a value of a tool with `tool_value` of
+`helpers.py`, which reads `tools.toml` directly, not with `bootstrap_get`.
 
 mise loads a `conf.d/*/mise.<env>.toml` only when `MISE_ENV` includes that
 environment. It loads the folders in name order, and `conf.d/zz-repo/` loads
