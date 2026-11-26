@@ -156,7 +156,10 @@ out a local branch. A branch only on `origin` becomes a local branch that
 tracks it: the task first prints a warning, because it trusts and runs the mise
 config of that branch as is. Any other branch is new, from `--from`, from the
 current branch with `--current`, else from the default branch
-(`default_branch` of `repo.toml`, local or on `origin`). `--no-setup` skips
+(`default_branch` of `repo.toml`, local or on `origin`). A new branch gets
+`--no-track`, so it does not track its base: `git:merge:<b>` reads the
+upstream of the branch to find unpushed commits, and a branch that tracks
+`origin/<b>` shows each new commit as unpushed. `--no-setup` skips
 `git:worktree:setup`; `mise trust`
 always runs. The task stops with code 2 for a core branch, for `--from` and
 `--current` together, and for either flag with a branch that exists. It stops

@@ -885,9 +885,15 @@ func TestCodeFiles(t *testing.T) {
 }
 
 // git:worktree:create cuts a new branch from the default branch, from the
-// current branch with --current, and refuses --from with --current.
+// current branch with --current, from --from, and refuses --from with
+// --current. No new branch tracks its base: branch.autoSetupMerge=always
+// would make each branch track it without --no-track.
 func TestWorktreeBase(t *testing.T) {
 	syncedCall := synced(func(*rc.Case) int { return 0 })
+	noUpstream := func(c *rc.Case, branch string) bool {
+		_, err := harness.GitErr(c.Consumer, "rev-parse", "--abbrev-ref", branch+"@{upstream}")
+		return err != nil
+	}
 	rc.Run(t, rc.Spec{Name: "git:worktree:create, the base of a new branch", Values: bothCore,
 		Change: precommitBothBranches, Call: syncedCall,
 		Check: func(c *rc.Case) {
@@ -896,6 +902,12 @@ func TestWorktreeBase(t *testing.T) {
 			git(c, c.Consumer, "merge", "--quiet", "--ff-only", "main")
 			git(c, c.Consumer, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "dev")
 			git(c, c.Consumer, "checkout", "--quiet", "main")
+			// A bare origin with main and develop, so origin/develop exists.
+			origin := filepath.Join(c.Dir, "origin.git")
+			git(c, c.Dir, "init", "--quiet", "--bare", "-b", "main", origin)
+			git(c, c.Consumer, "remote", "add", "origin", origin)
+			git(c, c.Consumer, "push", "--quiet", "--no-verify", "origin", "main", "develop")
+			git(c, c.Consumer, "config", "branch.autoSetupMerge", "always")
 			got := gitTask(c, "git:worktree:create", "a", "--no-setup")
 			c.CheckThat("worktree base: create exits 0", got == 0)
 			c.CheckThat("worktree base: a starts from the default branch develop",
@@ -904,8 +916,43 @@ func TestWorktreeBase(t *testing.T) {
 			c.CheckThat("worktree base: --current exits 0", got == 0)
 			c.CheckThat("worktree base: b starts from the current branch main",
 				plainGit(c.Consumer, "rev-parse", "b") == plainGit(c.Consumer, "rev-parse", "main"))
+			got = gitTask(c, "git:worktree:create", "e", "--from", "origin/develop", "--no-setup")
+			c.CheckThat("worktree base: --from origin/develop exits 0", got == 0)
+			c.CheckThat("worktree base: e starts from origin/develop",
+				plainGit(c.Consumer, "rev-parse", "e") == plainGit(c.Consumer, "rev-parse", "origin/develop"))
+			c.CheckThat("worktree base: a has no upstream", noUpstream(c, "a"))
+			c.CheckThat("worktree base: b of --current has no upstream", noUpstream(c, "b"))
+			c.CheckThat("worktree base: e of --from origin/develop has no upstream", noUpstream(c, "e"))
 			got = gitTask(c, "git:worktree:create", "d", "--current", "--from", "main", "--no-setup")
 			c.CheckThat("worktree base: --from with --current exits 2", got == 2)
+		}})
+}
+
+// A worktree from --from origin/main lands on main: the merge task finds no
+// upstream for the new branch, so its unpushed check passes. The case removes
+// the hook config, so the hook safety net does not run.
+func TestWorktreeFromOriginMerge(t *testing.T) {
+	prepare := synced(func(c *rc.Case) int {
+		_ = os.Remove(c.Path(".config/pre-commit-config.yaml"))
+		c.CommitConsumer()
+		origin := filepath.Join(c.Dir, "origin.git")
+		git(c, c.Dir, "init", "--quiet", "--bare", "-b", "main", origin)
+		git(c, c.Consumer, "remote", "add", "origin", origin)
+		git(c, c.Consumer, "push", "--quiet", "--no-verify", "-u", "origin", "main")
+		return 0
+	})
+	rc.Run(t, rc.Spec{Name: "git:merge:main of a worktree from origin/main", Values: devValues, Call: prepare,
+		Check: func(c *rc.Case) {
+			wt := c.Path(".worktrees/feature")
+			got := gitTask(c, "git:worktree:create", "feature", "--from", "origin/main", "--no-setup")
+			c.CheckThat("from origin: create exits 0", got == 0)
+			git(c, wt, "commit", "--quiet", "--no-verify", "--allow-empty", "-m", "feature")
+			got = gitTaskIn(c, wt, "git:merge:main", "feature")
+			c.CheckThat("from origin: merge exits 0", got == 0)
+			c.CheckThat("from origin: the unpushed check passes", c.LogHas("Checking if any unpushed commits exist on feature ... local branch"))
+			c.CheckThat("from origin: no unpushed refusal", c.LogLacks("Unpushed commits exist"))
+			c.CheckThat("from origin: main of origin has the commit",
+				plainGit(filepath.Join(c.Dir, "origin.git"), "log", "-1", "--format=%s", "main^2") == "feature")
 		}})
 }
 
