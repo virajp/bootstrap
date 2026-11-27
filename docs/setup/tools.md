@@ -230,7 +230,10 @@ either one.
 - **CLAUDE.md:** bootstrap owns the section between the `bootstrap:start` and
   `bootstrap:end` lines at the top of the file, and each sync writes it again.
   The own rules of the user go after the `bootstrap:end` line, and they stay.
-- **upgrade:ai:** it calls the `claude` command of `claude-cli`.
+- **upgrade:ai:** it calls the `claude` command of `claude-cli`. It updates
+  each plugin of the user scope, but not a plugin of the `builtin`
+  marketplace (`<name>@builtin`): that plugin ships inside Claude Code, and
+  `claude plugin update` cannot find it.
 
 ### `claude-cli`
 
