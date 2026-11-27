@@ -72,6 +72,10 @@ def main():
   plugins = data if isinstance(data, list) else []
   for plugin in plugins:
     if isinstance(plugin, dict) and plugin.get("scope") == "user" and isinstance(plugin.get("id"), str):
+      # A plugin of the builtin marketplace ships inside Claude Code, and
+      # `claude plugin update` cannot find it: it updates with Claude Code.
+      if plugin["id"].endswith("@builtin"):
+        continue
       run("claude", "plugin", "update", plugin["id"], "--yes")
 
   helpers.print_subheader("Prune plugins ...")
