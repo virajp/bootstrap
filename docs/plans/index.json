@@ -1,4 +1,20 @@
 {
   "format": 1,
-  "plans": []
+  "plans": [
+    {
+      "id": "2026-11-27-tool-selection",
+      "folder": "docs/plans/2026-11-27-tool-selection",
+      "kind": "change",
+      "title": "Drop the bun tool, and android depends on kotlin",
+      "target_repo": null,
+      "priority": 10,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [],
+      "backlog": [],
+      "backlog_pieces": []
+    }
+  ]
 }
