@@ -17,7 +17,12 @@ Other repositories copy files from it with their own `setup:configs` task. Read
 The shared files of a repository are in `repo/tools/<tool>/`, one folder for
 each tool: a `tools.toml`, the config files and merge specs in `files/`, the
 task files in `tasks/` and the scripts in `scripts/`. Each file of `files/` and
-`tasks/` has an entry in `tools.toml`. The engine runs a script from the clone
+`tasks/` has an entry in `tools.toml`. A tool folder can also hold a Claude
+Code skill in `files/.claude/skills/<skill>/`, with `when = "claude.skills"`
+on each entry (see `docs/design/tools.md`, "Skills"). The `claude` tool of
+`repo/tools/` owns the bootstrap section at the top of the `CLAUDE.md` of a
+consumer, and the other tools add its dependency and gate lines. The engine runs
+a script from the clone
 and never copies it. The packs are in
 `repo/packs.toml`, outside each tool folder, so the
 sync never copies it. The examples are in `repo/examples/`. The Mac tools are in
@@ -25,7 +30,8 @@ sync never copies it. The examples are in `repo/examples/`. The Mac tools are in
 each tool, and their packs are in `macos/packs.toml`. These
 files are for this repository only:
 
-- At the root: `README.md`, `CLAUDE.md`, `LICENSE`, `dprint.jsonc` (with the
+- At the root: `README.md`, `CLAUDE.md` (except its bootstrap section, which
+  the sync writes), `LICENSE`, `dprint.jsonc` (with the
   excludes of this repository), `eslint.config.mjs` and `go.mod` (the Go
   module of the end-to-end tests).
 - `e2e/`: the end-to-end tests, Go tests of the root module (see "Tests").
@@ -121,7 +127,8 @@ copies this folder.
 This repository is also a consumer of its own `base` pack and of the `claude`
 tool. Its values are in `.config/bootstrap/`. `setup:configs` writes
 the synced copies at the root (`.config/`, `.vscode/`, `.gitignore`,
-`.gitattributes`). Do not edit a synced copy. Change the
+`.gitattributes`, the bootstrap section at the top of `CLAUDE.md` and
+`.claude/skills/`). Do not edit a synced copy. Change the
 file in `repo/tools/<tool>/`, push it, then run `mise run setup:configs` here
 too.
 
@@ -470,7 +477,11 @@ the module of the test (see "The test cache" below).
   stdout; the project cases run `bootstrap detect --json`, `detect` and
   `detect --add --yes` in a scratch consumer with project folders. The
   examples cases run `bootstrap sync --dry-run` with each example of
-  `repo/examples/`. The tool-test-part cases read an old stackgen copy of the
+  `repo/examples/`. The claude files cases run `bootstrap sync` and examine the
+  bootstrap section at the top of `CLAUDE.md` (the own text of the user stays
+  after `bootstrap:end`), the header of each `SKILL.md`, the skills of the
+  selected tools, and the kotlin-only lines of the `gradle` skill. The
+  tool-test-part cases read an old stackgen copy of the
   compose `test/golden` task from the claude-plugins clone of
   `CLAUDE_PLUGINS_CLONE`; without it, each of the four cases is skipped with
   one line.
@@ -509,7 +520,11 @@ the module of the test (see "The test cache" below).
   both sides of `repo/tools/` and `macos/tools/` has one version and one
   `depends`, and a mise setting on both sides has one value (an intended
   difference goes in `driftAllowed`, with a reason); the git tool needs one
-  email only.
+  email only. The claude cases: with `backup`, `~/.claude/skills/secrets/`,
+  the npm hook and its `PreToolUse` item are in `$HOME`, `mac-setup/` and
+  `git-identity/` are real files in the clone, and a foreign item of
+  `~/.claude/skills/` stays a real item in `$HOME`; without `backup`, the two
+  skills of the clone are skipped; the hook cases run the synced hook.
 
 Each check of a case logs one line `CHECK <name>`, and each step of a case one
 line `TIMING <step> <seconds>s`. The cases run in parallel (`t.Parallel`), and

@@ -262,8 +262,13 @@ the header, a seed and a merge target stay.
   `requires`,
   for example `requires = ["package.json"]`.
 - A shared file is in [cli.md](cli.md#shared-files). The
-  `pre-commit`, `dprint`, `git` and `vscode` tools of `repo/tools/` and the
-  `claude`, `gem`, `gh` and `superfile` tools of `macos/tools/` have one.
+  `pre-commit`, `dprint`, `git`, `vscode` and `claude` (`CLAUDE.md`) tools of
+  `repo/tools/` and the
+  `claude`, `gem`, `gh` and `superfile` tools of `macos/tools/` have one. The
+  Mac `claude` tool also ships the copy file `.claude/hooks/npm-normalize.sh`
+  (`perm = "755"`), the `PreToolUse` hook that its `settings.json` spec adds.
+- A skill is a group of `[files]` entries with `when = "claude.skills"`. See
+  [Skills](#skills).
 - The test `e2e/macostools` fails when a `[files]` table gives `mode = "seed"`
   to a
   JSON, YAML
@@ -421,20 +426,25 @@ the tool folder, for example `files/.gitignore` or `tasks/code-format.py.tmpl`:
 
 A file of a Mac tool has `macos/tools/<tool>/<path>` in the header.
 
-| Kind of file   | Place of the header                            |
-| -------------- | ---------------------------------------------- |
-| A script       | After the shebang.                             |
-| YAML           | After `---` when the file has it.              |
-| TOML           | After a `# :schema` line when the file has it. |
-| JSONC          | Inside `{`.                                    |
-| Markdown       | As an HTML comment.                            |
-| Any other file | On the first line.                             |
+| Kind of file   | Place of the header                                                              |
+| -------------- | -------------------------------------------------------------------------------- |
+| A script       | After the shebang.                                                               |
+| YAML           | After `---` when the file has it.                                                |
+| TOML           | After a `# :schema` line when the file has it.                                   |
+| JSONC          | Inside `{`.                                                                      |
+| Markdown       | As an HTML comment.                                                              |
+| A `SKILL.md`   | On lines 2 and 3, as YAML comments inside the frontmatter that starts on line 1. |
+| Any other file | On the first line.                                                               |
 
 The sync does not add this header to a shipped file. The generator of the mise
 config
 writes the same two lines in each generated mise file. See
 [mise.md](mise.md#the-generated-files). The detection of the header is in
 [cli.md](cli.md#the-header).
+
+Claude Code reads the frontmatter of a `SKILL.md` only when it starts on line
+1, so the header of a skill is not an HTML comment above it. The header
+detection reads the first 3 lines, so it finds the header on lines 2 and 3.
 
 A seed and a merge spec have no header. The sync writes the shared header into
 a shared file of a format with comments. See
@@ -446,14 +456,20 @@ A `tools.toml` can have three optional tables for the values of a tool. A
 template reads
 the values as `.config` (the values of its tool) and `.all` (the values of each
 selected
-tool, by tool name). The `pre-commit`, `dprint`, `vscode` and `mise` tools of
+tool, by tool name). The `pre-commit`, `dprint`, `vscode`, `mise` and `claude`
+tools of
 `repo/tools/` use `[defaults]`, and many repo tools use `[contributes]` for the
-hooks of `pre-commit`, the blocks of `dprint` and the extensions of `vscode`. A
+hooks of `pre-commit`, the blocks of `dprint`, the extensions of `vscode` and
+the lines of the `CLAUDE.md` section of `claude`
+(`[contributes.claude.claude_md.deps]` and
+`[contributes.claude.claude_md.gates]`). A
 tool can also add `code_files` patterns of `mise` there.
 Mac tools such as
 `fish`, `git`, `ssh`, `gh` and `macos-defaults` use `[defaults]` or
 `[questions]`. The
-Mac tools `1password` and `orbstack` use `[contributes]`. The merge of these
+Mac tools `1password` and `orbstack` use `[contributes]`, and the contributors
+of a Mac skill add their lines in `[contributes.<owner>.skill.lines]` (see
+[Skills](#skills)). The merge of these
 values is
 in [cli.md](cli.md#the-values-of-a-tool).
 
@@ -543,6 +559,50 @@ with code 2, for example
 `the group git.email has no answer in macos.toml - run bootstrap mac migrate`.
 A template that needs a value without a question uses
 `required`, which fails that file with its message.
+
+## Skills
+
+A tool that owns a Claude Code skill ships its folder
+`.claude/skills/<skill>/` with three `[files]` entries:
+
+| File                        | Mode       | Use                                                                     |
+| --------------------------- | ---------- | ----------------------------------------------------------------------- |
+| `SKILL.md`                  | `template` | The skill. It reads `.all` and `.config`, and names the two references. |
+| `references/conventions.md` | `copy`     | The conventions of the skill.                                           |
+| `references/local.md`       | `seed`     | The own rules of the consumer. `SKILL.md` always names it.              |
+
+A short contribution of another tool is a value: on the Mac side, the owner
+has `[defaults.skill.lines]` as an empty table, a contributor writes
+`[contributes.<owner>.skill.lines] <tool> = "<line>"`, and `SKILL.md` renders
+one bullet for each key, in key order. A long contribution is a copy file
+`references/<tool>.md` that the contributing tool ships into the skill folder
+of the owner. A template tests that a tool is selected with
+`has .all "<tool>"`, because a tool with no `[defaults]` is an empty table.
+The stale rule removes the synced files of a tool that leaves the selection.
+The seed `references/local.md` stays.
+
+Each skill entry has `when = "claude.skills"`. The `claude` tool of each side
+has `[defaults] skills = true`, so a consumer without `claude`, or with
+`skills = false`, gets no skill. On the repo side, `skills` does not stop the
+bootstrap section of `CLAUDE.md`.
+
+| Side | Skill          | Owner    | Contributors                                  | Target                               |
+| ---- | -------------- | -------- | --------------------------------------------- | ------------------------------------ |
+| Repo | `typescript`   | `node`   | None                                          | The repository                       |
+| Repo | `pnpm`         | `pnpm`   | None                                          | The repository                       |
+| Repo | `kotlin`       | `kotlin` | None                                          | The repository                       |
+| Repo | `gradle`       | `java`   | None                                          | The repository                       |
+| Repo | `swift`        | `swift`  | None                                          | The repository                       |
+| Mac  | `secrets`      | `fnox`   | `1password-cli`, `age`                        | `~/.claude/skills/`                  |
+| Mac  | `mac-setup`    | `mise`   | `homebrew`, `mas`, `setapp`, `macos-defaults` | The backup clone (`root = "backup"`) |
+| Mac  | `git-identity` | `git`    | `1password`, `ssh`, `gh`, `glab`              | The backup clone (`root = "backup"`) |
+
+A skill has only the opinions of the owner, the ties to `bootstrap` (tasks,
+mise, seeds) and the traps that the docs of the tool do not warn about. A rule
+that the docs of the tool teach, or that a gate or a shipped seed enforces, is
+not in a skill. A tool with gate rules only gets no skill: each gate gives one
+line of the `CLAUDE.md` section instead. See
+[`docs/memory/decisions/2026-11-28-tool-skills-are-bootstraps.md`](../memory/decisions/2026-11-28-tool-skills-are-bootstraps.md).
 
 ## Tools and packs
 

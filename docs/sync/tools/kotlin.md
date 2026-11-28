@@ -3,13 +3,13 @@
 The Kotlin language server, the ktlint and detekt gates, and the task that
 resolves the Gradle dependencies against the lockfiles.
 
-| Property     | Value                                               |
-| ------------ | --------------------------------------------------- |
-| Root only    | No                                                  |
-| Depends      | `java`                                              |
-| Parent       | None                                                |
-| Default envs | dev                                                 |
-| Seeds        | `.config/ktlint.editorconfig`, `.config/detekt.yml` |
+| Property     | Value                                                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Root only    | No                                                                                                                          |
+| Depends      | `java`                                                                                                                      |
+| Parent       | None                                                                                                                        |
+| Default envs | dev                                                                                                                         |
+| Seeds        | `.config/ktlint.editorconfig`, `.config/detekt.yml`, `.claude/skills/kotlin/references/local.md`, only with `claude` skills |
 
 ## When the tool is relevant
 
@@ -33,14 +33,22 @@ Gradle file at the root, or one level below it, uses the Kotlin plugin (see
 
 ## What the tool ships
 
-| Path in the repository                        | Kind      | Use                                                |
-| --------------------------------------------- | --------- | -------------------------------------------------- |
-| `.config/mise/tasks/setup/deps/30-kotlin.py`  | Synced    | The task `setup:deps:30-kotlin`.                   |
-| `.config/mise/tasks/code/format/30-ktlint.py` | Synced    | The task `code:format:30-ktlint`.                  |
-| `.config/mise/tasks/code/lint/30-detekt.py`   | Synced    | The task `code:lint:30-detekt`.                    |
-| `.config/ktlint.editorconfig`                 | Seed      | The ktlint rules: `ktlint_official`, lines of 120. |
-| `.config/detekt.yml`                          | Seed      | The changes to the default detekt rules.           |
-| `.config/mise/conf.d/kotlin/mise.<env>.toml`  | Generated | The mise config of this tool.                      |
+| Path in the repository                            | Kind      | Use                                                                                |
+| ------------------------------------------------- | --------- | ---------------------------------------------------------------------------------- |
+| `.config/mise/tasks/setup/deps/30-kotlin.py`      | Synced    | The task `setup:deps:30-kotlin`.                                                   |
+| `.config/mise/tasks/code/format/30-ktlint.py`     | Synced    | The task `code:format:30-ktlint`.                                                  |
+| `.config/mise/tasks/code/lint/30-detekt.py`       | Synced    | The task `code:lint:30-detekt`.                                                    |
+| `.config/ktlint.editorconfig`                     | Seed      | The ktlint rules: `ktlint_official`, lines of 120.                                 |
+| `.config/detekt.yml`                              | Seed      | The changes to the default detekt rules.                                           |
+| `.config/mise/conf.d/kotlin/mise.<env>.toml`      | Generated | The mise config of this tool.                                                      |
+| `.claude/skills/kotlin/SKILL.md`                  | Template  | The Claude Code skill `kotlin`. Only with `claude` skills.                         |
+| `.claude/skills/kotlin/references/conventions.md` | Synced    | The conventions of the skill `kotlin`. Only with `claude` skills.                  |
+| `.claude/skills/kotlin/references/local.md`       | Seed      | The own rules of the repository for the skill `kotlin`. Only with `claude` skills. |
+
+The skill files have `when = "claude.skills"`: the sync writes them only
+when the repository selects the `claude` tool and its value `skills` is
+`true` (the default). `SKILL.md` names `references/conventions.md` and
+`references/local.md`. See [`claude-tool.md`](claude-tool.md).
 
 ## mise tools
 
@@ -125,7 +133,13 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Contributions
 
-None.
+| Tool     | Shared file | Items                                                                                                                                                                                   |
+| -------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `claude` | `CLAUDE.md` | The gate lines of `code:format:30-ktlint` and `code:lint:30-detekt` (`[contributes.claude.claude_md.gates]`), and the dependency line `kotlin` (`[contributes.claude.claude_md.deps]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 ## Values
 
@@ -178,3 +192,5 @@ None.
   stay as they are: the sync does not write a seed that exists.
 - If the Gradle build uses the Groovy DSL (`*.gradle`), do the migration of
   [`kotlin-dsl.md`](../kotlin-dsl.md) when the user agrees.
+- Delete the old stackgen copy of `.claude/skills/kotlin/` before the next sync
+  (M62 of `migrate.md`).

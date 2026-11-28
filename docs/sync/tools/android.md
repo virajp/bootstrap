@@ -160,7 +160,13 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Contributions
 
-None.
+| Tool     | Shared file | Items                                                                             |
+| -------- | ----------- | --------------------------------------------------------------------------------- |
+| `claude` | `CLAUDE.md` | The gate line of `code:lint:10-android` (`[contributes.claude.claude_md.gates]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 ## Values
 

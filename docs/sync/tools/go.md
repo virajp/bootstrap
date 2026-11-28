@@ -102,10 +102,15 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Contributions
 
-| Tool     | Shared file               | Items                                                                                   |
-| -------- | ------------------------- | --------------------------------------------------------------------------------------- |
-| `dprint` | `dprint.jsonc`            | The plugin `@dprint/exec`, and an `exec` command for the `go` files: `mise x -- gofmt`. |
-| `vscode` | `.vscode/extensions.json` | `golang.go`                                                                             |
+| Tool     | Shared file               | Items                                                                                                  |
+| -------- | ------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `dprint` | `dprint.jsonc`            | The plugin `@dprint/exec`, and an `exec` command for the `go` files: `mise x -- gofmt`.                |
+| `vscode` | `.vscode/extensions.json` | `golang.go`                                                                                            |
+| `claude` | `CLAUDE.md`               | The gate lines of `code:lint:40-go` and `code:lint:45-gomod` (`[contributes.claude.claude_md.gates]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 ## Values
 

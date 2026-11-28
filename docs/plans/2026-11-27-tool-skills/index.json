@@ -13,7 +13,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING — wave 3 (U5 review row) waits on Q3 (the pnpm alias npx = pnpm dlx) in .worktrees/all-2026-11-28-1412"
+    "detail": "RUNNING — wave 4 (U6 docs) in .worktrees/all-2026-11-28-1412"
   },
   "consent": {
     "merge": true,
@@ -202,11 +202,11 @@
         "U5"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-28T10:14:18.576Z",
+      "ended": "2026-11-28T10:24:29.044Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U7",
@@ -250,8 +250,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T10:14:18.509Z",
       "ended": ""
     },
     {
@@ -476,6 +476,15 @@
       "rejected": "leave it and record a follow-up; keep pnpm dlx on purpose",
       "units": [
         "U1",
+        "U6"
+      ]
+    },
+    {
+      "id": "D21",
+      "decision": "Q4: U6 Edit 6 targets docs/prompts/2026-11-27-mise-skill-and-flutter-test.md, which .gitignore ignores, so it exists only in the main checkout. Should U6 edit the main-checkout copy?",
+      "ruling": "Edit the main-checkout copy of docs/prompts/2026-11-27-mise-skill-and-flutter-test.md. Nothing is committed for it.",
+      "rejected": "skip Edit 6; copy the file into the worktree and edit it there",
+      "units": [
         "U6"
       ]
     }

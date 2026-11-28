@@ -98,7 +98,8 @@ in more than one pack, or in no pack. Only a member of `base` can be required.
 - **Files:**
   - `~/.config/1Password/ssh/agent.toml` — template
 - **Contributes to `ssh`:** `identity_agent`
-- **Contributes to `git`:** `gpg.ssh.program`
+- **Contributes to `git`:** `gpg.ssh.program`, and the line `1password` of
+  `skill.lines` (the skill `git-identity`)
 - **Mise sections:** `[mise.bootstrap.packages]`
 - **Question `ssh_vault`:**
   [`macos/tools/1password/tools.toml`](../../macos/tools/1password/tools.toml)
@@ -110,6 +111,8 @@ The 1Password CLI (op).
 - **Packs:** `1password-apps`
 - **Depends:** `1password`
 - **Files:** none
+- **Contributes to `fnox`:** the line `1password-cli` of `skill.lines` (the
+  skill `secrets`)
 - **Mise sections:** `[mise.tools]`
 
 ### `1password-safari`
@@ -127,6 +130,8 @@ age, the encryption tool.
 
 - **Packs:** `base` (required)
 - **Files:** none
+- **Contributes to `fnox`:** the line `age` of `skill.lines` (the skill
+  `secrets`)
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `alfred`
@@ -211,28 +216,50 @@ Cardhop, from the Mac App Store.
 
 ### `claude`
 
-The shared Claude files: settings.json, CLAUDE.md and the upgrade:ai task.
-`claude-cli` and `claude-desktop` depend on it, so the sync adds it with
-either one.
+The shared Claude files: settings.json, CLAUDE.md, the npm hook, the skills of
+the Mac tools and the upgrade:ai task. `claude-cli` and `claude-desktop` depend
+on it, so the sync adds it with either one.
 
 - **Packs:** none
+- **Depends:** `jq`. The npm hook reads its JSON input with jq.
 - **Files:**
   - `~/.claude/CLAUDE.md` — merge
+  - `~/.claude/hooks/npm-normalize.sh` — copy, `perm` `755`
   - `~/.claude/settings.json` — merge
 - **Tasks:**
   - `~/.config/mise/tasks/upgrade/ai.py`
-- **Runtime:** `~/.claude/history.jsonl`, `~/.claude/projects`,
-  `~/.claude/sessions`. Thus the backup clone links the synced files of
-  `~/.claude` one by one.
-- **Defaults:** `settings`, `lists`
+- **Runtime:** `~/.claude/history.jsonl`, `~/.claude/hooks`,
+  `~/.claude/projects`, `~/.claude/sessions`, `~/.claude/skills`. Thus the
+  backup clone links the synced files of `~/.claude` one by one. Other
+  programs also write items into `~/.claude/skills` and `~/.claude/hooks`, so
+  the backup clone links each synced item of these two folders one by one,
+  and each other item stays a real item in `$HOME`.
+- **Defaults:** `settings`, `lists`, `skills`. `skills = true` (the default)
+  ships the skills of the Mac tools: `secrets` of `fnox`, and `mac-setup` of
+  `mise` and `git-identity` of `git` in the backup clone. Each skill entry has
+  `when = "claude.skills"`, so `skills = false` stops all of them.
 - **Mise sections:** none
 - **Settings:** The merge spec adds only `$schema`, the install keys of `env`
-  and, with `claude-status`, its status lines and hook. The own keys of the
+  and, with `claude-status`, its status lines and hook, and the `PreToolUse`
+  item of the npm hook (matcher `Bash`). The own keys of the
   user are in `settings` of `[tools.claude]`. `lists` maps a dotted path, for
   example `"permissions.allow"`, to the items that the sync adds to that list.
 - **CLAUDE.md:** bootstrap owns the section between the `bootstrap:start` and
   `bootstrap:end` lines at the top of the file, and each sync writes it again.
   The own rules of the user go after the `bootstrap:end` line, and they stay.
+- **npm hook:** before each Bash command of Claude Code, the hook changes the
+  command when pnpm is on PATH: each `npm ci` becomes
+  `pnpm install --frozen-lockfile` (also before `;`, `&`, `|`, `)`, `<` and
+  `>`), `npx` becomes `pnpm exec` with its flags kept, and each other `npm`
+  becomes `pnpm`. It finds a command at the start of the line, after `;`, `&`
+  or `|`, and after `$(`. It changes nothing, and prints `{}`, when pnpm is not
+  on PATH, or when the command holds a newline, a quote or a backslash. It
+  returns only `updatedInput`, with the whole `tool_input` and only the
+  command changed, and no permission decision: the changed command goes
+  through the normal permission rules. The change comes before the permission
+  check, so an npm-only deny or ask rule, for example `Bash(npm publish:*)`,
+  does not match the changed pnpm command. Add a matching pnpm rule, for
+  example `Bash(pnpm publish:*)`, in `lists` of `[tools.claude]`.
 - **upgrade:ai:** it calls the `claude` command of `claude-cli`. It updates
   each plugin of the user scope, but not a plugin of the `builtin`
   marketplace (`<name>@builtin`): that plugin ships inside Claude Code, and
@@ -450,11 +477,23 @@ login shell.
 
 ### `fnox`
 
-fnox: secrets from the macOS Keychain, with a profile per consumer.
+fnox: secrets from the macOS Keychain, with a profile per consumer, and the
+Claude skill `secrets`.
 
 - **Packs:** `base` (required)
 - **Files:**
   - `~/.config/fnox/config.toml` — copy
+  - `~/.claude/skills/secrets/SKILL.md` — template, `when = "claude.skills"`
+  - `~/.claude/skills/secrets/references/conventions.md` — copy,
+    `when = "claude.skills"`
+  - `~/.claude/skills/secrets/references/local.md` — seed,
+    `when = "claude.skills"`
+- **Defaults:** `skill.lines`, an empty table. `1password-cli` and `age` add
+  their lines.
+- **Skill `secrets`:** secrets come from fnox (the macOS Keychain) or op. Give
+  a secret to a command with `fnox exec` or `op run`. Never print a secret,
+  never write it to a file, never put it in the chat. The skill ships only
+  when the `claude` tool is selected and its value `skills` is `true`.
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `fzf`
@@ -494,6 +533,8 @@ aliases.
   - `~/.config/gh/config.yml` — merge
 - **Runtime:** `~/.config/gh/hosts.yml`. Thus the backup clone links
   `config.yml`, not `~/.config/gh`.
+- **Contributes to `git`:** the line `gh` of `skill.lines` (the skill
+  `git-identity`)
 - **Mise sections:** `[mise.bootstrap.packages]`
 - **Question `editor`:**
   [`macos/tools/gh/tools.toml`](../../macos/tools/gh/tools.toml)
@@ -510,8 +551,8 @@ Ghostty, the terminal emulator, and its config.
 
 ### `git`
 
-git, its global config, the commit identity per forge (GitHub, GitLab) and the
-git aliases.
+git, its global config, the commit identity per forge (GitHub, GitLab), the
+git aliases and the Claude skill `git-identity` of the backup clone.
 
 - **Packs:** `base` (required)
 - **Depends:** `cli`, `diff-so-fancy`
@@ -523,7 +564,20 @@ git aliases.
   - `~/.config/git/identity` — template
   - `~/.config/git/ignore` — copy
   - `~/.github/git-commit-guidelines.md` — copy
-- **Defaults:** `core_editor`
+  - `<backup>/.claude/skills/git-identity/SKILL.md` — template,
+    `root = "backup"`, `when = "claude.skills"`
+  - `<backup>/.claude/skills/git-identity/references/conventions.md` — copy,
+    `root = "backup"`, `when = "claude.skills"`
+  - `<backup>/.claude/skills/git-identity/references/local.md` — seed,
+    `root = "backup"`, `when = "claude.skills"`
+- **Defaults:** `core_editor`, and `skill.lines`, an empty table. `1password`,
+  `ssh`, `gh` and `glab` add their lines.
+- **Skill `git-identity`:** the identity for each forge comes from `includeIf`,
+  never a local `user.email`. The 1Password SSH signer signs the commits. If a
+  signature fails, tell the user to unlock 1Password, and never turn off
+  signing. Use `gh auth status` and `glab auth status`, and never print a
+  token. `<backup>` is the backup clone (`macos-setup`), the key `backup` of
+  `macos.toml`. Without `backup`, the sync skips the skill.
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 - **Question `name`:**
   [`macos/tools/git/tools.toml`](../../macos/tools/git/tools.toml)
@@ -569,6 +623,8 @@ glab, the GitLab CLI.
 
 - **Packs:** `base` (required)
 - **Files:** none
+- **Contributes to `git`:** the line `glab` of `skill.lines` (the skill
+  `git-identity`)
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `google-chrome`
@@ -610,6 +666,8 @@ its shellenv in bash, zsh and fish.
 - **Tasks:**
   - `~/.config/mise/tasks/brew/casks.py`
   - `~/.config/mise/tasks/upgrade/brew.py`
+- **Contributes to `mise`:** the line `homebrew` of `skill.lines` (the skill
+  `mac-setup`)
 - **Mise sections:** `[mise.env]`, `[mise.shell_alias]`
 
 ### `httping`
@@ -686,6 +744,8 @@ and trackpad.
 
 - **Packs:** `base` (required)
 - **Files:** none
+- **Contributes to `mise`:** the line `macos-defaults` of `skill.lines` (the
+  skill `mac-setup`)
 - **Mise sections:** `[mise.bootstrap.macos]`, `[mise.bootstrap.hooks]`
 - **Question `dock_orientation`:**
   [`macos/tools/macos-defaults/tools.toml`](../../macos/tools/macos-defaults/tools.toml)
@@ -705,6 +765,8 @@ Mac App Store command-line interface.
 
 - **Packs:** `base` (required)
 - **Files:** none
+- **Contributes to `mise`:** the line `mas` of `skill.lines` (the skill
+  `mac-setup`)
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `microsoft-excel`
@@ -737,7 +799,8 @@ Microsoft Word, from the Mac App Store.
 ### `mise`
 
 mise: its user-level config, its activation in bash, zsh and fish, ~/.zprofile,
-and the entry tasks of the Mac sync.
+the entry tasks of the Mac sync and the Claude skill `mac-setup` of the backup
+clone.
 
 - **Packs:** `base` (required)
 - **Depends:** `cli`, `python`, `uv`
@@ -748,6 +811,12 @@ and the entry tasks of the Mac sync.
   - `~/.config/mise/miserc.toml` — copy
   - `~/.config/zsh/01b-mise.zsh` — template
   - `~/.zprofile` — copy
+  - `<backup>/.claude/skills/mac-setup/SKILL.md` — template,
+    `root = "backup"`, `when = "claude.skills"`
+  - `<backup>/.claude/skills/mac-setup/references/conventions.md` — copy,
+    `root = "backup"`, `when = "claude.skills"`
+  - `<backup>/.claude/skills/mac-setup/references/local.md` — seed,
+    `root = "backup"`, `when = "claude.skills"`
 - **Tasks:**
   - `~/.config/mise/tasks/_scripts/helpers.py` — library
   - `~/.config/mise/tasks/updateall/_default.py`
@@ -755,6 +824,14 @@ and the entry tasks of the Mac sync.
   - `~/.config/mise/tasks/upgrade/macos/download.py`
   - `~/.config/mise/tasks/upgrade/macos/upgrade.py`
   - `~/.config/mise/tasks/upgrade/power.py`
+- **Defaults:** `skill.lines`, an empty table. `homebrew`, `mas`, `setapp`
+  and `macos-defaults` add their lines.
+- **Skill `mac-setup`:** to install or remove a tool or an app, or to change a
+  setting, edit `macos.toml` and run `mise run updateall:configs`. Never run
+  `brew install`, `mise use -g` or `defaults write` directly. The dev tools
+  come from mise, the others from Homebrew. A file with the
+  `Synced from bootstrap` header is changed in `bootstrap`. `<backup>` is the
+  backup clone (`macos-setup`). Without `backup`, the sync skips the skill.
 - **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.tools]`, `[mise.bootstrap.packages]`,
   `[mise.shell_alias]`
@@ -988,6 +1065,8 @@ Collection of apps available by subscription.
 
 - **Packs:** `essentials`
 - **Files:** none
+- **Contributes to `mise`:** the line `setapp` of `skill.lines` (the skill
+  `mac-setup`)
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `sill`
@@ -1010,6 +1089,8 @@ agent that other tools contribute.
 - **Folder mode:** `dir_perm` keeps the folder `~/.ssh` at mode 700.
 - **Runtime:** `~/.ssh/known_hosts`, `~/.ssh/known_hosts.old`. Thus the backup
   clone links the synced files of `~/.ssh` one by one.
+- **Contributes to `git`:** the line `ssh` of `skill.lines` (the skill
+  `git-identity`)
 - **Question `user`:**
   [`macos/tools/ssh/tools.toml`](../../macos/tools/ssh/tools.toml)
 

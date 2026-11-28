@@ -389,7 +389,11 @@ The link rule picks the level of each link:
    backup.
 
 A runtime file is a file that the program of a tool writes, which must not go
-into git, for example `.config/fish/fish_variables`. The key `runtime` of the
+into git, for example `.config/fish/fish_variables`. A runtime path can also be
+a folder where other programs write their own items, for example
+`.claude/skills` of the `claude` tool: the folder is never linked, so the sync
+links each synced item in it one by one, and each other item stays a real item
+in `$HOME`. The key `runtime` of the
 `tools.toml` of a Mac tool names them: a list of paths relative to `$HOME`,
 with no `~`, no `..` and no `/` at the start or the end.
 

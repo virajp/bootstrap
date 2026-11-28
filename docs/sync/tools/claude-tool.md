@@ -1,9 +1,10 @@
 # The `claude` tool
 
-The AI tools: `setup:ai`, which installs the listed Claude Code plugins,
-uninstalls the project plugins that it installed and that left the list, and
-updates the plugins with `--upgrade`. No pack has this tool: select it with
-`[tools.claude]`.
+The AI tools: the bootstrap section at the top of `CLAUDE.md`, the Claude Code
+skills of the selected tools in `.claude/skills/`, and `setup:ai`, which
+installs the listed Claude Code plugins, uninstalls the project plugins that it
+installed and that left the list, and updates the plugins with `--upgrade`. No
+pack has this tool: select it with `[tools.claude]`.
 
 | Property     | Value |
 | ------------ | ----- |
@@ -25,9 +26,57 @@ finds `CLAUDE.md` and `.claude/` at the root.
 
 ## What the tool ships
 
-| Path in the repository           | Kind   | Use                  |
-| -------------------------------- | ------ | -------------------- |
-| `.config/mise/tasks/setup/ai.py` | Synced | The task `setup:ai`. |
+| Path in the repository           | Kind   | Use                                                      |
+| -------------------------------- | ------ | -------------------------------------------------------- |
+| `CLAUDE.md`                      | Shared | The bootstrap section at the top of the file. See below. |
+| `.config/mise/tasks/setup/ai.py` | Synced | The task `setup:ai`.                                     |
+
+### The bootstrap section of `CLAUDE.md`
+
+`CLAUDE.md` is a shared file. The sync renders the spec
+`files/CLAUDE.md.merge.toml` with the values of this tool, then writes one
+section between two comment lines that start with `bootstrap:start` and
+`bootstrap:end`. A new section goes at the top of the file, after the shared
+header. The sync writes the section again on each sync: a change between the
+markers is lost. Write the own rules of the repository
+after the `bootstrap:end` line: they stay. The section has no heading, so it
+can stay above the first heading of the file. It has three parts, each with a
+bold label:
+
+- **Tasks**: run a task with `mise run`, the aggregate tasks
+  (`code:precommit` only when the repository selects `pre-commit`), the number
+  prefix of a part, `bootstrap add tool` to add a tool, the `mise x --` prefix
+  and the form of an own task.
+- **Dependencies**: install and upgrade with `mise run setup`, a range in the
+  manifest and the exact version in the lockfile, ask the user before a new
+  dependency, and a lockfile merge conflict. Then one line for each key of
+  `claude_md.deps`, in key order.
+- **Gates**: one line for each key of `claude_md.gates` (key: the gate task),
+  in key order. Without a gate line, the sync does not write this part.
+
+The section ships when the repository selects `claude`. The value `skills`
+does not stop it.
+
+### The skills
+
+Each tool that owns a skill ships its folder `.claude/skills/<skill>/`:
+`SKILL.md` (a template), `references/conventions.md` (synced) and the seed
+`references/local.md`, for the own rules of the repository. `SKILL.md` names
+the two references. Each skill entry has `when = "claude.skills"`, so the sync
+writes it only when the repository selects `claude` and `skills` is `true`
+(the default).
+
+| Skill        | Owner tool |
+| ------------ | ---------- |
+| `typescript` | `node`     |
+| `pnpm`       | `pnpm`     |
+| `kotlin`     | `kotlin`   |
+| `gradle`     | `java`     |
+| `swift`      | `swift`    |
+
+When a tool leaves the selection, or after `skills = false`, the sync removes
+the synced files of its skill. The seed `references/local.md` stays, in a
+folder with no `SKILL.md`. You can delete that folder.
 
 ## mise tools
 
@@ -88,19 +137,27 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Contributions
 
-None. Other tools contribute plugin entries in `[contributes.claude]`, for
-example `virajp-plugins`. Each tool file lists them.
+None. Other tools contribute to this tool in `[contributes.claude]`, and each
+tool file lists them:
+
+- Plugin entries, for example `virajp-plugins`.
+- The lines of the `CLAUDE.md` section: `[contributes.claude.claude_md.deps]`
+  (key: the tool, value: one line) and `[contributes.claude.claude_md.gates]`
+  (key: the gate task, value: one line), for example `kotlin` and `dprint`.
 
 ## Values
 
 The keys of `[tools.claude]` in `.config/bootstrap/tools.toml`:
 
-| Key                              | Use                                                                           |
-| -------------------------------- | ----------------------------------------------------------------------------- |
-| `env`                            | The environments of the tool.                                                 |
-| `[tools.claude.plugins.user]`    | The plugins that `setup:ai` installs at user scope.                           |
-| `[tools.claude.plugins.project]` | The plugins that `setup:ai` installs at project scope.                        |
-| `plugins.installed`              | The record of `setup:ai`: the project plugins that it installed. Not by hand. |
+| Key                              | Use                                                                                                                  |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `env`                            | The environments of the tool.                                                                                        |
+| `skills`                         | `true` (the default) ships the skills of the selected tools. `false` stops all of them, not the `CLAUDE.md` section. |
+| `[tools.claude.claude_md.deps]`  | The dependency lines of the `CLAUDE.md` section. Empty by default; the selected tools contribute them.               |
+| `[tools.claude.claude_md.gates]` | The gate lines of the `CLAUDE.md` section. Empty by default; the selected tools contribute them.                     |
+| `[tools.claude.plugins.user]`    | The plugins that `setup:ai` installs at user scope.                                                                  |
+| `[tools.claude.plugins.project]` | The plugins that `setup:ai` installs at project scope.                                                               |
+| `plugins.installed`              | The record of `setup:ai`: the project plugins that it installed. Not by hand.                                        |
 
 Each key of the two plugin tables is a plugin, `<name>@<marketplace>`. Its value
 is the source of the
@@ -121,7 +178,7 @@ empty:
 installed while listed. It uninstalls a recorded plugin that leaves
 `[tools.claude.plugins.project]`. Do not edit it by hand.
 
-The sync does not use these keys. `setup:ai` reads them with
+The sync does not use the plugin keys. `setup:ai` reads them with
 `bootstrap config get tools.claude.plugins.<key>` when it runs, so a table has
 the entries that other selected tools contribute too. No questions. The rules of
 the keys are in
@@ -129,7 +186,9 @@ the keys are in
 
 ## Files the repository supplies
 
-None.
+| File        | Used by                                           |
+| ----------- | ------------------------------------------------- |
+| `CLAUDE.md` | The sync. It keeps each line outside the section. |
 
 ## Adapt to the repository
 
@@ -138,6 +197,10 @@ None.
    `[tools.claude.plugins.project]`.
 
 ## Migration
+
+- M62 of `migrate.md`: the next sync adds the bootstrap section at the top of
+  `CLAUDE.md` and the skills of the selected tools. A repository with
+  stackgen copies in `.claude/skills/` deletes them first.
 
 - The tool no longer ships graphify and mempalace (M24 of `migrate.md`).
 - Delete an old `conf.d/ai/` (M7 of `migrate.md`).

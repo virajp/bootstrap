@@ -3,13 +3,13 @@
 pnpm, the package manager of a repository that selects it. A repository with a
 `package.json` selects this tool or the [`aube`](aube.md) tool, not both.
 
-| Property     | Value                                                                                     |
-| ------------ | ----------------------------------------------------------------------------------------- |
-| Root only    | No                                                                                        |
-| Depends      | `node`                                                                                    |
-| Parent       | `node`. `bootstrap replace tool <old> <new>` changes a tool for another with that parent. |
-| Default envs | dev, ci                                                                                   |
-| Seeds        | `pnpm-workspace.yaml`, only with a `package.json`                                         |
+| Property     | Value                                                                                                                   |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Root only    | No                                                                                                                      |
+| Depends      | `node`                                                                                                                  |
+| Parent       | `node`. `bootstrap replace tool <old> <new>` changes a tool for another with that parent.                               |
+| Default envs | dev, ci                                                                                                                 |
+| Seeds        | `pnpm-workspace.yaml`, only with a `package.json`, `.claude/skills/pnpm/references/local.md`, only with `claude` skills |
 
 ## When the tool is relevant
 
@@ -21,10 +21,18 @@ pnpm, the package manager of a repository that selects it. A repository with a
 
 ## What the tool ships
 
-| Path in the repository                     | Kind      | Use                                                                            |
-| ------------------------------------------ | --------- | ------------------------------------------------------------------------------ |
-| `pnpm-workspace.yaml`                      | Seed      | The pnpm settings. The sync writes it only with a `package.json` (`requires`). |
-| `.config/mise/conf.d/pnpm/mise.<env>.toml` | Generated | The mise config of this tool.                                                  |
+| Path in the repository                          | Kind      | Use                                                                              |
+| ----------------------------------------------- | --------- | -------------------------------------------------------------------------------- |
+| `pnpm-workspace.yaml`                           | Seed      | The pnpm settings. The sync writes it only with a `package.json` (`requires`).   |
+| `.config/mise/conf.d/pnpm/mise.<env>.toml`      | Generated | The mise config of this tool.                                                    |
+| `.claude/skills/pnpm/SKILL.md`                  | Template  | The Claude Code skill `pnpm`. Only with `claude` skills.                         |
+| `.claude/skills/pnpm/references/conventions.md` | Synced    | The conventions of the skill `pnpm`. Only with `claude` skills.                  |
+| `.claude/skills/pnpm/references/local.md`       | Seed      | The own rules of the repository for the skill `pnpm`. Only with `claude` skills. |
+
+The skill files have `when = "claude.skills"`: the sync writes them only
+when the repository selects the `claude` tool and its value `skills` is
+`true` (the default). `SKILL.md` names `references/conventions.md` and
+`references/local.md`. See [`claude-tool.md`](claude-tool.md).
 
 The seed has strict settings: `strictDepBuilds`, a minimum release age of 24
 hours, `blockExoticSubdeps`, `trustPolicy: no-downgrade` and
@@ -36,7 +44,8 @@ hours, `blockExoticSubdeps`, `trustPolicy: no-downgrade` and
 | --------- | -------- | ------------ |
 | `pnpm`    | `latest` | dev, ci      |
 
-The tool also sets the shell alias `npx = "pnpm dlx"`.
+The tool also sets the shell alias `npx = "pnpm exec"`: `npx <bin>` runs the
+locked bin of the repository, and does not fetch a package.
 
 ## Tasks
 
@@ -58,7 +67,13 @@ parent, and only in a work tree without changes that are not committed.
 
 ## Contributions
 
-None.
+| Tool     | Shared file | Items                                                               |
+| -------- | ----------- | ------------------------------------------------------------------- |
+| `claude` | `CLAUDE.md` | The dependency line `pnpm` (`[contributes.claude.claude_md.deps]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 ## Values
 
@@ -101,3 +116,5 @@ in the seed:
 - If the old files pin a different version, tell the user. For example, a
   repository pins pnpm `12` (M6 of `migrate.md`).
 - Delete the old `setup/pnpm/*` tasks (M2).
+- Delete the old stackgen copy of `.claude/skills/pnpm/` before the next sync
+  (M62 of `migrate.md`).

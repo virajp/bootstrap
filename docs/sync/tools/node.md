@@ -3,13 +3,13 @@
 Node. A repository with a `package.json` also selects one package manager: the
 [`pnpm`](pnpm.md) tool or the [`aube`](aube.md) tool.
 
-| Property     | Value   |
-| ------------ | ------- |
-| Root only    | No      |
-| Depends      | None    |
-| Parent       | None    |
-| Default envs | dev, ci |
-| Seeds        | None    |
+| Property     | Value                                                                      |
+| ------------ | -------------------------------------------------------------------------- |
+| Root only    | No                                                                         |
+| Depends      | None                                                                       |
+| Parent       | None                                                                       |
+| Default envs | dev, ci                                                                    |
+| Seeds        | `.claude/skills/typescript/references/local.md`, only with `claude` skills |
 
 ## When the tool is relevant
 
@@ -28,10 +28,18 @@ are in [`docs/design/mise.md`](../../design/mise.md).
 
 ## What the tool ships
 
-| Path in the repository                     | Kind      | Use                            |
-| ------------------------------------------ | --------- | ------------------------------ |
-| `.config/mise/tasks/setup/deps/40-node.py` | Synced    | The task `setup:deps:40-node`. |
-| `.config/mise/conf.d/node/mise.<env>.toml` | Generated | The mise config of this tool.  |
+| Path in the repository                                | Kind      | Use                                                                                    |
+| ----------------------------------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| `.config/mise/tasks/setup/deps/40-node.py`            | Synced    | The task `setup:deps:40-node`.                                                         |
+| `.config/mise/conf.d/node/mise.<env>.toml`            | Generated | The mise config of this tool.                                                          |
+| `.claude/skills/typescript/SKILL.md`                  | Template  | The Claude Code skill `typescript`. Only with `claude` skills.                         |
+| `.claude/skills/typescript/references/conventions.md` | Synced    | The conventions of the skill `typescript`. Only with `claude` skills.                  |
+| `.claude/skills/typescript/references/local.md`       | Seed      | The own rules of the repository for the skill `typescript`. Only with `claude` skills. |
+
+The skill files have `when = "claude.skills"`: the sync writes them only
+when the repository selects the `claude` tool and its value `skills` is
+`true` (the default). `SKILL.md` names `references/conventions.md` and
+`references/local.md`. See [`claude-tool.md`](claude-tool.md).
 
 ## mise tools
 
@@ -146,3 +154,5 @@ No questions. The keys of the values file are in
   repository pins node `26` (M6 of `migrate.md`).
 - Do the "Migration" items of the package manager that the repository selects.
   M30 of `migrate.md` has the change from the old `node` tool.
+- Delete the old stackgen copy of `.claude/skills/typescript/` before the next
+  sync (M62 of `migrate.md`).

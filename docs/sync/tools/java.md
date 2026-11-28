@@ -2,13 +2,13 @@
 
 The Java development kit (JDK), for Gradle and the Android SDK.
 
-| Property     | Value   |
-| ------------ | ------- |
-| Root only    | No      |
-| Depends      | None    |
-| Parent       | None    |
-| Default envs | dev, ci |
-| Seeds        | None    |
+| Property     | Value                                                                  |
+| ------------ | ---------------------------------------------------------------------- |
+| Root only    | No                                                                     |
+| Depends      | None                                                                   |
+| Parent       | None                                                                   |
+| Default envs | dev, ci                                                                |
+| Seeds        | `.claude/skills/gradle/references/local.md`, only with `claude` skills |
 
 ## When the tool is relevant
 
@@ -24,9 +24,17 @@ file (see "Scripts").
 
 ## What the tool ships
 
-| Path in the repository                     | Kind      | Use                           |
-| ------------------------------------------ | --------- | ----------------------------- |
-| `.config/mise/conf.d/java/mise.<env>.toml` | Generated | The mise config of this tool. |
+| Path in the repository                            | Kind      | Use                                                                                |
+| ------------------------------------------------- | --------- | ---------------------------------------------------------------------------------- |
+| `.config/mise/conf.d/java/mise.<env>.toml`        | Generated | The mise config of this tool.                                                      |
+| `.claude/skills/gradle/SKILL.md`                  | Template  | The Claude Code skill `gradle`. Only with `claude` skills.                         |
+| `.claude/skills/gradle/references/conventions.md` | Synced    | The conventions of the skill `gradle`. Only with `claude` skills.                  |
+| `.claude/skills/gradle/references/local.md`       | Seed      | The own rules of the repository for the skill `gradle`. Only with `claude` skills. |
+
+The skill files have `when = "claude.skills"`: the sync writes them only
+when the repository selects the `claude` tool and its value `skills` is
+`true` (the default). `SKILL.md` names `references/conventions.md` and
+`references/local.md`. See [`claude-tool.md`](claude-tool.md).
 
 ## mise tools
 
@@ -87,3 +95,5 @@ None.
 ## Migration
 
 - Remove `java` and jdtls from the repository-owned mise files.
+- Delete the old stackgen copy of `.claude/skills/gradle/` before the next sync
+  (M62 of `migrate.md`).
