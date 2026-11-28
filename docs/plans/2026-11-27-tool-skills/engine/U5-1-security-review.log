@@ -1,0 +1,40 @@
+# Security review: d420194...HEAD (branch all-2026-11-28-1412, tool skills delta)
+
+No findings. Nothing in this delta reaches the 80% confidence bar for real exploitation, so the false-positive filtering step had nothing to filter.
+
+The delta does not touch the engine (`cli/`). It holds:
+
+- the Claude skill markdown templates
+- the `[files]` and contribution entries in `tools.toml`
+- the `CLAUDE.md` merge spec
+- one new PreToolUse item in `settings.json.merge.toml`
+- the hook script `macos/tools/claude/files/.claude/hooks/npm-normalize.sh`
+
+## Candidates examined and rejected
+
+1. `macos/tools/claude/files/.claude/hooks/npm-normalize.sh`, command injection. Rejected.
+   - The sed scripts are fixed. The command goes to sed as data on stdin through `printf '%s\n'`.
+   - The output JSON is built with `jq --arg`.
+   - Nothing is evaluated by the shell.
+   - A command that contains a newline is passed through unchanged.
+2. The same hook, permission bypass. Rejected.
+   - The hook returns `updatedInput` with no `permissionDecision`, so the normal allow, ask and deny rules still apply to the rewritten command.
+   - A deny rule written only for npm (for example `Bash(npm publish:*)`) does not match the rewritten `pnpm publish`. This gives no new capability, because the model could issue `pnpm publish` directly.
+   - Defense in depth: add matching `pnpm` deny rules where npm deny rules exist.
+3. `macos/tools/claude/files/.claude/settings.json.merge.toml`, the PreToolUse block. Rejected.
+   - It is a fixed command string pointing at a file that the sync writes with mode 755.
+   - No user-controlled value reaches it, and it weakens no permission.
+4. `repo/tools/claude/files/CLAUDE.md.merge.toml`, template injection. Rejected.
+   - It renders only `.config.claude_md.deps`, `.config.claude_md.gates` and `has .all`.
+   - These values come from the repo's own `tools.toml` and from the owner's overrides in `.config/bootstrap/`. They are trusted, and they are rendered once, as text.
+5. The `SKILL.md.tmpl` templates. Rejected.
+   - They hold only `has .all` switches and loops over `.config.skill.lines`, which are trusted contributions.
+   - The output is markdown for an AI to read, which is excluded.
+6. Path traversal and file modes in the new `[files]` entries. Rejected.
+   - Every target is a fixed literal under `.claude/skills/<tool>/` or `.claude/hooks/`.
+   - The only new mode is `perm = "755"` on the hook.
+   - The `runtime` additions change only how the backup clone links these folders.
+7. Exposure of secrets in the fnox secrets skill and the 1password contribution lines. Rejected.
+   - They are guidance text. No secret value is rendered.
+8. `depends = [ "jq" ]` on the Mac claude tool. Rejected.
+   - It is a dependency declaration, not a security issue.

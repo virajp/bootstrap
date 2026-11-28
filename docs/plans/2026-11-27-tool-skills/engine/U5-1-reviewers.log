@@ -1,0 +1,14 @@
+U5 round 1 — the two reviewers' merged findings (range d420194..fd2d17f), for the fix loop-back.
+Both halves ran because the row's Scope (05-review.md, D11) names /code-review and /security-review.
+
+SECURITY (execute-security-reviewer, VERDICT approve, 2 findings + Q1):
+S1 [medium] macos/tools/claude/files/.claude/hooks/npm-normalize.sh:31 (U3) — npx is rewritten to `pnpm dlx`, which ignores the lockfile and fetches the registry package named <bin> at latest (npx tsc → pnpm dlx tsc fetches the unrelated package `tsc`); unpinned registry code runs. Fix depends on Q1.
+S2 [low] macos/tools/claude/files/.claude/hooks/npm-normalize.sh:37 (U3) — the rewrite runs before the permission check, so an npm-only deny/ask rule (Bash(npm publish:*)) no longer matches the rewritten pnpm command. Mitigation: document that npm-only permission rules stop applying while the hook is active, and to add a matching pnpm rule (routed to U6 as a docs line for the claude section of docs/setup/tools.md, plus a comment line in the hook head by U3).
+
+CODE (execute-code-reviewer, VERDICT changes-required):
+C1 [high] macos/tools/claude/files/.claude/hooks/npm-normalize.sh:28 (U3) — the command-start pattern matches ;, & or | inside quoted or escaped text: `git commit -m "docs; npm install gone"` becomes `... pnpm install gone`, `echo 'x | npx foo'` and `echo a\; npm i` are rewritten too. Fix: when the command contains ', " or \, print {} and exit 0 (as for a newline, D16 f).
+C2 [medium] macos/tools/claude/files/.claude/hooks/npm-normalize.sh:34 (U3) — the `npm ci` rule needs a space or end of line after ci; `npm ci;npm test`, `npm ci&&npm t` and `npm  ci` become `pnpm ci`. Fix: `${start}npm[[:space:]]+ci([[:space:]]|[;&|)]|$)`, keeping the captured end in \2.
+C3 [medium] e2e/macostools/claude_test.go:181 (U4) — the hook cases use only spaced separators and no quotes. Add `npm ci;npm test` (want `pnpm install --frozen-lockfile;pnpm test`), `npm  ci`, and a quoted `; npm` (want {}); keep the no-pnpm case; plus a case for the Q1 answer.
+C4 [low] repo/tools/java/files/.claude/skills/gradle/SKILL.md.tmpl:29 (U1) — lines 29-31 say without ben-manes `mise run setup --upgrade` gives no report, and references/conventions.md:18-22 says the bootstrap tasks write and check the Gradle lockfiles; only kotlin's setup:deps:30-kotlin runs Gradle. Fix: move the ben-manes sentence into the existing has .all "kotlin" block (line 33); in conventions.md say "with the kotlin tool" in the lockfile and report paragraphs.
+
+Dropped engine findings: the aube/npm-repo rewrite (contradicts D9 "No lockfile walk"), updatedInput without permissionDecision (D15 with its quoted docs), pnpm dlx -y (folded into Q1), bold-only labels (D13 i, U1 ran code:lint:05-linter green), missing docs (U6, later), the index.json status (fixed by the orchestrator).

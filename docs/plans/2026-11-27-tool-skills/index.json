@@ -13,7 +13,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-28T08:46:16Z in .worktrees/all-2026-11-28-1412"
+    "detail": "RUNNING — wave 3 (U5 review row) waits on Q1 (npx rewrite of the npm hook) in .worktrees/all-2026-11-28-1412"
   },
   "consent": {
     "merge": true,
@@ -93,9 +93,9 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-28T08:46:49.783Z",
-      "ended": "",
+      "ended": "2026-11-28T09:28:14.269Z",
       "commit": "1eda3b2",
       "rounds": 3
     },
@@ -125,9 +125,9 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-28T08:46:49.852Z",
-      "ended": "",
+      "ended": "2026-11-28T09:28:14.337Z",
       "commit": "a667e2f",
       "rounds": 3
     },
@@ -166,14 +166,14 @@
         "U4"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T09:20:40.432Z",
       "ended": "",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "d420194",
+        "to": "fd2d17f"
       }
     },
     {
@@ -243,8 +243,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T09:20:40.367Z",
       "ended": ""
     },
     {
