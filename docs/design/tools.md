@@ -591,8 +591,14 @@ name in the registry.
 ### The current state
 
 - `repo/tools/flutter/tools.toml` has `depends = ["android"]`, so the mise tool
-  `flutter` depends on `android-sdk`. Thus each Flutter consumer gets `android`
-  and `java`, also a web-only or a desktop-only app.
+  `flutter` depends on `android-sdk`. `repo/tools/android/tools.toml` has
+  `depends = ["java", "kotlin"]`. `java` stays a direct dependency, because
+  the mise `depends` of a tool come from its direct `depends` only, and
+  `android-sdk` needs the JDK of `java`. Thus each Flutter consumer gets
+  `android`, `java` and `kotlin`, also a web-only or a desktop-only app.
+  `flutter` gets `kotlin` through `android`: the ktlint and detekt gates, the
+  seeds `.config/detekt.yml` and `.config/ktlint.editorconfig`,
+  `setup:deps:30-kotlin` and the Kotlin LSP.
 - Gradle does not come from mise. The Android tasks use the `gradlew` wrapper
   of the project. The `kotlin` tool ships `ktlint`, `detekt` and `kotlin-lsp`.
 

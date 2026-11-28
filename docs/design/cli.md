@@ -706,12 +706,14 @@ stops for such a tool.
 
 ```text
 android                ✔ found           android/settings.gradle: the Gradle files use the Android Gradle plugin
+├── java               ✔ found           android/settings.gradle: Gradle files exist
+└── kotlin             · nothing found   no Gradle file uses the Kotlin plugin
+    └── java           ✔ found           android/settings.gradle: Gradle files exist
 go                     ○ nothing found   no go.mod
 linter
 └── node               · nothing found   no package.json
 
 Found, not selected
-  · kotlin             not offered       android/settings.gradle is the evidence of android
   ✚ github             offered           .github/: .github/ exists
 ```
 

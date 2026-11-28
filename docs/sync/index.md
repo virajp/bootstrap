@@ -55,7 +55,7 @@ the tools. See [`vwf.md`](vwf.md).
 | `vwf.md`            | The entry point for the vwf and stackgen plugins: the `init`, `add`, `remove`, `add plugins` and `remove plugins` instructions. |
 
 The tool files in `tools/` are `_security_base.md`, `android.md`, `apko.md`,
-`aube.md`, `bun.md`, `claude-tool.md`, `cloudflare.md`, `cosign.md`, `crane.md`,
+`aube.md`, `claude-tool.md`, `cloudflare.md`, `cosign.md`, `crane.md`,
 `docker.md`, `doppler.md`, `dprint.md`, `firebase.md`, `flutter.md`, `fnox.md`,
 `gcloud.md`, `git.md`, `github.md`, `gitlab.md`, `gitleaks.md`, `go.md`,
 `grype.md`, `java.md`, `kotlin.md`, `linter.md`, `melange.md`, `mise.md`,

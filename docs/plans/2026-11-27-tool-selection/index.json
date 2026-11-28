@@ -102,11 +102,11 @@
         "U1"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-28T05:47:56.132Z",
+      "ended": "2026-11-28T05:51:13.694Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     },
     {
       "id": "U3",
@@ -138,8 +138,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T05:47:56.094Z",
       "ended": ""
     },
     {
@@ -282,32 +282,41 @@
       "units": [
         "U1"
       ]
+    },
+    {
+      "id": "D14",
+      "decision": "Q1: D2 says Write this wording in every doc. Must every doc that states the new android closure carry the full D2 wording, or only the part that fits each doc?",
+      "ruling": "Keep the per-doc wording as written. No more edits; each doc keeps the part that fits its subject.",
+      "rejected": "Full wording in every doc that states the closure — U2 adds the missing parts to kotlin.md, java.md, migrate.md M61 and docs/design/mise.md:805",
+      "units": [
+        "U2"
+      ]
     }
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-28T05:47:55.728Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-28T05:47:55.504Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — the plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-28T05:47:55.618Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers (no stamps) and no code unit (nothing to persist); no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-28T05:47:55.875Z"
     }
   },
   "gaps": [],

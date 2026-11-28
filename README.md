@@ -132,7 +132,7 @@ default_envs = [
   "dev",
   "ci",
 ] # the environments when the values file gives no env
-depends = [ "java" ] # tools added with this one
+depends = [ "java", "kotlin" ] # tools added with this one
 root_only = false # true: refused in a submodule; add pack skips it there
 
 # The mise config, in mise syntax. The sync generates

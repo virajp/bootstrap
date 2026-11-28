@@ -1816,3 +1816,37 @@ still fail the task, because CI builds them. See
 3. If CI builds an image that is also a service of
    `.tools/docker-compose.yaml`, add the image to `images` of
    `[tools.osv-scanner]`, so that its findings fail the task.
+
+## M60: The bun tool is gone
+
+`bootstrap` no longer ships the `bun` tool. Every engine command reads the
+clone, so `bootstrap remove tool bun` fails with code 3 when `bun` is gone. Thus
+remove the tool by hand. `bunfig.toml` was a seed, so the repository owns it,
+and the sync does not delete it.
+
+1. Delete the `[tools.bun]` table, and each `[overrides.tools.bun]` table, from
+   `.config/bootstrap/tools.toml`.
+2. Delete each override that names `bun` from the same file:
+   `[overrides.mise.tools.bun]` and each
+   `[overrides.mise_env.<env>.tools.bun]`.
+3. If the repository still needs a package manager, select `node` with `pnpm`
+   or `aube`. See `tools/pnpm.md` and `tools/aube.md`.
+4. Run `mise run setup:configs`.
+5. `bunfig.toml` stays. Tell the user that they can delete it by hand.
+
+## M61: android brings kotlin
+
+The `android` tool now has `depends = ["java", "kotlin"]`. Thus the next sync
+adds the `kotlin` tool to each `android` and `flutter` repository: the ktlint
+and detekt gates, the seeds `.config/detekt.yml` and
+`.config/ktlint.editorconfig`, `setup:deps:30-kotlin` and the Kotlin LSP.
+`kotlin` gets the environments of `android` (dev and ci), so CI now installs
+ktlint and detekt and runs the two gates. See `tools/kotlin.md`.
+
+1. Run `mise run setup:configs`.
+2. If the new gates fail on existing Kotlin code (for example the
+   `MainActivity.kt` of a Flutter app), run `mise run code:format --fix` for
+   ktlint. Then fix each detekt finding in the code. Do not weaken the seeds.
+3. If `setup:deps:30-kotlin` stops because
+   `gradle/wrapper/gradle-wrapper.properties` has no `distributionSha256Sum`,
+   add the checksum as the message of the task tells.
