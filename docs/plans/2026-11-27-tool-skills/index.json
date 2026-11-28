@@ -13,7 +13,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING — wave 4 (U6 docs) in .worktrees/all-2026-11-28-1412"
+    "detail": "RUNNING — wave 5 (U7 gates) in .worktrees/all-2026-11-28-1412"
   },
   "consent": {
     "merge": true,
@@ -222,11 +222,11 @@
         "U6"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-28T10:29:02.083Z",
-      "ended": "",
+      "ended": "2026-11-28T10:39:48.993Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -486,6 +486,15 @@
       "rejected": "skip Edit 6; copy the file into the worktree and edit it there",
       "units": [
         "U6"
+      ]
+    },
+    {
+      "id": "D22",
+      "decision": "Q5: Regenerating cli/internal/source/testdata/toml-yq.golden also changes about 57 stale lines of TOML files this plan did not touch; should the golden take the full regeneration?",
+      "ruling": "Keep only this plan's lines, the current state. A later plan refreshes the golden file.",
+      "rejected": "commit the full regenerated golden; keep only this plan's lines plus macos/examples/macos.toml",
+      "units": [
+        "U7"
       ]
     }
   ],
