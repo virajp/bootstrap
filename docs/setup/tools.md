@@ -6,15 +6,18 @@ it to select the tools of a Mac (see [`index.md`](index.md)).
 ## How a tool works
 
 Each tool is a folder `macos/tools/<tool>/` with a `tools.toml`. Its `[files]`
-table gives each target below `$HOME` and its source in `files/`. Its `[tasks]`
+table gives each target below `$HOME` and its source in `files/`. An entry with
+`root = "backup"` gives a target below the backup clone, the key `backup` of
+`macos.toml`, instead. Its `[tasks]`
 table gives each task below `~/.config/mise/tasks/` and its source in `tasks/`.
 A tool can also have scripts in `scripts/`. The sync runs a script, and never
 copies it. The schema of `tools.toml` is in
 [`docs/design/tools.md`](../design/tools.md). The rules of the Mac sync are in
 [`docs/design/mac.md`](../design/mac.md).
 
-`bootstrap mac sync` renders the selected tools into `$HOME`, and installs
-nothing. The task `mise run updateall:configs` of the tool `mise` runs that
+`bootstrap mac sync` renders the selected tools into `$HOME`, and the
+`root = "backup"` targets into the backup clone. It installs nothing. The task
+`mise run updateall:configs` of the tool `mise` runs that
 command, and `updateall` then runs `mise bootstrap`. Only the first setup of a
 Mac, which `bootstrap mac migrate` does, runs `mise bootstrap` itself.
 

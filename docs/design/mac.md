@@ -243,8 +243,9 @@ Two Mac sources do not follow this rule, each from its old copy:
 4. It runs the check scripts.
 5. It examines `[overrides.mise*]`, and generates the mise config of each tool
    and of `macos.toml` into a work folder.
-6. It makes the file plan: each file of a selected tool, relative to `$HOME`,
-   with the `.config/mise/` files first and the generated mise files first of
+6. It makes the file plan: each file of a selected tool, relative to `$HOME`
+   (or to the backup clone with `root = "backup"`), with the `.config/mise/`
+   files first and the generated mise files first of
    all.
 7. It makes the links of the backup clone (see
    [The backup clone](#the-backup-clone)), then writes each file of the plan in
@@ -258,7 +259,8 @@ order: the real path of its target, the seed gate, `requires`, the unblock of a
 folder path, the `dir_perm` of its folder, then the render or the copy, the
 parse check, the merge and the compare.
 
-`requires` holds paths relative to `$HOME`. An owned file with an entry that is
+`requires` holds paths relative to `$HOME`, or to the backup clone for a
+`root = "backup"` entry. An owned file with an entry that is
 not there is not handled, so the stale rule removes a listed copy with the
 header. A seed and a shared file stay as they are.
 
@@ -367,6 +369,16 @@ the targets into the clone, and then writes through the links (see
 with git and commits the changes. Without `backup`, the sync writes real files
 and makes no link.
 
+A `[files]` entry with `root = "backup"` (see
+[tools.md](tools.md#the-files-table)) writes its target as a real file at
+`<backup>/<target>`, at the root of the clone, not below `dotfiles/`. The link
+rule ignores it: it gets no link from `$HOME`. A dry run and `mac check` show
+its path in the clone: `~/...` when the clone is below `$HOME`, else the
+absolute path. Without `backup`, the sync skips the entry as a skipped target,
+with the line `skip file  @backup/<target> (no backup in macos.toml)`.
+bootstrap never commits these files: the user commits them in the clone, as
+the changes below `dotfiles/`.
+
 The link rule picks the level of each link:
 
 1. Link a folder when no selected tool declares a runtime file in it.
@@ -436,7 +448,8 @@ The manifest is `macos-generated.tsv` of the cache. It is outside the clone, so
 [cli.md](cli.md#the-manifest-and-the-stale-rule).
 
 Each owned target of a selected tool, each generated mise file, and each item
-that bootstrap added to a shared file has one row. The file
+that bootstrap added to a shared file has one row. The row of a target in the
+backup clone (`root = "backup"`) has the path `@backup/<target>`. The file
 `conf.d/zz-macos/mise.toml` has the tool `zz-macos`. A clean run writes the
 manifest after the stale rule. The first setup writes the rows of the init
 stage before its `mise bootstrap`. A
@@ -447,7 +460,8 @@ the rows of each tool, also of a tool that is not selected.
 
 - `$HOME`, and the sources that its symlinks point to.
 - The backup clone: the moves and the empty folders of the links, below
-  `<backup>/dotfiles/`.
+  `<backup>/dotfiles/`, and the targets of the `root = "backup"` entries, at
+  the root of the clone.
 - The cache: the clone, the lock and `macos-generated.tsv`.
 - `macos.toml`: `bootstrap_commit`, the tables of the required members of
   `base`, and the writes of `mac migrate`, `mac add`, `mac remove`,

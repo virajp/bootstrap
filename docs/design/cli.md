@@ -1607,6 +1607,9 @@ sorted, with the path relative to the target root:
 - `<tool><TAB><path><TAB><item>` for an item that bootstrap added to a shared
   file. `<item>` is the identity of the item as JSON on one line.
 
+On the Mac side, the row of a target in the backup clone (a `[files]` entry
+with `root = "backup"`) has the path `@backup/<target>`, relative to the clone.
+
 A seed gets no row. A reader skips each `#` line. The sync writes the file
 only when its content changes, with an atomic `mv` and the mode `644`. A write
 counts as `changed` or `new`. On the repo side, a dry run lists the manifest as
@@ -1622,7 +1625,9 @@ items.
 
 The sync does not trust a manifest. A row with no TAB, an empty tool or path, an
 absolute path, or an empty, `.`, `..` or `.git` segment (in any case) is skipped
-with a log line.
+with a log line. A Mac row accepts `@backup` as its first segment only, and
+`@backup` alone is a bad row. A repo row whose first segment is `@backup` is
+skipped in the same way.
 
 **The stale rule** examines each owned-file row of the old manifest whose path
 this run did not handle.
@@ -1636,6 +1641,12 @@ this run did not handle.
   `would remove`.
 - A failed removal is a failure, and the other rows still run.
 - The first sync has no manifest, so the stale rule removes nothing.
+- On the Mac side, an `@backup/<target>` row uses the backup clone as its
+  target root. Without `backup` in `macos.toml`, the run keeps each old
+  `@backup/` row in the new manifest and removes none of their files, so a
+  later run with `backup` can still remove them. When `backup` moves from one
+  clone to another, a row resolves to the new clone, and a file in the old
+  clone stays.
 
 | Rule               | `repo` link mode                                                                                                    | `macos` link mode                 |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------- | --------------------------------- |

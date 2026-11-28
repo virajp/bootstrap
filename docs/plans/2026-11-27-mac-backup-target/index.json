@@ -113,18 +113,19 @@
         "docs/setup/index.md",
         "docs/setup/migrate-dotfiles.md",
         "CLAUDE.md",
-        "README.md"
+        "README.md",
+        "docs/setup/tools.md"
       ],
       "depends_on": [
         "U1",
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-28T05:06:24.460Z",
+      "ended": "2026-11-28T05:10:25.722Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 4
     },
     {
       "id": "U4",
@@ -162,8 +163,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T05:06:24.425Z",
       "ended": ""
     },
     {
@@ -329,13 +330,21 @@
       "ended": "2026-11-28T05:06:05.167Z"
     },
     "reconcile": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers and no code unit — no stamps, nothing to persist; no Reconcile commit",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-28T05:06:24.261Z"
     }
   },
-  "gaps": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U3",
+      "stage": "",
+      "text": "docs/setup/tools.md:8-9 says each [files] target is below $HOME, falsified by root = \"backup\" (U3 DOCS FALSIFIED), and no unit owned it · U3 owns widened to docs/setup/tools.md under the Goal and S1 (docs/** owner U3), and the passage fixed",
+      "state": "closed"
+    }
+  ],
   "overrides": [
     {
       "id": "O1",

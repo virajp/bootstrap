@@ -72,8 +72,10 @@ of `bootstrap` in `~/.cache/bootstrap/`. This file uses these commands:
 `bootstrap mac migrate` takes no tool names. Each `mac` command uses the fixed
 file `~/.config/bootstrap/macos.toml` (below `$XDG_CONFIG_HOME` when it is
 set), from any folder. The key `backup` names the clone: the sync links the
-synced files into `<clone>/dotfiles/`, so the owner commits them in the clone.
-See [mac.md](../design/mac.md#the-backup-clone).
+synced files into `<clone>/dotfiles/`, and writes the targets of the
+`root = "backup"` entries as real files at the root of the clone, so the owner
+commits them in the clone. See
+[mac.md](../design/mac.md#the-backup-clone).
 
 An agent has no terminal for a prompt of the CLI. Thus give each answer with
 `--answer <tool>.<key>=<value>`, also an empty answer with
@@ -359,10 +361,13 @@ Do each command of these items in the clone.
 7. Each sync with a new commit changes `macos.toml`. On a Mac that
    [`migrate-dotfiles.md`](migrate-dotfiles.md) moved, the links stay, so each
    sync also writes through them into `dotfiles/` of the clone. That folder is
-   the backup. Show `git status --short` of the clone to the owner. Commit
-   `macos.toml`, and `dotfiles` if the clone has that folder, in the clone as
-   `ops: sync bootstrap`. Ask the owner before you push. Pass:
-   `git status --short -- macos.toml dotfiles` shows nothing.
+   the backup. The sync also writes the targets of the `root = "backup"`
+   entries at the root of the clone: the output of the sync shows their paths
+   in the clone. Show `git status --short` of the clone to the owner. Commit
+   `macos.toml`, `dotfiles` if the clone has that folder, and each of these
+   targets, in the clone as `ops: sync bootstrap`. Ask the owner before you
+   push. Pass: `git status --short -- macos.toml dotfiles <target…>` shows
+   nothing.
 
 ## Exit codes
 
