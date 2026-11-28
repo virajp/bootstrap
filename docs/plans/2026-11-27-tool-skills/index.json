@@ -95,7 +95,7 @@
       "waits": "",
       "status": "green",
       "started": "2026-11-28T08:46:49.783Z",
-      "ended": "2026-11-28T09:50:34.262Z",
+      "ended": "2026-11-28T10:12:02.140Z",
       "commit": "39dc519",
       "rounds": 3
     },
@@ -192,7 +192,8 @@
         "CLAUDE.md",
         "README.md",
         "docs/design/bootstrap-config.md",
-        "docs/design/mac.md"
+        "docs/design/mac.md",
+        "docs/design/mise.md"
       ],
       "depends_on": [
         "U1",
@@ -467,6 +468,16 @@
       "units": [
         "U3"
       ]
+    },
+    {
+      "id": "D20",
+      "decision": "Q3: The pnpm tool still ships the shell alias npx = \"pnpm dlx\" (repo/tools/pnpm/tools.toml:22); should this plan change it to match D18?",
+      "ruling": "Change the alias to npx = \"pnpm exec\" in this plan. U1 edits repo/tools/pnpm/tools.toml, and U6 updates docs/sync/tools/pnpm.md and docs/design/mise.md.",
+      "rejected": "leave it and record a follow-up; keep pnpm dlx on purpose",
+      "units": [
+        "U1",
+        "U6"
+      ]
     }
   ],
   "stages": {
@@ -508,6 +519,13 @@
       "unit": "U3",
       "stage": "",
       "text": "R1 nit: macos/tools/mise/tools.toml:21 has no blank line after the empty [defaults.skill.lines] table before the next comment · formatter-owned: dprint with this repository config removes that blank line, so the gate code:format --all keeps the dprint form; finding closed with no change",
+      "state": "closed"
+    },
+    {
+      "id": "G3",
+      "unit": "U6",
+      "stage": "",
+      "text": "D20 needs docs/design/mise.md (the pnpm npx alias at :252 and :790), which no unit owned · U6 owns widened to docs/design/mise.md by D20",
       "state": "closed"
     }
   ],

@@ -19,7 +19,7 @@ envs = [ "dev", "ci" ]
 version = "latest"
 
 [mise.shell_alias]
-npx = "pnpm dlx"
+npx = "pnpm exec"
 
 # The files of the tool, below files/.
 [files."pnpm-workspace.yaml"]
