@@ -15,8 +15,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING — green, held to land at the end of the all run on all-2026-11-28-1412"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-28 — 4581968 75b6737 0d6ab25 96b5299 893e797 0c987d3"
   },
   "consent": {
     "merge": true,
@@ -508,6 +508,10 @@
     {
       "id": "O1",
       "text": "shared worktree: all-2026-11-28-1412; hold landing"
+    },
+    {
+      "id": "O2",
+      "text": "shared worktree: all-2026-11-28-1412; land: yes; skip after-landing"
     }
   ],
   "run": {
