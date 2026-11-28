@@ -12,8 +12,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "RUNNING",
-    "detail": "RUNNING — green, held to land at the end of the all run on all-2026-11-28-1412; plan gates green; K1 checked on a scratch render (yq prints typescript), its literal form runs after A1; skipped: format check, stack conventions, acceptance, ux, renders and reconcile (no covers, no code unit), landing and after-landing (held)"
+    "state": "BLOCKED",
+    "detail": "BLOCKED at preflight (land: yes resume) — gates.wave `mise x -- mise run code:lint --all` red, inherited from the machine, not the plan: code:lint:60-bootstrap reports bootstrap 6.1.0 is older than 6.2.0, the version that the clone needs (upgrade with mise use -g github:virajp/bootstrap); every unit green, unit gate green; not run: overrides entry, landing, after-landing; worktree .worktrees/all-2026-11-28-1412"
   },
   "consent": {
     "merge": true,
