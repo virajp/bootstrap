@@ -3,15 +3,18 @@
   "plans": [
     {
       "id": "2026-11-27-tool-selection",
-      "folder": "docs/plans/2026-11-27-tool-selection",
+      "folder": "docs/plans/archived/2026-11-27-tool-selection",
       "kind": "change",
       "title": "Drop the bun tool, and android depends on kotlin",
       "target_repo": null,
       "priority": 10,
-      "status": "RUNNING",
+      "status": "COMPLETE",
       "started": "2026-11-28T05:41:07.404Z",
-      "ended": "",
-      "gaps": null,
+      "ended": "2026-11-28T08:07:16.758Z",
+      "gaps": {
+        "open": 0,
+        "moved_to": []
+      },
       "requires": [],
       "backlog": [],
       "backlog_pieces": []
