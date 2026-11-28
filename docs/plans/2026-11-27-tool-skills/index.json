@@ -1,0 +1,482 @@
+{
+  "format": 1,
+  "type": "vwf-change-plan",
+  "title": "Tool skills and the bootstrap section of CLAUDE.md",
+  "requires": [
+    "docs/plans/2026-11-27-tool-selection",
+    "docs/plans/2026-11-27-mac-backup-target"
+  ],
+  "source": [],
+  "backlog": [],
+  "backlog_pieces": [],
+  "gaps_of": [],
+  "execution": "teams",
+  "status": {
+    "state": "APPROVED",
+    "detail": "APPROVED 2026-11-28 by the user"
+  },
+  "consent": {
+    "merge": true,
+    "end_all_run": false
+  },
+  "gates": {
+    "unit": [
+      "mise x -- mise run code:format --all"
+    ],
+    "wave": [
+      "mise x -- mise run code:lint --all"
+    ],
+    "plan": [
+      "mise x -- mise run code:precommit",
+      "env CLAUDE_PLUGINS_CLONE=$HOME/Projects/github.com/virajp/claude-plugins mise x -- mise run test"
+    ],
+    "keeps": [
+      {
+        "id": "K1",
+        "check": "After A1 (the self-sync), in the main checkout: .claude/skills/typescript/SKILL.md starts with --- on line 1 and has the bootstrap header on lines 2-3, and `mise x -- yq --front-matter=extract \".name\" .claude/skills/typescript/SKILL.md` prints typescript (a strict YAML parse of the frontmatter with its comment lines).",
+        "pass": "yq prints typescript. If it does not, a gap is filed: the YAML comment lines break the frontmatter (D7)."
+      }
+    ]
+  },
+  "after_landing": [
+    {
+      "id": "A1",
+      "step": "In the main checkout, on a clean main after the landing: mise run setup:configs",
+      "mode": "run",
+      "notes": "The self-sync of CLAUDE.md step 4 (standing consent). It adds the bootstrap section at the top of the CLAUDE.md of this repository and the skills of its selected tools (node gives typescript), and lands them on main."
+    },
+    {
+      "id": "A2",
+      "step": "plan-management archive docs/plans/2026-11-27-tool-skills, only when the gaps list of this folder has no open entry",
+      "mode": "run",
+      "notes": "The standing consent: archive only with no open gap."
+    }
+  ],
+  "release_levels": [
+    {
+      "id": "bootstrap",
+      "level": "NONE",
+      "reason": "Only the golden test file of cli/ changes. Consumers get repo/ and macos/ from the clone at bootstrap_commit. The Mac entries with root = \"backup\" need the engine release of plan 2026-11-27-mac-backup-target, which the user cuts by hand."
+    }
+  ],
+  "dependencies": [],
+  "units": [
+    {
+      "id": "U1",
+      "title": "Repo tools: the CLAUDE.md section, contributions and skills",
+      "wave": 1,
+      "file": "01-repo-tools.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "repo/tools/claude/",
+        "repo/tools/android/tools.toml",
+        "repo/tools/dprint/tools.toml",
+        "repo/tools/flutter/tools.toml",
+        "repo/tools/go/tools.toml",
+        "repo/tools/linter/tools.toml",
+        "repo/tools/kotlin/tools.toml",
+        "repo/tools/node/tools.toml",
+        "repo/tools/pnpm/tools.toml",
+        "repo/tools/python/tools.toml",
+        "repo/tools/mise/tools.toml",
+        "repo/tools/swift/tools.toml",
+        "repo/tools/java/tools.toml",
+        "repo/tools/node/files/.claude/skills/",
+        "repo/tools/pnpm/files/.claude/skills/",
+        "repo/tools/kotlin/files/.claude/skills/",
+        "repo/tools/java/files/.claude/skills/",
+        "repo/tools/swift/files/.claude/skills/",
+        "repo/tools/gitleaks/tools.toml",
+        "repo/tools/grype/tools.toml",
+        "repo/tools/osv-scanner/tools.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U3",
+      "title": "Mac tools: secrets, the npm hook, mac-setup and git-identity",
+      "wave": 1,
+      "file": "03-mac-tools.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "macos/tools/claude/",
+        "macos/tools/fnox/",
+        "macos/tools/1password-cli/",
+        "macos/tools/age/",
+        "macos/tools/mise/",
+        "macos/tools/homebrew/",
+        "macos/tools/mas/",
+        "macos/tools/setapp/",
+        "macos/tools/macos-defaults/",
+        "macos/tools/git/",
+        "macos/tools/1password/",
+        "macos/tools/ssh/",
+        "macos/tools/gh/",
+        "macos/tools/glab/",
+        "macos/examples/macos.toml"
+      ],
+      "depends_on": [],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U4",
+      "title": "Tests",
+      "wave": 2,
+      "file": "04-tests.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "e2e/repo/",
+        "e2e/mac/",
+        "e2e/macostools/"
+      ],
+      "depends_on": [
+        "U1",
+        "U3"
+      ],
+      "waits": "Its checks read the files that U1 and U3 create.",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U5",
+      "title": "Review: the hook, the templates and the merge spec",
+      "wave": 3,
+      "file": "05-review.md",
+      "kind": "review",
+      "model": "opus",
+      "owns": [],
+      "depends_on": [
+        "U4"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0,
+      "range": {
+        "from": "",
+        "to": ""
+      }
+    },
+    {
+      "id": "U6",
+      "title": "Docs",
+      "wave": 4,
+      "file": "06-docs.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "docs/sync/",
+        "docs/setup/tools.md",
+        "docs/design/tools.md",
+        "docs/prompts/2026-11-27-mise-skill-and-flutter-test.md",
+        "docs/memory/decisions/",
+        "CLAUDE.md",
+        "README.md",
+        "docs/design/bootstrap-config.md"
+      ],
+      "depends_on": [
+        "U1",
+        "U3",
+        "U4",
+        "U5"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    },
+    {
+      "id": "U7",
+      "title": "Gates",
+      "wave": 5,
+      "file": "07-gates.md",
+      "kind": "edit",
+      "model": "opus",
+      "owns": [
+        "cli/internal/source/testdata/toml-yq.golden"
+      ],
+      "depends_on": [
+        "U6"
+      ],
+      "waits": "",
+      "status": "pending",
+      "started": "",
+      "ended": "",
+      "commit": "",
+      "rounds": 0
+    }
+  ],
+  "waves": [
+    {
+      "id": "W1",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W2",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W3",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W4",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    },
+    {
+      "id": "W5",
+      "status": "pending",
+      "started": "",
+      "ended": ""
+    }
+  ],
+  "shared_files": [
+    {
+      "id": "S1",
+      "file": "cli/internal/source/testdata/toml-yq.golden",
+      "why": "generated from every TOML file of repo/ and macos/",
+      "owner": "U7"
+    },
+    {
+      "id": "S2",
+      "file": "docs/**, CLAUDE.md, README.md",
+      "why": "every human-facing doc",
+      "owner": "U6"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "How is a skill delivered with the merge model?",
+      "ruling": "Shape A (user, 2026-11-27): the owner tool ships SKILL.md as a template that reads .all; a short contribution of another tool is a value, a long one is a references/<tool>.md copy file that the contributing tool ships into the skill folder of the owner; local notes go in the seed references/local.md, which SKILL.md always names; the conventions go in references/conventions.md, which SKILL.md names. The stale rule removes the file of a tool that leaves the selection.",
+      "rejected": "Merge inside SKILL.md (an engine change: frontmatter as a YAML block, multi-line items)",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D2",
+      "decision": "Which consumers get skills?",
+      "ruling": "Skills ship only when the claude tool is selected (user, 2026-11-27): the repo and Mac claude tools get [defaults] skills = true, and each [files] entry of a skill has when = \"claude.skills\"; skills = false stops all skills. The CLAUDE.md section ships whenever claude is selected; skills does not gate it.",
+      "rejected": "No gate",
+      "units": [
+        "U1",
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D3",
+      "decision": "Where do the task rules, the dependency rules and the gate lines go?",
+      "ruling": "Into one bootstrap section of the repo CLAUDE.md (user, 2026-11-27: \"move both to CLAUDE.md and drop the mise skill\"; \"Move task content to CLAUDE.md\"). The repo claude tool owns CLAUDE.md as a merge file (mode merge, source CLAUDE.md.merge.toml, format text, comment \"<!--\", one item of kind section, rendered as a template). Three parts. Tasks: run a task with mise run and list them with mise tasks; the aggregates setup, code, code:format, code:lint, code:sec, code:precommit, test, test:e2e, test:golden; the part form code:lint:NN-<name>, setup:deps:NN-<name>; add a tool with bootstrap add tool, never a bare mise use or a hand edit of a synced file; prefix each tool call with mise x --; an own task is a Python uv script that imports helpers. Dependencies: install with mise run setup, upgrade with mise run setup --upgrade, never the package manager directly; ranges in the manifest and the exact version in the lockfile; ask the user before adding a dependency (name it and what it is for); resolve a lockfile merge conflict by taking one side, then reinstall; then one line for each key of [contributes.claude.claude_md.deps] of the selected tools. Gates: one line for each key of [contributes.claude.claude_md.gates] (key = task name, value = one line). No repo mise skill.",
+      "rejected": "A repo mise skill (handoff prompt item 1, claude-plugins D14)",
+      "units": [
+        "U1",
+        "U4",
+        "U6"
+      ]
+    },
+    {
+      "id": "D4",
+      "decision": "Which repo skills, and which tool owns each?",
+      "ruling": "typescript with the tsconfig rules (owner node), pnpm (owner pnpm), kotlin (owner kotlin, linked to kotlin only), gradle (owner java), swift with the SwiftPM rules (owner swift). kotlin and swift have a short \"In a library\" section for the rules that apply only to a library (user, 2026-11-27: \"Keep the library section\"). One skill for each stackgen entry, with its narrow paths trigger.",
+      "rejected": "One skill for each tool; a mise skill; a _js or _kotlin common tool",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D5",
+      "decision": "What content may a skill have?",
+      "ruling": "User, 2026-11-27: \"If it can be learnt using context7 then it must NOT be in the skill.\" Keep only the owner's opinions, the bootstrap ties (tasks, mise, seeds) and traps that the docs do not warn about; drop what a gate or a shipped seed enforces. The unit checks each rule marked (unsure) with Context7 and drops it when the docs teach it. Never write \"uv run ruff\" (ruff is a mise tool) or the .npmrc ignore-scripts/fund advice (pnpm 11 reads only auth, registry, TLS, proxy and local-address settings from .npmrc). Version rule: a range in the manifest, the exact version in the lockfile (no exact versions in a manifest).",
+      "rejected": "Port the stackgen text as it is",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D6",
+      "decision": "What happens to the other stackgen entries?",
+      "ruling": "eslint, ktlint, detekt, swiftlint, swift-format, ruff and analysis-options get no skill: each becomes a gate line of D3. bash and markdown are dropped (user, 2026-11-27). uv and pub get no skill: their lines become dependency lines of D3 from python and flutter. ux-gate stays in stackgen.",
+      "rejected": "Keep them as skills",
+      "units": [
+        "U1"
+      ]
+    },
+    {
+      "id": "D7",
+      "decision": "Where does the bootstrap header go in SKILL.md?",
+      "ruling": "On lines 2 and 3 as YAML comments, inside the frontmatter that starts on line 1 (the YAML rule of docs/design/tools.md \"The header of a source file\"). header.Has reads the first 3 lines. A reference file gets the HTML-comment header of each Markdown file.",
+      "rejected": "An HTML comment above the frontmatter (Claude Code reads the frontmatter only on line 1)",
+      "units": [
+        "U1",
+        "U3"
+      ]
+    },
+    {
+      "id": "D8",
+      "decision": "Which Mac skills, where, and who owns each?",
+      "ruling": "secrets in ~/.claude/skills/secrets/ (owner fnox; contributors 1password-cli and age as values): secrets come from fnox (the macOS Keychain) or op; give a secret to a command with fnox exec or op run; never print a secret, never write it to a file, never put it in chat. mac-setup (owner mise; contributors homebrew, mas, setapp, macos-defaults) and git-identity (owner git; contributors 1password, ssh, gh, glab) as root = \"backup\" entries at .claude/skills/<skill>/ of the backup clone (macos-setup). mac-setup: to install or remove a tool or an app, or to change a setting, edit macos.toml and run mise run updateall:configs; never brew install, mise use -g or defaults write directly; dev tools from mise, others from Homebrew; a file with the Synced from bootstrap header is changed in bootstrap. git-identity: the identity for each forge comes from includeIf, never a local user.email; commits are signed by the 1Password SSH signer; if a signature fails, tell the user to unlock 1Password and never turn off signing; gh auth status / glab auth status, never print a token.",
+      "rejected": "mac-setup and git-identity at user level; a repo tool for macos-setup",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D9",
+      "decision": "How does the npm hook work?",
+      "ruling": "macos/tools/claude ships .claude/hooks/npm-normalize.sh (bash, mode 755) and a PreToolUse item (matcher Bash) in its settings.json merge spec. The hook reads the JSON input with jq. If command -v pnpm finds pnpm, it changes npm to pnpm, npx to pnpm dlx, and npm ci to pnpm install --frozen-lockfile; else it changes nothing. No lockfile walk, no bun. The Mac claude tool gets depends = [ \"jq\" ] (user, 2026-11-28). Source: claude-plugins plugins/stackgen/tools/pnpm/hooks/npm-normalize.sh, BSD sed compatible.",
+      "rejected": "Python through uv; sed parsing of the JSON",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D10",
+      "decision": "What does a consumer do?",
+      "ruling": "M62 in docs/sync/migrate.md: the next sync adds the bootstrap section at the top of CLAUDE.md and the skills of the selected tools. A consumer with stackgen copies (linter, virajp.dev) deletes .claude/skills/{eslint,ktlint,detekt,swiftlint,swift-format,analysis-options}/ where they exist, and .claude/hooks/npm-normalize.sh with its PreToolUse entry in .claude/settings.json; bootstrap writes the kept skills over the old copies at the same paths; the next stackgen release removes its tool/ lockfile rows.",
+      "rejected": "Delete nothing; wait for stackgen",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D11",
+      "decision": "Execution mode and review",
+      "ruling": "teams. One review unit after U4: the hook script and the templates are runnable.",
+      "rejected": "solo; no review",
+      "units": [
+        "U5"
+      ]
+    },
+    {
+      "id": "D12",
+      "decision": "Reversals to record",
+      "ruling": "U6 writes docs/memory/decisions/2026-11-28-tool-skills-are-bootstraps.md: bootstrap owns tool knowledge (the 2026-11-14 split gave stack knowledge to stackgen), and bootstrap ships no repo mise skill; the task text is the bootstrap section of CLAUDE.md (replaces item 1 of docs/prompts/2026-11-27-mise-skill-and-flutter-test.md and D14 of the claude-plugins plan 2026-11-26-stackgen-bootstrap-tasks).",
+      "rejected": "No record",
+      "units": [
+        "U6"
+      ]
+    },
+    {
+      "id": "D13",
+      "decision": "Edge rules (rulings review, round 1)",
+      "ruling": "(a) U1 owns the skill texts and their [files] entries together, because a [files] entry without its source, or a source without an entry, fails the sync; one commit. (b) A bootstrap check of the change runs with the worktree as the clone: mise x -- bootstrap check --clone <worktree root>. (c) U4 tests the real Mac tools in e2e/macostools: a case with a copy of macos/examples/macos.toml plus a backup key set to a temporary clone checks ~/.claude/skills/secrets/, the PreToolUse item, and .claude/skills/mac-setup/ and git-identity/ in the clone. (d) M62 also deletes the old stackgen folders .claude/skills/{tsconfig,swiftpm,ruff,uv,pub,bash,markdown}/, and deletes the old folders of the kept skills .claude/skills/{typescript,pnpm,kotlin,gradle,swift}/ before the sync, so no old stackgen reference stays; the sync then writes them again. (e) The paths of a merged skill are the union of the two stackgen lists (typescript + tsconfig, swift + swiftpm). (f) A template tests that a tool is selected with has .all \"<tool>\", because a tool with no [defaults] is an empty table. (g) U6 also owns docs/design/bootstrap-config.md and adds the key skills of [tools.claude]. (h) K1 is a strict YAML parse of the frontmatter (yq --front-matter=extract), not a question to Claude Code. (i) The CLAUDE.md section uses no Markdown heading: each part starts with a bold label (**Tasks**, **Dependencies**, **Gates**), so the heading rules of the linter (first heading, one H1) do not fire above the H1 of the file. U1 runs mise x -- mise run code:lint:05-linter on a scratch CLAUDE.md with the section above a # title and keeps it green. (j) The golden keep list has no *.merge.toml file (toml_test.go:38-39 skips them). (k) Each Mac owner (fnox, mise, git) has [defaults.skill.lines] as an empty table; a contributor writes [contributes.<owner>.skill.lines] <tool> = \"<line>\"; the template renders one bullet for each key in key order.",
+      "rejected": "Leave each edge to the unit",
+      "units": [
+        "U1",
+        "U3",
+        "U4",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Edge rules (rulings review, round 2)",
+      "ruling": "(a) This plan must not land before the user releases the engine of 2026-11-27-mac-backup-target: the Mac sync fetches main, and an older engine stops on the root key. U7 runs `git tag --contains $(git log --format=%H -1 --grep \"mac-backup-target\" origin/main) --list \"bootstrap@*\"` and, when it prints nothing, reports a QUESTION (release first, or hold the landing). (b) The scratch CLAUDE.md of D13 i sits at lint-check/CLAUDE.md in the worktree root (a new, not ignored path, so gate_files lists it); U1 passes it as a file to code:lint:05-linter, then deletes the folder with rm. (c) The Markdown that U3 ships into the backup clone passes the gates of macos-setup: U3 renders each SKILL.md and reference of mac-setup and git-identity into a scratch folder and runs `mise x -- dprint check` with the dprint config of this repository on them; the text is written so dprint changes nothing. (d) The code:sec scanners get gate lines too: gitleaks (code:sec:10-gitleaks), grype (code:sec:20-grype) and osv-scanner (code:sec:30-osv-scanner) each contribute one [contributes.claude.claude_md.gates] line; U1 owns their tools.toml.",
+      "rejected": "Leave each edge to the unit",
+      "units": [
+        "U1",
+        "U3",
+        "U7"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Does the npm hook approve the changed command?",
+      "ruling": "No. The hook returns only hookSpecificOutput with hookEventName PreToolUse and updatedInput, with no permissionDecision, so the changed command goes through the normal permission rules (Claude Code docs: \"If you omit permissionDecision, the modified input still applies and flows through the normal permission evaluation.\"). With no change it prints {}. User, 2026-11-28: \"No decision, only updatedInput\".",
+      "rejected": "permissionDecision allow (as in stackgen): each changed command, chained parts included, runs with no prompt",
+      "units": [
+        "U3",
+        "U4"
+      ]
+    },
+    {
+      "id": "D16",
+      "decision": "Edge rules (rulings review, round 3)",
+      "ruling": "(a) U6 also updates docs/sync/tools/gitleaks.md, grype.md and osv-scanner.md, and CLAUDE.md:123-124 (the list of synced copies at the root gets CLAUDE.md and .claude/skills/). (b) U1 renders the CLAUDE.md section and each SKILL.md and reference in a scratch consumer (mise x -- bootstrap sync --clone <worktree root> in a temporary git repository that selects claude, node, pnpm, kotlin, java and swift) and runs mise x -- dprint check with the dprint config of this repository on the written Markdown; the text is written so dprint changes nothing. (c) The release check of D14 a tests the last engine change: `git tag --contains $(git log --format=%H -1 origin/main -- cli/internal/) --list \"bootstrap@*\"`; nothing printed is a QUESTION. (d) The gate lines keep `mise run <task> --all`: `mise run -n code:format --all` prints `.../code/format/_default.py --all`, so mise passes --all to the task. (e) The hook writes the whole tool_input back with only the command changed (jq: .tool_input | .command = $new), so timeout, description and run_in_background stay. (f) When the command holds a newline (a heredoc or a multi-line string), the hook changes nothing and prints {}. (g) After skills = false, or when an owner tool leaves, the seed references/local.md stays in a folder with no SKILL.md: accepted; M62 and the claude tool doc say that the user can delete such a folder. (h) U1 updates the description and summary of repo/tools/claude/tools.toml, and U3 those of the Mac claude, fnox, mise and git tools. (i) M62 tells linter and virajp.dev not to run a stackgen sync or materialize until the stackgen release of the parked change; if one writes over a bootstrap skill, run mise run setup:configs again. (j) U4 owns all of e2e/repo/, so a case of config, selection, migrate, sync or commands that the new claude files break is fixed there.",
+      "rejected": "Leave each edge to the unit",
+      "units": [
+        "U1",
+        "U3",
+        "U4",
+        "U6",
+        "U7"
+      ]
+    },
+    {
+      "id": "D17",
+      "decision": "Edge rules (rulings review, round 4)",
+      "ruling": "(a) The Gates bullets of CLAUDE.md name the task only: `` `<task>`: <line> ``; a value holds no command and no --all. D16 d is about the gate lines of this plan, not about CLAUDE.md. The scanner lines say what the scanner finds. (b) The Tasks part names code:precommit only when has .all \"pre-commit\" is true. (c) The release check of D14 a and D16 c tests the engine commit of plan 2026-11-27-mac-backup-target: `git tag --contains $(git log --format=%H -1 --grep \"^feat: a Mac \\[files\\] entry can write into the backup clone\" origin/main) --list \"bootstrap@*\"`; nothing printed is a QUESTION. (d) The Mac claude tool adds \".claude/skills\" and \".claude/hooks\" to its runtime list, so the link rule never links these two folders (linkPlan: hasRuntime(dir) is true when a runtime path equals the folder, cli/internal/macos/backup.go:41-47); the sync links .claude/skills/secrets/ and .claude/hooks/npm-normalize.sh one by one, and the other items of ~/.claude/skills/ and ~/.claude/hooks/ (for example the links to ~/.agents/skills/ and context-caps.js) stay in place. U4 tests that a foreign item of ~/.claude/skills/ stays a real item in $HOME after a sync with backup.",
+      "rejected": "A folder link that moves the existing ~/.claude/skills/ and ~/.claude/hooks/ into the clone",
+      "units": [
+        "U1",
+        "U3",
+        "U4",
+        "U7"
+      ]
+    }
+  ],
+  "stages": {
+    "renders": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "acceptance": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "ux": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    },
+    "reconcile": {
+      "state": "pending",
+      "detail": "",
+      "started": "",
+      "ended": ""
+    }
+  },
+  "gaps": [],
+  "overrides": [],
+  "run": {}
+}
