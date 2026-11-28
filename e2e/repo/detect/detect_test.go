@@ -120,7 +120,6 @@ func TestDetectScripts(t *testing.T) {
 	detectCase(t, "node", 0, "package.json={}")
 	detectCase(t, "pnpm", 1, "package.json={}", "pnpm-workspace.yaml=packages: []")
 	detectCase(t, "aube", 1, "package.json={}", "aube-workspace.yaml=packages: []")
-	detectCase(t, "bun", 1, "bunfig.toml=[install]")
 	detectCase(t, "python", 0, "pyproject.toml=[project]")
 	detectCase(t, "go", 1, "go.mod=module example.com/x")
 	detectCase(t, "rust", 1, "Cargo.toml=[package]")

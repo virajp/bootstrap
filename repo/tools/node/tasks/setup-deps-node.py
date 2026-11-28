@@ -30,10 +30,6 @@ conf_d = f"{root}/.config/mise/conf.d"
 has_pnpm = os.path.isdir(f"{conf_d}/pnpm")
 has_aube = os.path.isdir(f"{conf_d}/aube")
 
-# The bun tool owns the dependencies of a Bun repository, and it has no task.
-if not has_pnpm and not has_aube and os.path.isdir(f"{conf_d}/bun"):
-  sys.exit(0)
-
 upgrade = os.environ.get("usage_upgrade") == "true"
 if upgrade:
   helpers.print_header("Upgrading Node dependencies ...")

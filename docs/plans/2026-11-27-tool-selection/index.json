@@ -9,8 +9,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-27 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-28T05:42:31Z in .worktrees/all-2026-11-28-1014"
   },
   "consent": {
     "merge": true,
@@ -70,11 +70,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-28T05:43:01.664Z",
+      "ended": "2026-11-28T05:46:00.305Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -132,8 +132,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T05:43:01.625Z",
       "ended": ""
     },
     {
@@ -311,7 +311,12 @@
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-28-1014; hold landing"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-28-1014",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-27-tool-selection.jsonl"

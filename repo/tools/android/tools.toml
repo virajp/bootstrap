@@ -1,8 +1,8 @@
 # The Android SDK command-line tools.
 category = "languages"
 default_envs = [ "dev", "ci" ]
-depends = [ "java" ]
-description = "The Android SDK command-line tools. It needs the java tool."
+depends = [ "java", "kotlin" ]
+description = "The Android SDK command-line tools. It needs the java and kotlin tools."
 root_only = false
 summary = "The Android SDK command-line tools"
 

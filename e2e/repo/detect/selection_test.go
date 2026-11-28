@@ -57,6 +57,7 @@ func TestAdd(t *testing.T) {
 			c.CheckThat("add: flutter", c.TomlQ(`.tools | has("flutter")`, ""))
 			c.CheckThat("add: its dependency android", c.TomlQ(`.tools | has("android")`, ""))
 			c.CheckThat("add: the dependency of android", c.TomlQ(`.tools | has("java")`, ""))
+			c.CheckThat("add: the kotlin dependency of android", c.TomlQ(`.tools | has("kotlin")`, ""))
 		}})
 	rc.Run(t, rc.Spec{Name: "add without --yes and without a terminal", Code: 2, Values: devValues,
 		Call: engineCall("add", "tool", "go"), Message: "changes need --yes", Check: checkAddKept})
@@ -107,15 +108,19 @@ func TestRemove(t *testing.T) {
 			c.CheckThat("remove: the mise config of pnpm is gone", rc.NoFile(c.Path(".config/mise/conf.d/pnpm/mise.dev.toml")))
 		}})
 	rc.Run(t, rc.Spec{Name: "remove: the dependencies that no tool needs go",
-		Values: devValues + "\n[tools.flutter]\n[tools.android]\n[tools.java]\n[tools.go]", Call: removeTool("flutter"),
+		Values: devValues + "\n[tools.flutter]\n[tools.android]\n[tools.kotlin]\n[tools.java]\n[tools.go]", Call: removeTool("flutter"),
 		Message: "remove java (a dependency that no tool needs)", Check: func(c *rc.Case) {
 			c.CheckThat("remove: android goes", notGrep(c.ToolsValues, "android"))
 			c.CheckThat("remove: java goes", notGrep(c.ToolsValues, "java"))
+			c.CheckThat("remove: kotlin goes", notGrep(c.ToolsValues, "kotlin"))
 			c.CheckThat("remove: go stays", c.TomlQ(`.tools | has("go")`, ""))
 		}})
 	rc.Run(t, rc.Spec{Name: "remove: a tool that another selected tool needs", Code: 2,
 		Values: devValues + "\n[tools.flutter]\n[tools.android]", Call: removeTool("android"),
 		Message: "android is needed by flutter - remove flutter first"})
+	rc.Run(t, rc.Spec{Name: "remove: a tool that android needs", Code: 2,
+		Values: devValues + "\n[tools.android]\n[tools.kotlin]", Call: removeTool("kotlin"),
+		Message: "kotlin is needed by android - remove android first"})
 	rc.Run(t, rc.Spec{Name: "remove: a required tool", Code: 2, Values: devValues, Call: removeTool("mise"),
 		Message: "mise is required by the base pack, so remove cannot remove it"})
 	rc.Run(t, rc.Spec{Name: "remove: a required scanner of the pack base", Code: 2, Values: devValues, Call: removeTool("gitleaks"),
