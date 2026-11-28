@@ -21,11 +21,17 @@ copies it. The schema of `tools.toml` is in
 command, and `updateall` then runs `mise bootstrap`. Only the first setup of a
 Mac, which `bootstrap mac migrate` does, runs `mise bootstrap` itself.
 
-`macos.toml`, at the root of the private `macos-setup` clone, selects the tools:
+`macos.toml`, at the fixed place `~/.config/bootstrap/macos.toml`, selects
+the tools:
 
 - `format = 2`: the form of the file.
+- `backup`: the backup clone, for example the private `macos-setup` clone.
+- `bootstrap_commit`: the commit of the last clean run that changed a file.
+  The sync writes it.
 - `[tools.<name>]`: a table. It adds the tool. A table for a required tool of
   the pack `base` only gives values.
+- `[mise.*]`: the own mise config of the owner. It goes to
+  `~/.config/mise/conf.d/zz-macos/mise.toml`.
 
 `macos.toml` keeps no record of a pack. The sync also adds the required members
 of the pack `base` and each tool in `depends`, transitively.
@@ -38,32 +44,80 @@ and `bootstrap mac detect --add` change the `[tools.<name>]` tables.
 A key of `[tools.<name>]` sets a value of that tool. It answers a question of
 the tool, or it replaces a key of `[defaults]` of its `tools.toml`.
 
+`[mise.bootstrap.packages]` of a `tools.toml` lists the Homebrew formulae
+(`brew:<name>`), the casks (`brew-cask:<name>`) and the Mac App Store apps
+(`mas:<adam id>`). A dev tool that mise installs goes in `[mise.tools]`, for
+example `usage` of `mise`. mise, not a Brewfile, installs these packages.
+`upgrade:brew` upgrades them with `mise bootstrap packages upgrade` and
+`mise bootstrap packages apply`. The Brewfile holds only the VS Code
+extensions. Each tool with a `mas:` package depends on `mas`. A tool holds one
+app or one package. The exceptions are `fonts` (the Nerd Fonts casks), `zsh`
+(zsh and zinit) and `mise` (`usage`, `github:virajp/bootstrap` and
+`ca-certificates`). The shells load the drop-in files of `~/.config/bash/`,
+`~/.config/zsh/` and `~/.config/fish/conf.d/` in the order of their names. A
+tool adds its own drop-in, for example `01a-homebrew.zsh` of `homebrew` and
+`01b-mise.zsh` of `mise`.
+
+Each task of a Mac tool is a Python uv script with a `.py` name, and mise
+removes `.py` from the task name. Each task has
+`# MISE tools={uv="latest", python="3.14"}`, and the Mac config of the tool
+`mise` sets `task.run_auto_install = false`, so `mise` depends on `python` and
+`uv`. A task that uses a function of the library `helpers.py` of the tool
+`mise` (the print functions of the Mac tasks, `task_exists` and
+`run_task_if_exists`) imports it with this preamble:
+
+```python
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.expanduser("~/.config/mise/tasks/_scripts"))
+import helpers  # noqa: E402
+```
+
+`func:claude`, `func:code` and `keychain:delete` use no function of the
+library, so they do not import it. `updateall:configs` imports no library, so
+it runs before the first sync writes `helpers.py`. It runs under `mise run` and
+directly, with uv on PATH.
+
 Each section below gives these items for one tool:
 
 - **Packs:** the packs that hold the tool, or none. `(required)` marks a
   member of `base` that each Mac must have.
-- **Stage:** `migrate` for a tool of the init stage: the first setup of
-  `bootstrap mac migrate` writes and installs it. A tool without this item has
-  no stage of its own. See [`docs/design/mac.md`](../design/mac.md).
+- **Stage:** `migrate` for a tool with `stage = "init"`, a tool of the init
+  stage: the first setup of `bootstrap mac migrate` writes and installs it. A
+  tool without this item has no stage of its own. See
+  [`docs/design/mac.md`](../design/mac.md).
 - **Depends:** the tools that the sync adds with this tool.
 - **Files:** each target, and its mode. `copy` is copied on each run.
   `template` is rendered on each run. `seed` is written only when it is
   missing. `merge` adds the items of a merge spec (`files/<name>.merge.toml`)
-  to the live file, and the other items of the live file stay. The `format` and
-  `dir_perm` keys of the `[files]` table follow.
+  to the live file, and the other items of the live file stay. The keys
+  `format`, `perm`, `dir_perm`, `when` and `root` of the `[files]` table
+  follow. `<backup>/` starts the target of a `root = "backup"` entry: a real
+  file in the backup clone, the key `backup` of `macos.toml`.
 - **Tasks:** each task file below `~/.config/mise/tasks/`. `library` marks a
   library of `_scripts/`, which is not a task.
 - **Scripts:** the scripts in `scripts/` of the tool. The sync runs them, and
   does not copy them.
-- **Contributes to:** the keys that the tool adds to the values of another
-  tool.
+- **Contributes to `<tool>`:** the keys that the tool adds to the values of
+  the tool `<tool>` (`[contributes.<tool>]`), for example `extensions` of
+  `visual-studio-code`, or its line of `skill.lines`, a line of the skill of
+  `<tool>`. The section has one item for each tool.
 - **Defaults:** the keys of `[defaults]`. A key of `[tools.<name>]` in
   `macos.toml` replaces it.
 - **Mise sections:** the `[mise.*]` tables of `tools.toml`. They become
   `~/.config/mise/conf.d/<tool>/mise.toml`, which the sync generates.
-- **Question:** the key of a value that the owner of the Mac gives. The text of
-  the question is only in the `[questions.<key>]` table of the `tools.toml` that
-  the item links to. `bootstrap mac questions` shows it.
+- **Runtime:** the `runtime` paths of `tools.toml`: the files and folders
+  below `$HOME` that the program of the tool writes. They must not go into
+  git, so the backup clone does not link a folder that holds one: it links the
+  synced items of that folder one by one. See
+  [`docs/design/mac.md`](../design/mac.md#the-backup-clone).
+- **Skill `<skill>`:** the Claude Code skill that the tool owns, in short: its
+  rules, and where the sync writes it. Each `[files]` entry of the skill has
+  `when = "claude.skills"`. See
+  [`docs/design/tools.md`](../design/tools.md#skills).
+- **Question `<key>`:** a value that the owner of the Mac gives, with a link to
+  the `tools.toml` that holds its `[questions.<key>]` table. The text of the
+  question is only in that table. `bootstrap mac questions` shows it. The
+  section has one item for each question.
 
 ## The packs
 
@@ -91,7 +145,12 @@ in more than one pack, or in no pack. Only a member of `base` can be required.
 
 ### `1password`
 
-1Password (the app) as SSH agent and git commit signer.
+1Password (the app) as SSH agent and git commit signer. The SSH agent offers
+the keys of the vault `ssh_vault`. The cask goes to `/Applications` (`appdir`
+of its package), not to `~/Applications` like the other casks, and the git
+signer `gpg.ssh.program` is
+`/Applications/1Password.app/Contents/MacOS/op-ssh-sign`. Only the detect of
+the question `ssh_vault` runs `op`, the command of the tool `1password-cli`.
 
 - **Packs:** `1password-apps`
 - **Depends:** `ssh`, `git`
@@ -153,6 +212,14 @@ Tools for building Android applications.
 ### `bash`
 
 bash from Homebrew, its rc files and its drop-in folder ~/.config/bash/.
+`~/.bash_profile` loads `~/.bashrc`, and `~/.bashrc` loads each
+`~/.config/bash/*.bash` file in name order, so the drop-ins of other tools
+(`01a-homebrew.bash`, `01b-mise.bash`) run after `00-bootstrap.bash`.
+`00-bootstrap.bash` sets the XDG folders, `GPG_TTY` (mise cannot set it,
+because it needs the live terminal) and `FNOX_CONFIG_DIR`. It adds
+`~/.local/bin` at the end of `PATH`, in the shell config and not in
+`[env] _.path` of mise. `/etc/shells` is outside `$HOME`, so the line of
+Homebrew's bash in it stays a `[mise.dotfiles]` declaration.
 
 - **Packs:** `base` (required)
 - **Stage:** `migrate`
@@ -191,11 +258,12 @@ Bitwarden, the password manager.
 
 ### `brave-browser`
 
-Brave Browser.
+Brave Browser. Its `[mise.env]` sets `CHROME_EXECUTABLE` to the Brave app in
+`~/Applications`, so a tool that reads that variable starts Brave.
 
 - **Packs:** `essentials`
 - **Files:** none
-- **Mise sections:** `[mise.bootstrap.packages]`
+- **Mise sections:** `[mise.bootstrap.packages]`, `[mise.env]`
 
 ### `btop`
 
@@ -228,22 +296,28 @@ on it, so the sync adds it with either one.
   - `~/.claude/settings.json` — merge
 - **Tasks:**
   - `~/.config/mise/tasks/upgrade/ai.py`
+- **Defaults:** `settings`, `lists`, `skills`. `skills = true` (the default)
+  ships the skills of the Mac tools: `secrets` of `fnox`, and `mac-setup` of
+  `mise` and `git-identity` of `git` in the backup clone. Each skill entry has
+  `when = "claude.skills"`, so `skills = false` stops all of them.
+- **Mise sections:** none
 - **Runtime:** `~/.claude/history.jsonl`, `~/.claude/hooks`,
   `~/.claude/projects`, `~/.claude/sessions`, `~/.claude/skills`. Thus the
   backup clone links the synced files of `~/.claude` one by one. Other
   programs also write items into `~/.claude/skills` and `~/.claude/hooks`, so
   the backup clone links each synced item of these two folders one by one,
   and each other item stays a real item in `$HOME`.
-- **Defaults:** `settings`, `lists`, `skills`. `skills = true` (the default)
-  ships the skills of the Mac tools: `secrets` of `fnox`, and `mac-setup` of
-  `mise` and `git-identity` of `git` in the backup clone. Each skill entry has
-  `when = "claude.skills"`, so `skills = false` stops all of them.
-- **Mise sections:** none
-- **Settings:** The merge spec adds only `$schema`, the install keys of `env`
-  and, with `claude-status`, its status lines and hook, and the `PreToolUse`
-  item of the npm hook (matcher `Bash`). The own keys of the
-  user are in `settings` of `[tools.claude]`. `lists` maps a dotted path, for
-  example `"permissions.allow"`, to the items that the sync adds to that list.
+- **Settings:** Claude Code rewrites `~/.claude/settings.json`, so the merge
+  spec adds only `$schema`, the install keys of `env`
+  (`CLAUDE_INSTALL_METHOD`, `DISABLE_AUTOUPDATER`: Homebrew installs Claude
+  Code, so it does not update itself), with `claude-status` its status lines
+  and hook, and the `PreToolUse` item of the npm hook (matcher `Bash`). It
+  removes `deniedMcpServers` and `env.CONTEXT7_RUNNER`, which bootstrap set
+  before. A key that the spec does not name stays as Claude Code or the owner
+  wrote it, and a key that the user or Claude Code changes keeps its value.
+  The own keys of the user are in `settings` of `[tools.claude]`. `lists` maps
+  a dotted path, for example `"permissions.allow"`, to the items that the sync
+  adds to that list, and an item that the user adds in Claude Code stays.
 - **CLAUDE.md:** bootstrap owns the section between the `bootstrap:start` and
   `bootstrap:end` lines at the top of the file, and each sync writes it again.
   The own rules of the user go after the `bootstrap:end` line, and they stay.
@@ -260,14 +334,25 @@ on it, so the sync adds it with either one.
   check, so an npm-only deny or ask rule, for example `Bash(npm publish:*)`,
   does not match the changed pnpm command. Add a matching pnpm rule, for
   example `Bash(pnpm publish:*)`, in `lists` of `[tools.claude]`.
-- **upgrade:ai:** it calls the `claude` command of `claude-cli`. It updates
-  each plugin of the user scope, but not a plugin of the `builtin`
-  marketplace (`<name>@builtin`): that plugin ships inside Claude Code, and
-  `claude plugin update` cannot find it.
+- **upgrade:ai:** a hidden task that `updateall` runs when it exists. It
+  calls the `claude` command of `claude-cli`. It adds the marketplaces
+  `anthropics/claude-plugins-official` and `virajp/claude-plugins` when they
+  are missing, and updates each marketplace. It updates each plugin of the
+  user scope, but not a plugin of the `builtin` marketplace
+  (`<name>@builtin`): that plugin ships inside Claude Code, and
+  `claude plugin update` cannot find it. Then it removes the unused plugins
+  of the user scope (`claude plugin autoremove`).
 
 ### `claude-cli`
 
 Claude Code: its output styles, the func:claude task and the cc* aliases.
+`func:claude` takes an optional `name`, `-n/--new` and `-m/--model`. It starts
+`claude` with a session named after the current folder, or `<folder>-<name>`
+with the argument `<name>`, and resumes that session with `--resume` unless
+`--new` is given. It adds `--remote-control`, `--dangerously-skip-permissions`
+and `--allow-dangerously-skip-permissions`. `cc` uses the default model, and
+`ccf`, `cch`, `cco` and `ccs` give `--model` with Fable, Haiku, Opus and Sonnet
+(each with `[1m]`).
 
 - **Packs:** `claude-apps`
 - **Depends:** `claude`, `cli`
@@ -292,7 +377,9 @@ Claude Desktop.
 The status line of Claude Code (from the virajp/tap tap). When this tool is
 selected, the merge spec of `~/.claude/settings.json` of `claude` adds
 `statusLine`, `subagentStatusLine` and the `PostToolUse` hook of
-`claude-status`.
+`claude-status`. The tool declares the tap `virajp/tap` in
+`[mise.bootstrap.brew.taps]`, and its package is
+`brew:virajp/tap/claude-status`.
 
 - **Packs:** `claude-apps`
 - **Depends:** `claude-cli`
@@ -301,8 +388,12 @@ selected, the merge spec of `~/.claude/settings.json` of `claude` adds
 
 ### `cli`
 
-the projects folder, the generic aliases and the func:*, cleanupDS and
+The projects folder, the generic aliases and the func:*, cleanupDS and
 keychain:delete tasks. Each command-line package is a tool of its own.
+`projects_dir` (default `~/Projects`) sets `PROJECTS_DIR`, with `~` expanded,
+because a value of `[mise.env]` does not expand it. `projects_dir` also sets the
+alias `cdgh`. The tools `git` and `mise` also read `projects_dir`.
+`CLOUD_PATH` is the iCloud Drive folder.
 
 - **Packs:** `base` (required)
 - **Files:** none
@@ -352,7 +443,8 @@ DaisyDisk, from the Mac App Store.
 
 ### `dasel`
 
-dasel, the query tool for JSON, YAML and TOML, and its fish completion.
+dasel, the query tool for JSON, YAML and TOML, and its fish completion. The
+fish file loads the completion only when `dasel` is on PATH.
 
 - **Packs:** none
 - **Files:**
@@ -370,7 +462,8 @@ Developer, from the Mac App Store.
 
 ### `diff-so-fancy`
 
-diff-so-fancy, the git diff formatter (the pager of the git config).
+diff-so-fancy, the git diff formatter. The tool `git` depends on it, and its
+alias `diff` runs `diff-so-fancy`. The git config sets no pager.
 
 - **Packs:** `base` (required)
 - **Files:** none
@@ -409,15 +502,19 @@ dprint, the code formatter, and its global config.
 - **Packs:** none
 - **Files:**
   - `~/.config/dprint/dprint.jsonc` — merge
-- **Defaults:** `settings`, `blocks`, `excludes`, `plugins`
 - **Contributes to `visual-studio-code`:** `extensions`
+- **Defaults:** `settings`, `blocks`, `excludes`, `plugins`
 - **Mise sections:** `[mise.tools]`
-- **Plugins:** The global config extends no other config. The ruff plugin
+- **Plugins:** The global config formats the base formats only: TOML, JSON,
+  Markdown, YAML, shell and Python. A repository gets its own
+  `dprint.jsonc`, which extends no other config. The ruff plugin
   (`npm:@dprint/ruff`, the block `ruff`) formats each `.py` file, also each
-  Python task below `~/.config/mise/tasks/`. The shuck block formats the other
-  task files, and skips `*.tmpl` and `*.py`. The sync finds a
-  plugin by its name, so it keeps the version in the file. `updateall` runs
-  `dprint config update` on the file, and that step updates the versions.
+  Python task below `~/.config/mise/tasks/`. The shuck block formats the
+  other task files, and skips `*.tmpl` and `*.py`. A key, an exclude or a
+  plugin that the user adds stays. The sync finds a plugin by its name, so
+  it keeps the version in the file. When the file exists and `dprint` is on
+  PATH, `updateall` runs `dprint config update` on the file, and that step
+  updates the versions.
 
 ### `duplicate-detective`
 
@@ -456,7 +553,17 @@ Final Cut Pro, from the Mac App Store.
 ### `fish`
 
 fish from Homebrew, its config, drop-in folder conf.d/ and functions, and the
-login shell.
+login shell. fish loads `conf.d/` in name order: `01-env` and `02-path` set
+the XDG folders, `HOMEBREW_PREFIX` and the PATH before mise activates at
+`06-mise.fish`, so the tools of mise win on PATH. `02-path.fish` puts
+`~/.local/bin` on `PATH`, not `[env] _.path` of mise. mise puts `_.path`
+before its own tool paths, so with `_.path` the standalone copies in
+`~/.local/bin` (`uv` and `uvx`) come before the tools of mise. `02-path.fish`
+uses `fish_add_path --global`. A universal path stays in `fish_variables`
+after its line is removed, and the global scope is built again at each start.
+`/etc/shells` is outside `$HOME`, so the line of Homebrew's fish is a
+`[mise.dotfiles]` entry, as the lines of `bash` and `zsh`. The login shell is
+`login_shell` of `[mise.bootstrap.user]`. `mise bootstrap` applies both.
 
 - **Packs:** `base` (required)
 - **Stage:** `migrate`
@@ -468,17 +575,23 @@ login shell.
   - `~/.config/fish/conf.d/fish_frozen_theme.fish` — seed
   - `~/.config/fish/config.fish` — copy
   - `~/.config/fish/functions/fish_title.fish` — seed
-- **Runtime:** `~/.config/fish/fish_variables`. Thus the backup clone links
-  `conf.d/`, `functions/` and `config.fish`, not `~/.config/fish`.
-- **Defaults:** `login_shell`
 - **Contributes to `visual-studio-code`:** `extensions`
+- **Defaults:** `login_shell`
 - **Mise sections:** `[mise.bootstrap.packages]`, `[mise.bootstrap.user]`,
   `[mise.dotfiles]`
+- **Runtime:** `~/.config/fish/fish_variables`. Thus the backup clone links
+  `conf.d/`, `functions/` and `config.fish`, not `~/.config/fish`.
 
 ### `fnox`
 
 fnox: secrets from the macOS Keychain, with a profile per consumer, and the
-Claude skill `secrets`.
+Claude skill `secrets`. fnox has one provider, `global`: it reads each secret
+from the macOS Keychain (service `fnox`, prefix `global/`). `env = false`
+exports no secret to the shell: only the command of `fnox exec -P <profile>`
+gets it. `if_missing = "error"` stops a command when a secret is missing. The
+profile `brew` gives `GITHUB_API_TOKEN` and `HOMEBREW_GITHUB_API_TOKEN` to the
+command, from the Keychain item `GITHUB_API_TOKEN`. The second profile is
+`fnox`. It gives `AGE_KEY`.
 
 - **Packs:** `base` (required)
 - **Files:**
@@ -490,10 +603,18 @@ Claude skill `secrets`.
     `when = "claude.skills"`
 - **Defaults:** `skill.lines`, an empty table. `1password-cli` and `age` add
   their lines.
+- **Mise sections:** `[mise.bootstrap.packages]`
 - **Skill `secrets`:** secrets come from fnox (the macOS Keychain) or op. Give
   a secret to a command with `fnox exec` or `op run`. Never print a secret,
   never write it to a file, never put it in the chat. The skill ships only
   when the `claude` tool is selected and its value `skills` is `true`.
+
+### `fonts`
+
+The Nerd Fonts casks (Fira Code, Hack, Iosevka, Iosevka Term, Meslo LG).
+
+- **Packs:** `base` (required)
+- **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `fzf`
@@ -504,18 +625,13 @@ fzf, the command-line fuzzy finder.
 - **Files:** none
 - **Mise sections:** `[mise.bootstrap.packages]`
 
-### `fonts`
-
-The Nerd Fonts casks (Fira Code, Hack, Iosevka, Iosevka Term, Meslo LG).
-
-- **Packs:** `base` (required)
-- **Files:** none
-- **Mise sections:** `[mise.bootstrap.packages]`
-
 ### `gcloud`
 
 The Google Cloud CLI (gcloud) and its env. `CLOUDSDK_PYTHON` names the Python
-3.14 of the `python` tool.
+3.14 of the `python` tool. Without it, gcloud runs the system `python3` (3.9 on
+macOS) and fails. The path names the minor version 3.14, not `latest`, because
+`latest` moves to each newer Python, and the gcloud virtual environment in
+`~/.config/gcloud/virtenv` then runs without its packages.
 
 - **Packs:** none
 - **Depends:** `python`
@@ -525,23 +641,26 @@ The Google Cloud CLI (gcloud) and its env. `CLOUDSDK_PYTHON` names the Python
 ### `gh`
 
 the GitHub CLI (gh) and its config: ssh as git protocol, the editor, the
-aliases.
+aliases. `gh config set` rewrites `config.yml`, so the file is a merge target:
+the spec adds only `version`, `git_protocol`, `editor`, `pager` and the alias
+`co`, and gh owns each other key.
 
 - **Packs:** `base` (required)
 - **Depends:** `git`
 - **Files:**
   - `~/.config/gh/config.yml` — merge
-- **Runtime:** `~/.config/gh/hosts.yml`. Thus the backup clone links
-  `config.yml`, not `~/.config/gh`.
 - **Contributes to `git`:** the line `gh` of `skill.lines` (the skill
   `git-identity`)
 - **Mise sections:** `[mise.bootstrap.packages]`
+- **Runtime:** `~/.config/gh/hosts.yml`. Thus the backup clone links
+  `config.yml`, not `~/.config/gh`.
 - **Question `editor`:**
   [`macos/tools/gh/tools.toml`](../../macos/tools/gh/tools.toml)
 
 ### `ghostty`
 
-Ghostty, the terminal emulator, and its config.
+Ghostty, the terminal emulator, and its config. The config uses the font
+MesloLGS Nerd Font, so the tool depends on `fonts`.
 
 - **Packs:** `terminal`
 - **Depends:** `fonts`
@@ -552,7 +671,17 @@ Ghostty, the terminal emulator, and its config.
 ### `git`
 
 git, its global config, the commit identity per forge (GitHub, GitLab), the
-git aliases and the Claude skill `git-identity` of the backup clone.
+git aliases and the Claude skill `git-identity` of the backup clone. `config`
+includes `identity`. `identity` holds `[user]`, and includes `github.config` or
+`gitlab.config` by the URL of a remote (`hasconfig:remote.*.url:`) and by the
+folder of the repository (`gitdir:`): a GitHub remote or a folder below
+`<projects_dir>/github.com/` gets `github.config`, and a GitLab remote or a
+folder below `<projects_dir>/gitlab.com/` gets `gitlab.config`. `projects_dir`
+is a value of the `cli` tool, so `git` depends on `cli`. The config signs each
+commit and each annotated tag with SSH, and the `program` line of
+`[gpg "ssh"]` renders only when `1password` gives `gpg.ssh.program`.
+`push.default` is `current`, so the alias `gp` and the git alias `p` push only
+the current branch.
 
 - **Packs:** `base` (required)
 - **Depends:** `cli`, `diff-so-fancy`
@@ -572,13 +701,13 @@ git aliases and the Claude skill `git-identity` of the backup clone.
     `root = "backup"`, `when = "claude.skills"`
 - **Defaults:** `core_editor`, and `skill.lines`, an empty table. `1password`,
   `ssh`, `gh` and `glab` add their lines.
+- **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 - **Skill `git-identity`:** the identity for each forge comes from `includeIf`,
   never a local `user.email`. The 1Password SSH signer signs the commits. If a
   signature fails, tell the user to unlock 1Password, and never turn off
   signing. Use `gh auth status` and `glab auth status`, and never print a
   token. `<backup>` is the backup clone (`macos-setup`), the key `backup` of
   `macos.toml`. Without `backup`, the sync skips the skill.
-- **Mise sections:** `[mise.bootstrap.packages]`, `[mise.shell_alias]`
 - **Question `name`:**
   [`macos/tools/git/tools.toml`](../../macos/tools/git/tools.toml)
 - **Question `email_github`:**
@@ -654,7 +783,23 @@ Open-source video transcoder.
 ### `homebrew`
 
 Homebrew: its environment, the brew alias, the Brewfile, its upgrade task and
-its shellenv in bash, zsh and fish.
+its shellenv in bash, zsh and fish. `HOMEBREW_CASK_OPTS` gives `brew` the cask
+folder of mise, `~/Applications`. The alias `brew` runs
+`fnox -c $HOME/.config/fnox/config.toml exec -P brew -- brew`, so `brew` gets
+the GitHub token of the profile `brew` of fnox. Thus the tool depends on
+`fnox`. The shellenv files (`01a-`, `05-`) run before the mise drop-ins
+(`01b-`, `06-`), so the tools of mise win on PATH. The Brewfile holds only the
+VS Code extensions of `visual-studio-code`, with no line when that tool is not
+selected.
+
+`upgrade:brew` updates Homebrew and runs `upgrade:tailscale` when that task
+exists. Then it runs `mise bootstrap packages prune`, which removes each
+package that no tool and no `[mise.bootstrap.packages]` of `macos.toml`
+declares, and it upgrades and applies the declared packages. `updateall` runs
+`upgrade:brew` under `fnox exec --profile brew` when fnox is on `PATH`, else
+without the token, with a warning. Its other `mise bootstrap` step gets no
+token from fnox. `brew:casks` runs by hand only: it installs the Brewfile, and
+removes each cask and VS Code extension that the Brewfile does not hold.
 
 - **Packs:** `base` (required)
 - **Depends:** `fnox`
@@ -740,7 +885,14 @@ lcov, the code coverage tool.
 ### `macos-defaults`
 
 macOS settings: Finder, Dock, Mission Control, window management, menu bar clock
-and trackpad.
+and trackpad. `dock_orientation` is `bottom`, `left` or `right`. Its detect
+proposes the current position of the Dock, else `bottom`. Another value stops
+the render, and the sync stops. A `defaults` value is not a template and cannot
+hold `$HOME`, so the hook `post-defaults` writes `NewWindowTargetPath` of
+Finder with `$HOME`. It also runs `chflags nohidden ~/Library`, and restarts
+`cfprefsd`, Finder, the Dock, `SystemUIServer` and Control Center, so they read
+the new values. The `pmset` and `nvram` settings are in the task
+`upgrade:power` of `mise`.
 
 - **Packs:** `base` (required)
 - **Files:** none
@@ -800,7 +952,26 @@ Microsoft Word, from the Mac App Store.
 
 mise: its user-level config, its activation in bash, zsh and fish, ~/.zprofile,
 the entry tasks of the Mac sync and the Claude skill `mac-setup` of the backup
-clone.
+clone. The activation files read `projects_dir` of the `cli` tool, so the tool
+depends on `cli`. The entry tasks are Python uv scripts, so the tool also
+depends on `python` and `uv`: both are then in the init stage, and the first
+setup installs them before its exit 4. `~/.zprofile` puts `~/.local/bin`, the
+folder of mise, on PATH before the activation files run. Each activation file
+exports `MISE_ENV=dev`. An interactive shell gets the full `mise activate`, and
+a non-interactive shell gets `mise activate --shims`.
+
+The activation of mise runs after `brew shellenv` and the `PATH` exports:
+`01b-mise` sorts after `01a-homebrew` in bash and zsh, and `06-mise.fish`
+after `02-path.fish` and `05-homebrew.fish` in fish. mise prepends its tool
+paths to `PATH`, so its tools win, and a later change of `PATH` takes that
+place back. The fish file sets `MISE_FISH_AUTO_ACTIVATE` to `0`, because the
+Homebrew formula of mise ships `vendor_conf.d/mise-activate.fish`, which sorts
+after it and runs a full `mise activate` again.
+`MISE_BREW_CASK_OPT_APPDIR` of `~/.config/mise/config.toml` puts each cask that
+mise installs into `~/Applications`. The place of `macos.toml` is fixed, at
+`~/.config/bootstrap/macos.toml`, so the tool has no question `config_path`:
+`mac migrate` moves an old answer to the key `backup`. See
+[mac.md](../design/mac.md#the-place-of-macostoml).
 
 - **Packs:** `base` (required)
 - **Depends:** `cli`, `python`, `uv`
@@ -824,45 +995,56 @@ clone.
   - `~/.config/mise/tasks/upgrade/macos/download.py`
   - `~/.config/mise/tasks/upgrade/macos/upgrade.py`
   - `~/.config/mise/tasks/upgrade/power.py`
+- **Contributes to `visual-studio-code`:** `extensions`
 - **Defaults:** `skill.lines`, an empty table. `homebrew`, `mas`, `setapp`
   and `macos-defaults` add their lines.
-- **Skill `mac-setup`:** to install or remove a tool or an app, or to change a
-  setting, edit `macos.toml` and run `mise run updateall:configs`. Never run
-  `brew install`, `mise use -g` or `defaults write` directly. The dev tools
-  come from mise, the others from Homebrew. A file with the
-  `Synced from bootstrap` header is changed in `bootstrap`. `<backup>` is the
-  backup clone (`macos-setup`). Without `backup`, the sync skips the skill.
-- **Contributes to `visual-studio-code`:** `extensions`
 - **Mise sections:** `[mise.tools]`, `[mise.bootstrap.packages]`,
   `[mise.shell_alias]`
+- **Skill `mac-setup`:** to install or remove a tool or an app, or to change a
+  setting, edit `macos.toml` and run `mise run updateall:configs`.
+  `mise run updateall` also installs the packages. Never run `brew install`,
+  `mise use -g` or `defaults write` directly. The dev tools come from mise,
+  the others from Homebrew. A file with the `Synced from bootstrap` header is
+  changed in `bootstrap`. `SKILL.md` shows one bullet for each key of
+  `skill.lines`, in key order. `references/local.md` is a seed: the own rules
+  of the Mac. `<backup>` is the backup clone (`macos-setup`). The sync writes
+  the skill only when the `claude` tool is selected and its value `skills` is
+  true. Without `backup`, the sync skips the skill.
 - **CA certificates:** `[mise.bootstrap.packages]` installs
   `brew:ca-certificates`.
   It is in this tool, because each Mac must have it.
-- **Entry of the Mac sync:** `updateall:configs` runs `bootstrap mac sync`, with
-  the flags `--dry-run`, `--no-bootstrap` and `--verbose`. `updateall` upgrades
-  the Mac, and runs `updateall:configs` as one step. With the
-  `dprint` tool, it also updates the plugins of `~/.config/dprint/dprint.jsonc`.
-  The `upgrade:*` tasks download and install the macOS updates and apply the
-  power
-  profile. The aliases are `updateall` and `osx-upgrade`.
-- **Python tasks:** each Mac task is a Python uv script with a `.py` name, and
-  mise removes `.py` from the task name. Each task has
-  `# MISE tools={uv="latest", python="3.14"}`, and the Mac config sets
-  `task.run_auto_install = false`, so the `mise` tool depends on `python` and
-  `uv`: the first setup installs them before its exit 4. A task that uses
-  a function of the library `helpers.py` (the print functions of the Mac tasks,
-  `task_exists` and `run_task_if_exists`) imports it with this preamble:
+- **Entry of the Mac sync:** `updateall:configs` runs `bootstrap mac sync`,
+  with the flags `--dry-run`, `--no-bootstrap` and `--verbose`, and exits
+  with its code. `BOOTSTRAP_BIN`, a local build, replaces the `bootstrap` of
+  mise. `updateall` upgrades the Mac. It does these steps, in this order:
 
-  ```python
-  sys.dont_write_bytecode = True
-  sys.path.insert(0, os.path.expanduser("~/.config/mise/tasks/_scripts"))
-  import helpers  # noqa: E402
-  ```
+  1. `mise self-update`.
+  2. `updateall:configs`. On exit 4 it stops with exit 4, and on another
+     failure it stops with that code. After an exit 4, open a new terminal,
+     then run `updateall` again.
+  3. `mise install --include-task-tools`, `mise upgrade` and `mise prune`.
+  4. With the `dprint` tool, `dprint config update` of
+     `~/.config/dprint/dprint.jsonc`.
+  5. `upgrade:brew`.
+  6. `mise bootstrap --skip macos-defaults,packages`, `mise reshim` and
+     `mise doctor`.
+  7. `upgrade:npm` and `upgrade:ai`.
+  8. Once a week: `mise bootstrap --only macos-defaults,defaults` and
+     `upgrade:power`.
+  9. `upgrade:macos:download`, `cleanupDS` of `PROJECTS_DIR`, and
+     `tailscale:daemon`.
 
-  `func:claude`, `func:code` and `keychain:delete` use no function of the
-  library, so they do not import it. `updateall:configs` imports no library, so
-  it runs before the first sync writes `helpers.py`. It runs under `mise run`
-  and directly, with uv on PATH.
+  The weekly steps run when the stamp `/tmp/mise-updateall-weekly.stamp` is
+  missing or older than one week, and `--force` runs them now. They come
+  after the upgrades of steps 1 to 7, because they ask for sudo and restart
+  Finder, the Dock and Control Center. macOS clears `/tmp` at a restart, and
+  each macOS update restarts the Mac, so the first `updateall` after an update
+  applies them again. A step of an opt-in tool (`upgrade:brew`,
+  `upgrade:npm`, `upgrade:ai`, `cleanupDS`, `tailscale:daemon`) runs only
+  when its task exists, else `updateall` prints one skip line. The
+  `upgrade:*` tasks download and install the macOS updates and apply the
+  power profile. The aliases are `updateall`, `osx-upgrade`,
+  `cancelPrintJobs` and `listServices`.
 - **CLI:** `[mise.tools]` installs `github:virajp/bootstrap`, the CLI
   `bootstrap`. mise reads the release tags `bootstrap@X.Y.Z` as the
   versions `X.Y.Z`. `minimum_release_age_excludes` names
@@ -875,9 +1057,6 @@ clone.
 - **Self-update:** `self_update.auto = true` lets mise install a new release
   before an interactive command. `self_update.minimum_release_age = "0h"` means
   that mise does not wait after a release.
-- **The place of `macos.toml`:** fixed, at `~/.config/bootstrap/macos.toml`.
-  The old question `config_path` is gone: `mac migrate` moves its answer to the
-  key `backup`. See [mac.md](../design/mac.md#the-place-of-macostoml).
 
 ### `network`
 
@@ -900,6 +1079,11 @@ tool of its own.
 
 Node.js (LTS), and the user config of the aube that mise embeds. The tool has no
 pnpm and no `PNPM_HOME`, because a repository selects its own package manager.
+mise installs the `npm:` tools with its embedded aube (`npm.package_manager`).
+That aube reads `~/.config/aube/config.toml`, not the `[env]` of mise, so the
+file holds `minimumPackageAge`: 600 minutes (10 hours) for a new package name.
+`upgrade:npm` sets `fund=false` and upgrades the global npm packages, and it
+does nothing when npm is not on PATH.
 
 - **Packs:** `base` (required)
 - **Files:**
@@ -944,7 +1128,10 @@ OpenCode, the AI coding agent, and its alias.
 
 ### `openwhispr`
 
-Voice-to-text dictation with AI agents, and its hotkey.
+Voice-to-text dictation with AI agents, and its hotkey. OpenWhispr writes
+`.env` again at each start, so the file is a seed: the sync writes it once, and
+then the app owns it. The app reads only `DICTATION_KEY` and `ACTIVATION_MODE`
+from it, on a new install.
 
 - **Packs:** none
 - **Files:**
@@ -959,7 +1146,10 @@ Voice-to-text dictation with AI agents, and its hotkey.
 ### `orbstack`
 
 OrbStack (Docker and Kubernetes), its env, the docker and kubectl aliases, its
-fish and zsh init and its ssh Include.
+fish and zsh init and its ssh Include. The Include `~/.orbstack/ssh/config`
+gives the `orb` SSH host, and the `ssh` tool puts it at the top of
+`~/.ssh/config`, before each Host block. `DOCKER_DEFAULT_PLATFORM` is
+`linux/amd64`, and the aliases `dpull` and `drun` also force that platform.
 
 - **Packs:** `dev`
 - **Files:**
@@ -1034,11 +1224,12 @@ pstree, the process tree, with the func:myps task and its myps alias.
 
 ### `python`
 
-Python through mise. uv is the tool `uv`.
+Python through mise. uv is the tool `uv`. mise installs Python 3.14, the
+version of the Mac tasks, and does not compile it (`python.compile = false`).
 
 - **Packs:** `base` (required)
 - **Files:** none
-- **Mise sections:** `[mise.settings]`, `[mise.tools]`, `[mise.env]`
+- **Mise sections:** `[mise.settings]`, `[mise.tools]`
 
 ### `ripgrep`
 
@@ -1050,9 +1241,11 @@ ripgrep, the fast search tool.
 
 ### `ruby`
 
-Ruby through mise, and the RubyGems config (~/.gemrc): no documentation on
+Ruby through mise, and the RubyGems config (`~/.gemrc`): no documentation on
 install and update. mise uses Ruby to run the hooks of some casks and to build
-a formula without a bottle.
+a formula without a bottle. gem writes `~/.gemrc` again (the gem sources), so
+the file is a merge: the spec adds only its keys, and sets the format `yaml`
+because the file has no extension.
 
 - **Packs:** `base` (required)
 - **Files:**
@@ -1080,23 +1273,32 @@ Sill menu bar app.
 ### `ssh`
 
 the ssh client config: Host * defaults, the default user, the includes and the
-agent that other tools contribute.
+agent that other tools contribute. An Include works only at the top of
+`~/.ssh/config`, before each Host block, so the template puts the `includes` of
+other tools there, for example the one of `orbstack`. `~/.ssh/config` also
+includes `~/.ssh/config.local`, the hosts and keys of this Mac only, which no
+tool syncs. ssh ignores the Include when that file is missing. In `Host *`, it
+includes `~/.ssh/config.identity`, which holds `User`. The `identity_agent` of
+another tool, for example `1password`, goes inside `Host *`.
+`StrictHostKeyChecking` is `accept-new`. ssh refuses a `~/.ssh` folder that
+other users can read, so `dir_perm` keeps it at mode 700.
 
 - **Packs:** `base` (required)
 - **Files:**
   - `~/.ssh/config` — template, format `text`, `dir_perm` `700`
   - `~/.ssh/config.identity` — template, `dir_perm` `700`
-- **Folder mode:** `dir_perm` keeps the folder `~/.ssh` at mode 700.
-- **Runtime:** `~/.ssh/known_hosts`, `~/.ssh/known_hosts.old`. Thus the backup
-  clone links the synced files of `~/.ssh` one by one.
 - **Contributes to `git`:** the line `ssh` of `skill.lines` (the skill
   `git-identity`)
+- **Runtime:** `~/.ssh/known_hosts`, `~/.ssh/known_hosts.old`. Thus the backup
+  clone links the synced files of `~/.ssh` one by one.
 - **Question `user`:**
   [`macos/tools/ssh/tools.toml`](../../macos/tools/ssh/tools.toml)
 
 ### `starship`
 
-starship prompt, its config and the fish and zsh init drop-ins.
+starship prompt, its config and the fish and zsh init drop-ins. Each init runs
+only in an interactive shell, and only when `starship` is on PATH. bash gets no
+starship init.
 
 - **Packs:** `base` (required)
 - **Files:**
@@ -1115,7 +1317,11 @@ Text editor for code, markup and prose, and the edit alias.
 
 ### `superfile`
 
-superfile, the terminal file manager, and its config.
+superfile, the terminal file manager, and its config. superfile rewrites its
+config, so the merge spec adds only the keys of bootstrap, and superfile owns
+each other key. The spec owns the list `sidebar_sections` as a block, so its
+order holds. The config previews code with bat and uses zoxide, so the tool
+depends on `bat` and `zoxide`.
 
 - **Packs:** `dev`
 - **Depends:** `bat`, `zoxide`
@@ -1126,7 +1332,17 @@ superfile, the terminal file manager, and its config.
 ### `tailscale`
 
 Tailscale (the formula; tailscaled runs as a root brew service) and its daemon
-and upgrade tasks.
+and upgrade tasks. mise installs the formula, and only the daemon goes through
+`brew services`, because tailscaled needs root for the utun interface and mise
+has no root services on macOS. The App Store app is sandboxed and cannot run
+the Tailscale SSH server, so the tool uses the formula. `updateall` runs
+`tailscale:daemon`, which starts the daemon with
+`sudo brew services start tailscale` only when tailscaled does not run,
+because a start of a running daemon restarts it and drops the tunnel.
+`upgrade:brew` runs `upgrade:tailscale` first. It stops the service, gives the
+root-owned keg back to the user, so that `brew cleanup` can remove it,
+upgrades the formula with `mise bootstrap packages upgrade` and starts the
+service again.
 
 - **Packs:** `essentials`
 - **Files:** none
@@ -1145,7 +1361,9 @@ Explore running tasks (processes).
 
 ### `telegram`
 
-Telegram, from the Mac App Store.
+Telegram, from the Mac App Store. The task `cleanupTelegram` (also the shell
+alias `cleanupTelegram`) quits Telegram, deletes the `telegram-*` cache files
+larger than 1 MB in its App Store group container, and starts Telegram again.
 
 - **Packs:** none
 - **Depends:** `mas`
@@ -1174,7 +1392,11 @@ The Unarchiver, from the Mac App Store.
 
 ### `touchid-sudo`
 
-Touch ID for sudo (/etc/pam.d/sudo_local).
+Touch ID for sudo (/etc/pam.d/sudo_local). Each macOS update writes
+`/etc/pam.d/sudo` again, but `sudo_local` is the drop-in that it includes, and
+it stays. The target is outside `$HOME`, so it is a `[mise.bootstrap.files]`
+entry (mode `0444`, owner `root`, group `wheel`) that `mise bootstrap`
+applies.
 
 - **Packs:** `base` (required)
 - **Files:** none
@@ -1200,7 +1422,9 @@ tree, the directory tree.
 ### `uv`
 
 uv through mise, with uv as the pipx backend. Each Mac task is a uv script, so
-each Mac must have uv.
+each Mac must have uv. Each `pipx:` tool installs through uv (`pipx.uvx`).
+`UV_NO_MANAGED_PYTHON` and `UV_PYTHON_DOWNLOADS = "never"` stop uv from
+downloading a Python of its own.
 
 - **Packs:** `base` (required)
 - **Files:** none
@@ -1213,7 +1437,9 @@ Open-source code editor.
 - **Packs:** `base`
 - **Files:** none
 - **Defaults:** `extensions`, the VS Code extensions of
-  `~/.config/brewfile` (homebrew). Each tool adds its own.
+  `~/.config/brewfile` (homebrew), which the task `brew:casks` installs. Each
+  selected tool adds its own in `[contributes.visual-studio-code]`, and
+  `extensions` of `[tools.visual-studio-code]` in `macos.toml` adds more.
 - **Mise sections:** `[mise.bootstrap.packages]`
 
 ### `vlc`
@@ -1226,7 +1452,11 @@ Multimedia player.
 
 ### `vorssaint`
 
-Menu bar toolkit with keep-awake, system monitor and volume mixer.
+Menu bar toolkit with keep-awake, system monitor and volume mixer. The defaults
+leave out the audio device priorities, the state of one Mac (mic mute devices,
+update checks, window sizes), the onboarding and migration markers, and the
+binary values (`radialMenuProfiles`, `shelfItems`) that mise cannot write.
+Restart the app after `mise bootstrap` applies the defaults.
 
 - **Packs:** `base` (required)
 - **Files:** none
@@ -1312,7 +1542,9 @@ Multiplayer environment for coding with agents.
 
 ### `zoxide`
 
-zoxide, the fast directory jumper, its shell init and the cd alias.
+zoxide, the fast directory jumper, its shell init and the cd alias. The alias
+makes `cd` run `z`. The zsh init runs only in an interactive shell, and loads
+before `02b-starship.zsh` of `starship`.
 
 - **Packs:** `base` (required)
 - **Files:**
@@ -1323,7 +1555,17 @@ zoxide, the fast directory jumper, its shell init and the cd alias.
 ### `zsh`
 
 zsh from Homebrew with zinit, its rc files and its drop-in folder
-~/.config/zsh/.
+~/.config/zsh/. `~/.zshenv` and `~/.zshrc` each source each
+`~/.config/zsh/*.zsh` file in name order, so an interactive shell sources each
+drop-in two times. Other tools add their drop-ins to this folder (`homebrew`,
+`mise`, `zoxide`, `starship`, `orbstack`), and `~/.zprofile` belongs to the
+tool `mise`. `00-bootstrap.zsh` holds only the bootstrap variables, because
+each other variable is in the `[env]` of mise; `GPG_TTY` is here because mise
+evaluates its `[env]` in a subprocess, which has no terminal.
+`00-bootstrap.zsh` adds `~/.local/bin` at the end of `PATH`, in the shell
+config and not in `[env] _.path` of mise. The fzf-tab plugin of `98-zinit.zsh`
+needs fzf, so the tool depends on `fzf`. `/etc/shells` is outside `$HOME`, so
+`[mise.dotfiles]` adds `/opt/homebrew/bin/zsh` to it.
 
 - **Packs:** `base` (required)
 - **Stage:** `migrate`
