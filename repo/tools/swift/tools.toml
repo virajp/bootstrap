@@ -13,6 +13,16 @@ summary = "Swift, SwiftLint and swift-format (macOS)"
 [contributes.vscode]
 extensions = [ "swiftlang.swift-vscode" ]
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:format:50-swift-format" = "swift-format checks the layout of the Swift files in strict mode; its seed is `.config/swift-format.json`: fix the code, not the seed."
+"code:lint:80-swiftlint" = "SwiftLint lints the Swift files in strict mode; its seed is `.config/swiftlint.yml`: fix the code, not the seed. Never run swiftlint --fix; swift-format owns the layout."
+
+# The dependency line of the bootstrap section of CLAUDE.md.
+[contributes.claude.claude_md.deps]
+swift = "The Package.resolved inside .xcodeproj belongs to Xcode: change it only with mise run setup or mise run setup --upgrade. SwiftPM has no audit command: read the revision diff of Package.resolved by hand."
+
 # The mise config, generated into .config/mise/conf.d/swift/mise.<env>.toml.
 # SwiftLint is the correctness gate. swift-format comes with the Swift
 # toolchain of the host, so it has no mise tool.
@@ -42,6 +52,22 @@ source = ".config/swift-format.json"
 [files.".config/swiftlint.yml"]
 mode = "seed"
 source = ".config/swiftlint.yml"
+
+# The swift skill, only with the claude tool and its skills = true.
+[files.".claude/skills/swift/SKILL.md"]
+mode = "template"
+source = ".claude/skills/swift/SKILL.md.tmpl"
+when = "claude.skills"
+
+[files.".claude/skills/swift/references/conventions.md"]
+source = ".claude/skills/swift/references/conventions.md"
+when = "claude.skills"
+
+# A seed: the repository writes its own rules here.
+[files.".claude/skills/swift/references/local.md"]
+mode = "seed"
+source = ".claude/skills/swift/references/local.md"
+when = "claude.skills"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.

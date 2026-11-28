@@ -10,6 +10,16 @@ summary = "Flutter and Dart"
 [contributes.vscode]
 extensions = [ "dart-code.dart-code", "dart-code.flutter" ]
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:format:10-dart" = "dart format checks the layout of the Dart files."
+"code:lint:20-dart" = "dart analyze examines the Dart files, and each finding fails the gate, also an info."
+
+# The dependency line of the bootstrap section of CLAUDE.md.
+[contributes.claude.claude_md.deps]
+flutter = "mise run setup --upgrade deletes pubspec.lock and runs pub upgrade --major-versions: it re-resolves every package. After an edit of pubspec.yaml, run mise run setup and commit both files."
+
 # The mise config, generated into .config/mise/conf.d/flutter/mise.<env>.toml.
 [mise.tools.flutter]
 envs = [ "dev", "ci" ]

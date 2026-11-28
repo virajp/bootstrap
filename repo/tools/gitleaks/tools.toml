@@ -6,6 +6,11 @@ description = "gitleaks scans the code and the git history for secrets. It adds 
 root_only = false
 summary = "Scans the code for secrets"
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:sec:10-gitleaks" = "gitleaks finds secrets in the files and in the staged changes; its seed is `.config/gitleaks.toml`: fix the code, not the seed."
+
 # The mise config, generated into .config/mise/conf.d/gitleaks/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.
 [mise.tools.gitleaks]

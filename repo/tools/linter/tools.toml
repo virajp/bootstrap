@@ -25,6 +25,12 @@ require_serial = true
 [contributes.vscode]
 extensions = [ "dbaeumer.vscode-eslint", "foxundermoon.shell-format" ]
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:lint:05-linter" = "the house linter (`@virajp.dev/linter`) lints the TypeScript, JavaScript, JSON, YAML, TOML, Markdown, CSS, HTML and Astro files."
+"code:lint:06-shellcheck" = "ShellCheck finds the problems of severity warning or higher in the shell scripts."
+
 # The mise config, generated into .config/mise/conf.d/linter/mise.<env>.toml.
 
 # Linter

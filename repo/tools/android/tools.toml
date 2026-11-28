@@ -6,6 +6,11 @@ description = "The Android SDK command-line tools. It needs the java and kotlin 
 root_only = false
 summary = "The Android SDK command-line tools"
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:lint:10-android" = "Android lint examines the Gradle modules of the changed files."
+
 # The mise config, generated into .config/mise/conf.d/android/mise.<env>.toml.
 [mise.tools.android-sdk]
 envs = [ "dev", "ci" ]

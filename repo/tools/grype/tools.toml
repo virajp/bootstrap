@@ -6,6 +6,11 @@ description = "grype scans the dependencies for known vulnerabilities. It adds t
 root_only = false
 summary = "Scans the dependencies for vulnerabilities"
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:sec:20-grype" = "grype finds the known vulnerabilities of the dependencies; its seed is `.config/grype.yaml`: fix the code, not the seed."
+
 # The mise config, generated into .config/mise/conf.d/grype/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.
 [mise.tools.grype]

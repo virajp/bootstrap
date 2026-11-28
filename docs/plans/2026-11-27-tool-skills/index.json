@@ -12,8 +12,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-28 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-28T08:46:16Z in .worktrees/all-2026-11-28-1412"
   },
   "consent": {
     "merge": true,
@@ -93,11 +93,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T08:46:49.783Z",
       "ended": "",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U3",
@@ -125,11 +125,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T08:46:49.852Z",
       "ended": "",
       "commit": "",
-      "rounds": 0
+      "rounds": 3
     },
     {
       "id": "U4",
@@ -191,7 +191,8 @@
         "docs/memory/decisions/",
         "CLAUDE.md",
         "README.md",
-        "docs/design/bootstrap-config.md"
+        "docs/design/bootstrap-config.md",
+        "docs/design/mac.md"
       ],
       "depends_on": [
         "U1",
@@ -230,8 +231,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T08:46:49.716Z",
       "ended": ""
     },
     {
@@ -476,8 +477,28 @@
       "ended": ""
     }
   },
-  "gaps": [],
-  "overrides": [],
+  "gaps": [
+    {
+      "id": "G1",
+      "unit": "U6",
+      "stage": "",
+      "text": "R1 rule-5 finding: docs/design/mac.md:391-394 defines a runtime entry as a file the tool program writes; the Mac claude tool now lists .claude/skills and .claude/hooks as runtime (D17 d), and no unit owned that file · U6 owns widened to docs/design/mac.md under the plan Goal, handed to U6 as a DOCS FALSIFIED line",
+      "state": "closed"
+    },
+    {
+      "id": "G2",
+      "unit": "U3",
+      "stage": "",
+      "text": "R1 nit: macos/tools/mise/tools.toml:21 has no blank line after the empty [defaults.skill.lines] table before the next comment · formatter-owned: dprint with this repository config removes that blank line, so the gate code:format --all keeps the dprint form; finding closed with no change",
+      "state": "closed"
+    }
+  ],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-28-1412; hold landing"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-28-1412",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-27-tool-skills.jsonl"

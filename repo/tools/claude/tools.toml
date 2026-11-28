@@ -1,10 +1,25 @@
-# AI tools: setup:ai. In a git submodule, setup:ai skips itself.
+# AI tools: the bootstrap section of CLAUDE.md, the skills of the selected
+# tools and setup:ai. In a git submodule, setup:ai skips itself.
 category = "editor-ai"
 default_envs = [ "dev" ]
 depends = []
-description = "The setup:ai task, which installs the listed Claude Code plugins of the repository, uninstalls the project plugins that it installed and that left the list, and updates the plugins only with --upgrade. In a git submodule, setup:ai does nothing."
+description = "The bootstrap section at the top of CLAUDE.md (tasks, dependencies and gates of the selected tools), the Claude Code skills of the selected tools in .claude/skills/, and the setup:ai task, which installs the listed Claude Code plugins of the repository, uninstalls the project plugins that it installed and that left the list, and updates the plugins only with --upgrade. In a git submodule, setup:ai does nothing."
 root_only = false
-summary = "Claude Code plugins, with setup:ai"
+summary = "CLAUDE.md, tool skills and Claude Code plugins"
+
+# skills = true ships the skills of the selected tools to .claude/skills/.
+# Each skill entry of a tool has when = "claude.skills", so skills = false
+# stops all of them. It does not stop the CLAUDE.md section.
+[defaults]
+skills = true
+
+# The lines of the CLAUDE.md section. A tool adds one line in
+# [contributes.claude.claude_md.deps] (key: the tool) or
+# [contributes.claude.claude_md.gates] (key: the gate task). The tables are
+# empty here, so the spec can read them with no contribution.
+[defaults.claude_md.deps]
+
+[defaults.claude_md.gates]
 
 [defaults.plugins]
 # The record of setup:ai: the project plugins, `"<plugin>@<marketplace>"`, that
@@ -17,6 +32,12 @@ installed = []
 [defaults.plugins.user]
 
 [defaults.plugins.project]
+# The files of the tool, below files/.
+# A shared file: bootstrap owns the section at the top of CLAUDE.md.
+[files."CLAUDE.md"]
+mode = "merge"
+source = "CLAUDE.md.merge.toml"
+
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
 [tasks."setup/ai.py"]

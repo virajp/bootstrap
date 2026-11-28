@@ -103,6 +103,11 @@ require_serial = true
 [contributes.vscode]
 extensions = [ "dprint.dprint" ]
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:format:05-dprint" = "dprint checks the format of each file type that `dprint.jsonc` configures."
+
 # The mise config, generated into .config/mise/conf.d/dprint/mise.<env>.toml.
 
 # Formatter

@@ -21,6 +21,17 @@ plugins = [ "npm:@dprint/ruff@0.11.3" ]
 indentWidth = 2
 lineLength = 120
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:lint:50-pyrefly" = "pyrefly checks the types of the Python files, in a repository with a `pyproject.toml`."
+"code:lint:70-ruff" = "ruff lints the Python files, in a repository with a `pyproject.toml`."
+"code:lint:90-uv" = "each `uv.lock` must agree with its `pyproject.toml`."
+
+# The dependency line of the bootstrap section of CLAUDE.md.
+[contributes.claude.claude_md.deps]
+python = "Python comes from mise: never run uv python install and never pin a Python version in uv; use uv sync --locked through mise run setup, never --frozen by hand."
+
 # The mise config, generated into .config/mise/conf.d/python/mise.<env>.toml.
 [mise.settings]
 pipx.uvx = true

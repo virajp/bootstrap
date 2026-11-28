@@ -31,3 +31,20 @@ command = "jdtls"
 extensions = { ".java" = "java" }
 source = "http:jdtls"
 startup_timeout = 60000
+
+# The files of the tool, below files/.
+# The gradle skill, only with the claude tool and its skills = true.
+[files.".claude/skills/gradle/SKILL.md"]
+mode = "template"
+source = ".claude/skills/gradle/SKILL.md.tmpl"
+when = "claude.skills"
+
+[files.".claude/skills/gradle/references/conventions.md"]
+source = ".claude/skills/gradle/references/conventions.md"
+when = "claude.skills"
+
+# A seed: the repository writes its own rules here.
+[files.".claude/skills/gradle/references/local.md"]
+mode = "seed"
+source = ".claude/skills/gradle/references/local.md"
+when = "claude.skills"

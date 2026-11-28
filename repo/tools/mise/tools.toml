@@ -21,6 +21,11 @@ includes = []
 [contributes.vscode]
 extensions = [ "hverlin.mise-vscode", "redhat.vscode-yaml", "tamasfe.even-better-toml" ]
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:lint:60-bootstrap" = "bootstrap check validates the values in `.config/bootstrap/`."
+
 # The mise config, generated into .config/mise/conf.d/mise/mise.<env>.toml.
 
 # JSON and YAML queries. In dev and ci, because the tasks use them in both.

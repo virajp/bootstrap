@@ -15,6 +15,11 @@ summary = "Scans dependencies and images with OSV"
 [defaults]
 images = []
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:sec:30-osv-scanner" = "osv-scanner finds the known vulnerabilities of the lockfiles and of the container images in the OSV database; its seed is `.config/osv-scanner.toml`: fix the code, not the seed."
+
 # The mise config, generated into .config/mise/conf.d/osv-scanner/mise.<env>.toml.
 # In dev and ci, because CI runs `code:sec` too.
 [mise.tools.osv-scanner]
