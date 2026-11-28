@@ -125,7 +125,7 @@
       "status": "green",
       "started": "2026-11-28T07:47:42.032Z",
       "ended": "2026-11-28T07:57:05.634Z",
-      "commit": "",
+      "commit": "15e0256",
       "rounds": 1
     }
   ],
@@ -144,9 +144,9 @@
     },
     {
       "id": "W3",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-28T07:47:41.994Z",
-      "ended": ""
+      "ended": "2026-11-28T07:58:21.706Z"
     }
   ],
   "shared_files": [
