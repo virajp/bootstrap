@@ -50,7 +50,7 @@ replaces = ["` + good + `"]
 		got = append(got, e.Msg)
 	}
 	want := []string{
-		`macos/tools/b/tools.toml: [files."x"] replaces is not a key of a files entry - the keys are source, mode, render, format, requires, requires_found, when, perm, dir_perm`,
+		`macos/tools/b/tools.toml: [files."x"] replaces is not a key of a files entry - the keys are source, mode, render, format, requires, requires_found, when, perm, dir_perm, root`,
 		`macos/tools/b/tools.toml: [tasks."grp/40-b"] replaces: 'md5:00' must be "sha256:<64 hex>", in lower case`,
 		`macos/tools/b/tools.toml: [tasks."grp/40-b"] replaces: 'sha256:` + strings.Repeat("AB", 32) + `' must be "sha256:<64 hex>", in lower case`,
 		`macos/tools/b/tools.toml: [tasks."grp/40-c"] replaces must be a non-empty list of "sha256:<64 hex>" strings`,

@@ -9,8 +9,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-28 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-28T04:47:43Z in .worktrees/all-2026-11-28-1014"
   },
   "consent": {
     "merge": true,
@@ -71,11 +71,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-28T04:48:30.070Z",
+      "ended": "2026-11-28T04:57:22.732Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     },
     {
       "id": "U2",
@@ -150,8 +150,8 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T04:48:30.033Z",
       "ended": ""
     },
     {
@@ -336,7 +336,12 @@
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-28-1014; hold landing"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-28-1014",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-27-mac-backup-target.jsonl"

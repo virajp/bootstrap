@@ -51,6 +51,9 @@ type File struct {
 	// one expanded file: each {name} of Each, and `value`, the table.
 	Each string
 	Vars map[string]any
+	// Backup: root = "backup" of a Mac entry. Target is then relative to
+	// the backup clone, not to $HOME.
+	Backup bool
 }
 
 // Files gives the files that <tool> ships, from the entries of its
@@ -63,7 +66,7 @@ func (x *Index) Files(tool string) []File {
 	}
 	out := make([]File, 0, len(m.Files))
 	for _, fe := range m.Files {
-		out = append(out, File{Path: fe.Source, Target: fe.Target, Tmpl: fe.Tmpl, When: fe.When, Each: fe.Each, Perm: fe.Perm, DirPerm: fe.DirPerm})
+		out = append(out, File{Path: fe.Source, Target: fe.Target, Backup: fe.Backup, Tmpl: fe.Tmpl, When: fe.When, Each: fe.Each, Perm: fe.Perm, DirPerm: fe.DirPerm})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Target < out[j].Target })
 	return out
@@ -212,15 +215,33 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 			if badRelPath(key) || strings.HasSuffix(key, "/") {
 				fail1("must be a path relative to the target root, with no .. part")
 			}
+			keys := kind.keys
+			if s.Side == Macos && kind.table == "files" {
+				keys = append(append([]string(nil), keys...), "root")
+			}
 			for _, k := range e.Keys() {
-				if !oneOf(k, kind.keys) {
-					fail1("%s is not a key of a %s entry - the keys are %s", k, kind.table, strings.Join(kind.keys, ", "))
+				if !oneOf(k, keys) {
+					fail1("%s is not a key of a %s entry - the keys are %s", k, kind.table, strings.Join(keys, ", "))
 				}
 			}
 			if s.Side == Macos && e.Has("requires_found") {
 				fail1("requires_found is for repo tools only")
 			}
 			fe := FileEntry{Target: kind.target(key), Keys: e, Task: kind.table == "tasks"}
+			// root is a key of a Mac [files] entry only: on the repo side,
+			// the check of the keys above refuses it.
+			if v, has := e.Lookup("root"); has && s.Side == Macos && kind.table == "files" {
+				r, isStr := v.(string)
+				switch {
+				case !isStr || !oneOf(r, []string{"home", "backup"}):
+					fail1("root must be \"home\" or \"backup\"")
+				case r == "backup":
+					fe.Backup = true
+					if badBackupPath(key) {
+						fail1("a target of root = \"backup\" cannot be below dotfiles/ or a .git folder of the backup clone")
+					}
+				}
+			}
 			src, isStr := e.Get("source").(string)
 			if !isStr || badRelPath(src) || strings.HasSuffix(src, "/") {
 				fail1("needs source, a path below %s/ with no .. part", kind.dir)
@@ -305,7 +326,9 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 				for _, it := range items {
 					if k == "requires" && badRelPath(it) {
 						where := "the repository root"
-						if s.Side == Macos {
+						if fe.Backup {
+							where = "the backup clone"
+						} else if s.Side == Macos {
 							where = "$HOME"
 						}
 						fail1("requires: '%s' must be a path relative to %s, with no .. part", it, where)
@@ -351,6 +374,9 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 				}
 			} else if len(EachVars(key)) > 0 {
 				fail1("a {name} part of the path needs each")
+			}
+			if mode == "merge" && fe.Backup {
+				fail1("root = \"backup\" works only with mode = \"copy\", \"template\" or \"seed\"")
 			}
 			if mode == "merge" && isStr && !strings.HasSuffix(src, ".merge.toml") {
 				fail1("the source of a shared file is a merge spec <name>.merge.toml")

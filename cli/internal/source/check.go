@@ -175,10 +175,33 @@ func (x *Index) repoRules(tool string, m *Manifest) []*fail.Error {
 	return out
 }
 
-// badRelPath is the case `” | /* | .. | ../* | */../* | */..` of bash.
+// badRelPath is the case `” | /* | .. | ../* | */../* | */..` of bash. It
+// also refuses a path whose first segment is @backup: that segment starts
+// the manifest row of a target in the backup clone.
 func badRelPath(p string) bool {
 	return p == "" || strings.HasPrefix(p, "/") || p == ".." || strings.HasPrefix(p, "../") ||
-		strings.Contains(p, "/../") || strings.HasSuffix(p, "/..")
+		strings.Contains(p, "/../") || strings.HasSuffix(p, "/..") ||
+		p == BackupRow || strings.HasPrefix(p, BackupRow+"/")
+}
+
+// BackupRow is the first segment of the manifest row of a target in the
+// backup clone: @backup/<target>.
+const BackupRow = "@backup"
+
+// badBackupPath tells if the target <p> of a root = "backup" entry is not
+// permitted: its first segment is dotfiles (the links of the $HOME targets),
+// or a segment is .git (the git folder of the clone). The check ignores case.
+func badBackupPath(p string) bool {
+	segs := strings.Split(p, "/")
+	if strings.EqualFold(segs[0], "dotfiles") {
+		return true
+	}
+	for _, seg := range segs {
+		if strings.EqualFold(seg, ".git") {
+			return true
+		}
+	}
+	return false
 }
 
 func (s Source) openMacos() (*Index, error) {

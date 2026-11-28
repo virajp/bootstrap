@@ -34,14 +34,30 @@ func (s *state) file(it planItem) fail.Code {
 	if explicit == "-" {
 		explicit = ""
 	}
-	show := tilde + "/" + it.target
+	show := s.showTarget(it.target, it.backup)
 	s.show = show
-	real, ok := manifest.Real(s.home + "/" + it.target)
+	// The root of the target: $HOME, or the backup clone.
+	root, rootReal := s.home, s.homeReal
+	if it.backup {
+		if s.clone == "" {
+			s.r.Outcome(report.Skipped, show, "", "skip file  "+show+" (no backup in "+valuesName+")")
+			if it.mode != "seed" {
+				s.unhandle(it.row())
+			}
+			return fail.OK
+		}
+		root, rootReal = s.clone, s.cloneReal
+		if rootReal == "" {
+			rootReal = root
+		}
+	}
+	abs := TargetPath(s.home, s.clone, it.target, it.backup)
+	real, ok := manifest.Real(abs)
 	if !ok {
 		s.r.Outcome(report.Failed, show, "cannot resolve - a symlink loop", "cannot resolve "+show+" - a symlink loop")
 		return fail.Other
 	}
-	if real != s.homeReal+"/"+it.target {
+	if real != rootReal+"/"+it.target {
 		show += " (-> " + real + ")"
 	}
 	s.show = show
@@ -50,19 +66,22 @@ func (s *state) file(it planItem) fail.Code {
 		s.r.Outcome(report.Kept, show, "", "kept seed  "+show)
 		return fail.OK
 	}
-	if fe := s.entry(it.tool, it.target); fe != nil {
+	if fe := s.entry(it.tool, it.row()); fe != nil {
+		// A requires path of a target in the backup clone is relative to
+		// the clone.
 		for _, req := range fe.Requires {
-			if exists(s.home + "/" + req) {
+			if exists(root + "/" + req) {
 				continue
 			}
+			need := s.showPath(root + "/" + req)
 			switch it.mode {
 			case "seed":
-				s.r.Outcome(report.Skipped, show, "", "skip seed  "+show+" (no "+tilde+"/"+req+")")
+				s.r.Outcome(report.Skipped, show, "", "skip seed  "+show+" (no "+need+")")
 			case "merge":
-				s.r.Outcome(report.Skipped, show, "", "skip merge "+show+" (no "+tilde+"/"+req+")")
+				s.r.Outcome(report.Skipped, show, "", "skip merge "+show+" (no "+need+")")
 			default:
-				s.r.Outcome(report.Skipped, show, "", "skip file  "+show+" (no "+tilde+"/"+req+")")
-				s.unhandle(it.target)
+				s.r.Outcome(report.Skipped, show, "", "skip file  "+show+" (no "+need+")")
+				s.unhandle(it.row())
 			}
 			return fail.OK
 		}
@@ -73,10 +92,11 @@ func (s *state) file(it planItem) fail.Code {
 		return fail.Other
 	}
 	// A file with the header where a folder goes is removed. The real path
-	// can be outside $HOME, so the walk then stops at the first folder of
-	// that path.
-	top := s.homeReal
-	if !strings.HasPrefix(real, s.homeReal+"/") {
+	// can be outside the root ($HOME or the backup clone), so the walk then
+	// stops at the first folder of that path. The walk never goes above the
+	// root.
+	top := rootReal
+	if !strings.HasPrefix(real, rootReal+"/") {
 		first, _, _ := strings.Cut(strings.TrimPrefix(real, "/"), "/")
 		top = "/" + first
 	}
@@ -94,10 +114,10 @@ func (s *state) file(it planItem) fail.Code {
 			return fail.Other
 		}
 	}
-	fe := s.entry(it.tool, it.target)
+	fe := s.entry(it.tool, it.row())
 	if fe != nil && fe.DirPerm != 0 {
 		dir := target.Dirname(it.target)
-		if _, code := s.e.DirPerm(s.home+"/"+dir, tilde+"/"+dir, fe.DirPerm, s.dirDone); code != fail.OK {
+		if _, code := s.e.DirPerm(root+"/"+dir, s.showPath(root+"/"+dir), fe.DirPerm, s.dirDone); code != fail.OK {
 			return code
 		}
 	}
@@ -145,7 +165,7 @@ func (s *state) file(it planItem) fail.Code {
 		return code
 	}
 	if it.mode == "generated" {
-		s.rows = append(s.rows, manifest.Row{Tool: it.tool, Path: it.target})
+		s.rows = append(s.rows, manifest.Row{Tool: it.tool, Path: it.row()})
 	}
 	if it.mode == "merge" {
 		s.merged[it.target] = true

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -67,13 +69,13 @@ library = true
 	})
 	x, err := Source{Root: root, Side: Macos}.Open()
 	want := []File{
-		{"files/d/one", ".config/d/one", false, "", 0, 0, "", nil},
-		{"files/d/sub/two", ".config/d/sub/two", false, "", 0, 0, "", nil},
-		{"tasks/lib", ".config/mise/tasks/_scripts/lib", false, "", 0, 0, "", nil},
-		{"tasks/run-it", ".config/mise/tasks/run/it", false, "", 0, 0, "", nil},
-		{"files/y.json.tmpl", ".config/y.json", true, "", 0, 0, "", nil},
-		{"files/s.md", "s.md", true, "", 0, 0, "", nil},
-		{"files/x.txt", "x.txt", false, "", 0, 0, "", nil},
+		{"files/d/one", ".config/d/one", false, "", 0, 0, "", nil, false},
+		{"files/d/sub/two", ".config/d/sub/two", false, "", 0, 0, "", nil, false},
+		{"tasks/lib", ".config/mise/tasks/_scripts/lib", false, "", 0, 0, "", nil, false},
+		{"tasks/run-it", ".config/mise/tasks/run/it", false, "", 0, 0, "", nil, false},
+		{"files/y.json.tmpl", ".config/y.json", true, "", 0, 0, "", nil, false},
+		{"files/s.md", "s.md", true, "", 0, 0, "", nil, false},
+		{"files/x.txt", "x.txt", false, "", 0, 0, "", nil, false},
 	}
 	if g := x.Files("a"); !reflect.DeepEqual(g, want) {
 		t.Errorf("files = %v, want %v", g, want)
@@ -130,5 +132,86 @@ func TestNameOK(t *testing.T) {
 		if got := NameOK(name); got != want {
 			t.Errorf("NameOK(%q) = %v, want %v", name, got, want)
 		}
+	}
+}
+
+func TestRootKey(t *testing.T) {
+	root := t.TempDir()
+	tool := `summary = "A"
+category = "core"
+[files."home.txt"]
+source = "x"
+root = "home"
+[files.".claude/skills/s/SKILL.md"]
+source = "x"
+root = "backup"
+[files."bad.txt"]
+source = "x"
+root = "clone"
+[files."dotfiles/x"]
+source = "x"
+root = "backup"
+[files."DotFiles/x"]
+source = "x"
+root = "backup"
+[files."a/.Git/x"]
+source = "x"
+root = "backup"
+[files."m.json"]
+source = "m.merge.toml"
+mode = "merge"
+root = "backup"
+[files."@backup/x"]
+source = "x"
+[files."r.txt"]
+source = "x"
+root = "backup"
+requires = [ "/abs" ]
+`
+	write(t, root, map[string]string{
+		"macos/categories.toml":            "[category.core]\ntitle = \"Core\"\n",
+		"macos/tools/a/tools.toml":         tool,
+		"macos/tools/a/files/x":            "x",
+		"macos/tools/a/files/m.merge.toml": "",
+		"repo/categories.toml":             "[category.core]\ntitle = \"Core\"\n",
+		"repo/tools/a/tools.toml":          repoTool("summary = \"A\"\ncategory = \"core\"\n[files.\"home.txt\"]\nsource = \"x\"\nroot = \"home\"\n"),
+		"repo/tools/a/files/x":             "x",
+	})
+	x, err := Source{Root: root, Side: Macos}.Open()
+	var got []string
+	for _, f := range x.Files("a") {
+		got = append(got, f.Target+" "+map[bool]string{true: "backup", false: "home"}[f.Backup])
+	}
+	if want := []string{".claude/skills/s/SKILL.md backup", "home.txt home"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("files = %v, want %v", got, want)
+	}
+	var msgs []string
+	for _, e := range Messages(err) {
+		msgs = append(msgs, e.Msg)
+	}
+	const at = "macos/tools/a/tools.toml: "
+	wantMsgs := []string{
+		at + `[files."@backup/x"] must be a path relative to the target root, with no .. part`,
+		at + `[files."DotFiles/x"] a target of root = "backup" cannot be below dotfiles/ or a .git folder of the backup clone`,
+		at + `[files."a/.Git/x"] a target of root = "backup" cannot be below dotfiles/ or a .git folder of the backup clone`,
+		at + `[files."bad.txt"] root must be "home" or "backup"`,
+		at + `[files."dotfiles/x"] a target of root = "backup" cannot be below dotfiles/ or a .git folder of the backup clone`,
+		at + `[files."m.json"] root = "backup" works only with mode = "copy", "template" or "seed"`,
+		at + `[files."r.txt"] requires: '/abs' must be a path relative to the backup clone, with no .. part`,
+	}
+	if !reflect.DeepEqual(msgs, wantMsgs) {
+		t.Errorf("messages:\n%v\nwant\n%v", strings.Join(msgs, "\n"), strings.Join(wantMsgs, "\n"))
+	}
+
+	// On the repo side, root is an unknown key, with the list of the repo
+	// keys.
+	_, err = Source{Root: root, Side: Repo}.Open()
+	msgs = nil
+	for _, e := range Messages(err) {
+		msgs = append(msgs, e.Msg)
+	}
+	want := `repo/tools/a/tools.toml: [files."home.txt"] root is not a key of a files entry - the keys are source, mode, render, format, requires, requires_found, when, perm, dir_perm`
+	if !slices.Contains(msgs, want) {
+		t.Errorf("repo messages = %v, want %s", msgs, want)
 	}
 }

@@ -33,6 +33,19 @@ func TestLinkPlan(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("links:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
 	}
+
+	// A target of root = "backup" gets no link.
+	plan := []planItem{
+		{tool: "a", target: ".zshrc"},
+		{tool: "a", target: ".claude/skills/x/SKILL.md", backup: true},
+	}
+	var links []string
+	for _, l := range linkPlan(linkTargets(plan), nil) {
+		links = append(links, l.rel)
+	}
+	if want := []string{".zshrc"}; !reflect.DeepEqual(links, want) {
+		t.Errorf("links with a backup target = %v, want %v", links, want)
+	}
 }
 
 // tree writes each file of <files> (path to content) below <root>, and each
