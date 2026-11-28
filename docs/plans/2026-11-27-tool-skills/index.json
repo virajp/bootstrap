@@ -13,7 +13,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING — wave 3 (U5 review row) round 1 loop-back in .worktrees/all-2026-11-28-1412"
+    "detail": "RUNNING — wave 3 (U5 review row) waits on Q3 (the pnpm alias npx = pnpm dlx) in .worktrees/all-2026-11-28-1412"
   },
   "consent": {
     "merge": true,
@@ -151,7 +151,7 @@
       "status": "green",
       "started": "2026-11-28T09:12:05.219Z",
       "ended": "2026-11-28T10:05:18.015Z",
-      "commit": "4e88d6f",
+      "commit": "18415a7",
       "rounds": 1
     },
     {
