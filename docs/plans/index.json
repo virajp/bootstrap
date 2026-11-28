@@ -54,6 +54,25 @@
       ],
       "backlog": [],
       "backlog_pieces": []
+    },
+    {
+      "id": "2026-11-28-mac-tools-doc-audit",
+      "folder": "docs/plans/2026-11-28-mac-tools-doc-audit",
+      "kind": "change",
+      "title": "Audit docs/setup/tools.md against macos/tools/",
+      "target_repo": null,
+      "priority": 30,
+      "status": "APPROVED",
+      "started": "",
+      "ended": "",
+      "gaps": null,
+      "requires": [
+        "2026-11-27-tool-skills"
+      ],
+      "backlog": [
+        "B18"
+      ],
+      "backlog_pieces": []
     }
   ]
 }
