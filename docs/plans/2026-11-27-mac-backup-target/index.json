@@ -10,7 +10,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING since 2026-11-28T04:47:43Z in .worktrees/all-2026-11-28-1014"
+    "detail": "RUNNING — green, held to land at the end of the all run on all-2026-11-28-1014"
   },
   "consent": {
     "merge": true,
@@ -144,7 +144,7 @@
       "status": "green",
       "started": "2026-11-28T05:13:43.106Z",
       "ended": "2026-11-28T05:37:16.925Z",
-      "commit": "",
+      "commit": "cc55b16",
       "rounds": 2
     }
   ],
@@ -169,9 +169,9 @@
     },
     {
       "id": "W4",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-28T05:13:43.072Z",
-      "ended": ""
+      "ended": "2026-11-28T05:38:35.349Z"
     }
   ],
   "shared_files": [
