@@ -13,7 +13,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING — wave 3 (U5 review row) waits on Q1 (npx rewrite of the npm hook) in .worktrees/all-2026-11-28-1412"
+    "detail": "RUNNING — wave 3 (U5 review row) waits on Q2 (npx flags in the npm hook); U3 fix edits uncommitted in .worktrees/all-2026-11-28-1412"
   },
   "consent": {
     "merge": true,
@@ -96,7 +96,7 @@
       "status": "green",
       "started": "2026-11-28T08:46:49.783Z",
       "ended": "2026-11-28T09:50:34.262Z",
-      "commit": "1eda3b2",
+      "commit": "39dc519",
       "rounds": 3
     },
     {
@@ -127,7 +127,7 @@
       "waits": "",
       "status": "green",
       "started": "2026-11-28T08:46:49.852Z",
-      "ended": "2026-11-28T09:28:14.337Z",
+      "ended": "2026-11-28T09:56:01.811Z",
       "commit": "a667e2f",
       "rounds": 3
     },
@@ -455,6 +455,15 @@
       "decision": "Q1: The npm hook (D9) rewrites npx <bin> to pnpm dlx <bin>, which ignores the lockfile and fetches the registry package named <bin>. What should the hook do with npx?",
       "ruling": "npx becomes pnpm exec. The local locked bin runs, and an npx of a package that is not installed fails instead of a fetch.",
       "rejected": "leave npx unchanged, rewrite only npm and npm ci; keep pnpm dlx as D9 rules",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Q2: Under D18 the npm hook rewrites npx <anything> to pnpm exec <anything> with the flags in place; how should it treat an npx with a flag before the command name?",
+      "ruling": "Keep the rewrite as it is. The hook rewrites npx <anything> to pnpm exec <anything> and keeps the flags; a flag that pnpm exec does not know reaches pnpm exec.",
+      "rejected": "rewrite only when the word after npx does not start with -; drop -y/--yes and leave npx unchanged for other flags",
       "units": [
         "U3"
       ]
