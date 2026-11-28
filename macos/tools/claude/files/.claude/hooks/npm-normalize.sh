@@ -39,8 +39,10 @@ start='(^|[;&|][[:space:]]*|\$\([[:space:]]*)'
 # npx -> pnpm exec
 rewritten=$(printf '%s\n' "$command" | sed -E "s/${start}npx[[:space:]]+/\\1pnpm exec /g")
 
-# npm ci -> pnpm install --frozen-lockfile
-rewritten=$(printf '%s\n' "$rewritten" | sed -E "s/${start}npm[[:space:]]+ci([[:space:]]|[;&|)]|$)/\\1pnpm install --frozen-lockfile\\2/g")
+# npm ci -> pnpm install --frozen-lockfile. The match takes the character
+# after ci, which can be the start of the next npm ci, so the loop (:a, ta)
+# changes one npm ci at a time instead of /g.
+rewritten=$(printf '%s\n' "$rewritten" | sed -E -e ':a' -e "s/${start}npm[[:space:]]+ci([[:space:]]|[;&|)<>]|$)/\\1pnpm install --frozen-lockfile\\2/" -e 'ta')
 
 # npm -> pnpm (each other npm command)
 rewritten=$(printf '%s\n' "$rewritten" | sed -E "s/${start}npm[[:space:]]+/\\1pnpm /g")
