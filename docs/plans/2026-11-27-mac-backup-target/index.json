@@ -74,7 +74,7 @@
       "status": "green",
       "started": "2026-11-28T04:48:30.070Z",
       "ended": "2026-11-28T05:03:36.947Z",
-      "commit": "0838b3c",
+      "commit": "a82b568",
       "rounds": 2
     },
     {
@@ -89,14 +89,14 @@
         "U1"
       ],
       "waits": "",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-28T05:00:07.883Z",
-      "ended": "",
+      "ended": "2026-11-28T05:05:30.629Z",
       "commit": "",
-      "rounds": 1,
+      "rounds": 2,
       "range": {
-        "from": "15c925d",
-        "to": "73e7fd9"
+        "from": "73e7fd9",
+        "to": "a82b568"
       }
     },
     {
@@ -156,9 +156,9 @@
     },
     {
       "id": "W2",
-      "status": "running",
+      "status": "green",
       "started": "2026-11-28T05:00:07.850Z",
-      "ended": ""
+      "ended": "2026-11-28T05:06:05.029Z"
     },
     {
       "id": "W3",
@@ -311,22 +311,22 @@
   ],
   "stages": {
     "renders": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-28T05:06:05.270Z"
     },
     "acceptance": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-28T05:06:05.066Z"
     },
     "ux": {
-      "state": "pending",
-      "detail": "",
+      "state": "skipped",
+      "detail": "skipped: no covers — a change plan has no blueprint slice",
       "started": "",
-      "ended": ""
+      "ended": "2026-11-28T05:06:05.167Z"
     },
     "reconcile": {
       "state": "pending",

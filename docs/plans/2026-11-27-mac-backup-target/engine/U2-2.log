@@ -1,0 +1,5 @@
+/security-review engine, loop U2, round 2, range 73e7fd9..a82b568 (the fix delta)
+
+No high-confidence vulnerabilities found.
+
+The earlier bypass is closed. Every root = "backup" key now has to equal path.Clean(key), which rules out empty, . and leading ./ segments, and .. was already refused by badRelPath. So the first segment that badBackupPath checks with EqualFold is the real first segment, including case variants like DotFiles. On the Mac side the files target is the key itself. Expanding a folder entry only appends file names from the trusted source after a clean prefix. each and {name} are refused on the Mac side. requires paths are only checked for existence and never written. The fix introduces no new issue.
