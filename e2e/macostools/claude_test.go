@@ -196,6 +196,15 @@ func testClaudeHook(t *testing.T) {
 			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"pnpm exec tsc"}}}`, true},
 		{"npx keeps its flags", `{"tool_input":{"command":"npx -y tsc"}}`,
 			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"pnpm exec -y tsc"}}}`, true},
+		{"two npm ci with no space", `{"tool_input":{"command":"npm ci;npm ci"}}`,
+			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"pnpm install --frozen-lockfile;pnpm install --frozen-lockfile"}}}`, true},
+		{"npm ci before >", `{"tool_input":{"command":"npm ci>log"}}`,
+			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"pnpm install --frozen-lockfile>log"}}}`, true},
+		{"npm ci before && with no space", `{"tool_input":{"command":"npm ci&&npm test"}}`,
+			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"pnpm install --frozen-lockfile&&pnpm test"}}}`, true},
+		{"npm ci in $( )", `{"tool_input":{"command":"x=$(npm ci)"}}`,
+			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"x=$(pnpm install --frozen-lockfile)"}}}`, true},
+		{"a single-quoted npx: {}", `{"tool_input":{"command":"echo 'x | npx foo'"}}`, `{}`, true},
 	} {
 		got := runHook(t, hook, c.dir, tc.input, tc.pnpm)
 		c.check(sameJSON(got, tc.want), "hook: "+tc.name, "hook: "+tc.name+": got "+got)

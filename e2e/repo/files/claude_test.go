@@ -21,6 +21,13 @@ const (
 skills = false
 [tools.node]
 [tools.pnpm]`
+	claudeJavaValues = `environments = [ "dev" ]
+[tools.claude]
+[tools.java]`
+	claudeJavaKotlinValues = `environments = [ "dev" ]
+[tools.claude]
+[tools.java]
+[tools.kotlin]`
 	noClaudeValues = `environments = [ "dev" ]
 [tools.node]
 [tools.pnpm]`
@@ -32,6 +39,7 @@ skills = false
 	tsSkill     = ".claude/skills/typescript/SKILL.md"
 	pnpmSkill   = ".claude/skills/pnpm/SKILL.md"
 	tsLocal     = ".claude/skills/typescript/references/local.md"
+	gradleSkill = ".claude/skills/gradle/SKILL.md"
 )
 
 // ownClaude: a CLAUDE.md of the consumer with own text.
@@ -126,5 +134,35 @@ func TestClaudeFiles(t *testing.T) {
 			checkExact(c, "claude second sync: CLAUDE.md keeps the line after bootstrap:end", c.Path("CLAUDE.md"), want)
 			checkExact(c, "claude second sync: the edited local.md stays", c.Path(tsLocal),
 				"# Local rules\n\nMy own typescript rule.\n")
+		}})
+}
+
+// gradleKotlinLines: the kotlin-only lines of the gradle skill of the java tool.
+var gradleKotlinLines = []string{
+	"`setup:deps:30-kotlin` runs Gradle with `--no-configuration-cache`",
+	"- Without the ben-manes plugin, `mise run setup --upgrade` does not give the",
+	"- The locking rules are in the bootstrap section of `CLAUDE.md`.",
+}
+
+// The gradle skill of the java tool has its kotlin-only lines only when
+// kotlin is selected.
+func TestClaudeGradleSkill(t *testing.T) {
+	rc.Run(t, rc.Spec{Name: "claude: java without kotlin, the gradle skill has no kotlin line", Values: claudeJavaValues, Args: realRun,
+		Check: func(c *rc.Case) {
+			p := c.Path(gradleSkill)
+			c.CheckThat("claude java: the gradle skill has the frontmatter and the header", skillHeader(c, gradleSkill))
+			c.CheckThat("claude java: the gradle skill has the cache line",
+				hasLine(p, "  (`org.gradle.caching=true` and `org.gradle.configuration-cache=true`)."))
+			for _, l := range gradleKotlinLines {
+				c.CheckThat("claude java: no kotlin line: "+l, fileLacks(p, l))
+			}
+		}})
+	rc.Run(t, rc.Spec{Name: "claude: java and kotlin, the gradle skill has the kotlin lines", Values: claudeJavaKotlinValues, Args: realRun,
+		Check: func(c *rc.Case) {
+			p := c.Path(gradleSkill)
+			c.CheckThat("claude java kotlin: the gradle skill has the frontmatter and the header", skillHeader(c, gradleSkill))
+			for _, l := range gradleKotlinLines {
+				c.CheckThat("claude java kotlin: the kotlin line: "+l, rc.FileHas(p, l))
+			}
 		}})
 }
