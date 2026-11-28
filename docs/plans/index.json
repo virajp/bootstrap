@@ -29,8 +29,8 @@
       "title": "Audit docs/setup/tools.md against macos/tools/",
       "target_repo": null,
       "priority": 30,
-      "status": "APPROVED",
-      "started": "",
+      "status": "RUNNING",
+      "started": "2026-11-28T10:54:40.334Z",
       "ended": "",
       "gaps": null,
       "requires": [
