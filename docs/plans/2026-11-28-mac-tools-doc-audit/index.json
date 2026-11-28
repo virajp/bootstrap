@@ -163,11 +163,11 @@
         "U5"
       ],
       "waits": "It reads the five audit files that U1 to U5 create.",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-28T11:40:59.254Z",
+      "ended": "2026-11-28T11:47:01.711Z",
+      "commit": "0c987d3",
+      "rounds": 2
     },
     {
       "id": "U7",
@@ -224,9 +224,9 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-28T11:40:59.213Z",
+      "ended": "2026-11-28T11:51:13.313Z"
     },
     {
       "id": "W3",
