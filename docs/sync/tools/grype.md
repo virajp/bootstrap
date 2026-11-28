@@ -44,7 +44,15 @@ None.
 
 ## Contributions
 
-None. The `sec` hook of `_security_base` runs `code:sec`, which runs this
+| Tool     | Shared file | Items                                                                          |
+| -------- | ----------- | ------------------------------------------------------------------------------ |
+| `claude` | `CLAUDE.md` | The gate line of `code:sec:20-grype` (`[contributes.claude.claude_md.gates]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
+
+The `sec` hook of `_security_base` runs `code:sec`, which runs this
 task.
 
 ## Values

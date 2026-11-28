@@ -4,5 +4,9 @@ category = "passwords"
 description = "age, the encryption tool"
 summary = "age, the file encryption tool"
 
+# The line of the age tool in the Claude skill of fnox.
+[contributes.fnox.skill.lines]
+age = "age: encrypt a file with `age`. Never commit the key or a decrypted file."
+
 [mise.bootstrap.packages]
 "brew:age" = "latest" # Encryption tool

@@ -249,7 +249,7 @@ The `pnpm` tool is also in `dev` and `ci`. Its `tools.toml` has:
 
 ```toml
 [mise.shell_alias] # dev only: an alias is for a person at a terminal
-npx = "pnpm dlx"
+npx = "pnpm exec"
 ```
 
 So `conf.d/node/mise.dev.toml` and `conf.d/node/mise.ci.toml` each get
@@ -787,7 +787,7 @@ Each library is a Python module.
 | `worktrees`      | `mise run git:worktree:list` | `repo/tools/mise/tools.toml`                                                                             |
 | `setup-all`      | `mise run setup --all`       | The derive script of `mise`, only with a submodule or sibling member that has a `[members.<name>]` table |
 | `setup-<member>` | `mise run setup --<member>`  | The derive script of `mise`, one for each such member                                                    |
-| `npx`            | `pnpm dlx`                   | `repo/tools/pnpm/tools.toml`                                                                             |
+| `npx`            | `pnpm exec`                  | `repo/tools/pnpm/tools.toml`                                                                             |
 | `npx`            | `aubx`                       | `repo/tools/aube/tools.toml`                                                                             |
 | `code`           | `command code --profile ...` | `repo/tools/vscode/tools.toml`                                                                           |
 

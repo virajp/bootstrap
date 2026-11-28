@@ -1,0 +1,69 @@
+I reviewed `d420194..fd2d17f` (5 commits, 60 files). I ran the new npm hook against sample commands with a fake `pnpm` on PATH, so findings 1 and 2 come from real output. The rest come from reading the code and the plan. One check was blocked: I could not see how `pnpm dlx` treats `--yes`, so finding 6 is unconfirmed.
+
+```json
+[
+  {
+    "file": "macos/tools/claude/files/.claude/hooks/npm-normalize.sh",
+    "line": 83,
+    "summary": "When `npm ci` is followed by `;`, `&&`, `|` or `)` with no space, the hook turns it into `pnpm ci`, which pnpm does not have. The `npm ci` rule only matches when a space or the end of the line comes next, so the general `npm -> pnpm` rule at line 86 catches it instead. A double space (`npm  ci`) fails the same way. Fix: let the `ci` rule also end at a command separator, e.g. `npm[[:space:]]+ci([[:space:]]|[;&|)]|$)`, and add test cases for it.",
+    "failure_scenario": "Input `npm ci;npm test` gave `pnpm ci;pnpm test`. Input `npm ci&&npm test` gave `pnpm ci&&pnpm test`. Running `pnpm ci` fails, so Claude's command breaks.",
+    "severity": "important"
+  },
+  {
+    "file": "macos/tools/claude/files/.claude/hooks/npm-normalize.sh",
+    "line": 77,
+    "summary": "The hook also rewrites `npm`/`npx` inside quoted text, such as commit messages, grep patterns and echo strings. The pattern that finds the start of a command matches any `;`, `&` or `|`, even inside quotes. Fix: skip commands that have quotes, or only rewrite text outside quotes. At least, add a test for a quoted `; npm` and decide what should happen.",
+    "failure_scenario": "Input `git commit -m \"docs; npm install is gone\"` gave `git commit -m \"docs; pnpm install is gone\"`, so the commit message changes without anyone noticing. Input `grep -r \"|npm \" .` became a search for `|pnpm `.",
+    "severity": "important"
+  },
+  {
+    "file": "macos/tools/claude/files/.claude/hooks/npm-normalize.sh",
+    "line": 69,
+    "summary": "The hook is global to the Mac and only checks whether `pnpm` is on PATH. Repos that use npm or aube still get their commands rewritten to pnpm. The Mac node tool says each repo picks its own package manager, and some pick aube. Fix: also require a `pnpm-lock.yaml` or a `packageManager: pnpm` in the working folder, or at least document this limit. Plan D9 ruled out a lockfile check, so this needs a decision from you.",
+    "failure_scenario": "In an aube or npm repo, Claude runs `npm ci` while pnpm is on PATH (for example from an earlier pnpm session). The hook sends `pnpm install --frozen-lockfile`, which fails because there is no `pnpm-lock.yaml`, or it creates a second lockfile.",
+    "severity": "important"
+  },
+  {
+    "file": "repo/tools/java/files/.claude/skills/gradle/SKILL.md.tmpl",
+    "line": 29,
+    "summary": "The gradle skill ships with the `java` tool even when `kotlin` is not selected. It still tells Claude that `mise run setup --upgrade` gives the ben-manes report and writes and checks the Gradle lockfiles, but only kotlin's `setup:deps:30-kotlin` does that. The `conventions.md` copy file says the same thing with no condition. Fix: put the ben-manes and lockfile lines behind `has .all \"kotlin\"`, or ship the skill only when kotlin is selected.",
+    "failure_scenario": "In a repo that selects java but not kotlin, Claude runs `mise run setup --upgrade` to refresh the lockfiles. No setup task runs Gradle, so the lockfiles are never written or checked, and the skill's advice is wrong.",
+    "severity": "nit"
+  },
+  {
+    "file": "macos/tools/claude/files/.claude/hooks/npm-normalize.sh",
+    "line": 96,
+    "summary": "The hook returns `updatedInput` with no `permissionDecision`, and the tests only check the shape of the JSON it prints. Nothing confirms that Claude Code applies `updatedInput` without a decision. Its docs describe using it together with `allow` or `ask`. If Claude Code ignores it, the hook silently does nothing. Fix: check this against the current Claude Code hooks docs (Context7), or test it by hand in a live session before relying on it.",
+    "failure_scenario": "Claude Code throws away an `updatedInput` that has no decision, so `npm ci` runs unchanged, even though the e2e tests pass.",
+    "severity": "nit"
+  },
+  {
+    "file": "macos/tools/claude/files/.claude/hooks/npm-normalize.sh",
+    "line": 80,
+    "summary": "Some flags are copied over word for word even though pnpm may handle them differently. `npx -y foo` becomes `pnpm dlx -y foo` (confirmed by running the hook). `npm install -g foo` becomes `pnpm install -g foo`, which needs PNPM_HOME to be set up. `npm exec` becomes `pnpm exec`, which runs only local binaries. Fix: drop `-y`/`--yes` when rewriting `npx`, and leave `npm -g` and `npm exec` alone, or check each one against the pnpm docs.",
+    "failure_scenario": "Claude often runs `npx -y <pkg>`. If `pnpm dlx` rejects `-y`, or a global install fails because PNPM_HOME is missing, a command that worked before now fails. I could not confirm how pnpm treats `-y`; that check was blocked.",
+    "severity": "nit"
+  },
+  {
+    "file": "repo/tools/claude/files/CLAUDE.md.merge.toml",
+    "line": 465,
+    "summary": "The section uses lines that are only bold text (`**Tasks**`, `**Dependencies**`, `**Gates**`) as headings. Markdown linters often flag this as \"emphasis used instead of a heading\" (markdownlint MD036). No other Markdown file in this repo has a bold-only line. The Markdown lint gate `code:lint:05-linter` (the `@virajp.dev/linter` gate) may then fail on every consumer's CLAUDE.md. Fix: check whether that linter turns on such a rule. If it does, end each label with a colon, or put the label in the same paragraph as text.",
+    "failure_scenario": "A consumer that selects claude and linter runs `mise run code:lint --all`, and the gate fails on the synced CLAUDE.md, which the user cannot fix by hand.",
+    "severity": "nit"
+  },
+  {
+    "file": "docs/sync/tools/claude-tool.md",
+    "line": 9,
+    "summary": "The tool files changed but their docs did not. `claude-tool.md` still lists \"Seeds: None\" and ships only `setup/ai.py`. The same goes for `docs/setup/tools.md` and the docs of node, pnpm, java, kotlin and swift. There is no migrate.md item for the CLAUDE.md section, and `docs/design/mac.md` defines a runtime entry in a way that no longer fits. The plan puts the docs in U6, which is still open. Fix: land U6 together with these changes so the range does not merge to main with docs that are wrong.",
+    "failure_scenario": "This breaks a rule in /Users/virajpatel/Projects/github.com/virajp/bootstrap/CLAUDE.md, \"Change a shared file\" step 2: \"If the change adds, removes or changes a file, a mise tool, a task, a hook, a seed or a value of the tool, change `docs/sync/tools/<tool>.md` too ... A change to a tool in `macos/tools/` changes its section in `docs/setup/tools.md` too.\"",
+    "severity": "nit"
+  },
+  {
+    "file": "docs/plans/2026-11-27-tool-skills/index.json",
+    "line": 96,
+    "summary": "Units U1 and U3 still say `running` with an empty `ended`, but their commits are recorded and waves W1 and W2 say `green`. Only U4 was marked green. Tools that read the plan index (resume, next pick, archive) will see two units that look stuck. Fix: set U1 and U3 to green with their end times, as for U4.",
+    "failure_scenario": "Plan management or `/vwf:execute` resume reads U1 and U3 as still in progress and may run them again or refuse to archive the plan.",
+    "severity": "nit"
+  }
+]
+```

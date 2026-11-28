@@ -119,10 +119,15 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Contributions
 
-| Tool     | Shared file               | Items                                                                                   |
-| -------- | ------------------------- | --------------------------------------------------------------------------------------- |
-| `vscode` | `.vscode/extensions.json` | `meta.pyrefly`.                                                                         |
-| `dprint` | `dprint.jsonc`            | The block `ruff` (`indentWidth = 2`, `lineLength = 120`) and the plugin `@dprint/ruff`. |
+| Tool     | Shared file               | Items                                                                                                                                                                                                   |
+| -------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vscode` | `.vscode/extensions.json` | `meta.pyrefly`.                                                                                                                                                                                         |
+| `dprint` | `dprint.jsonc`            | The block `ruff` (`indentWidth = 2`, `lineLength = 120`) and the plugin `@dprint/ruff`.                                                                                                                 |
+| `claude` | `CLAUDE.md`               | The gate lines of `code:lint:50-pyrefly`, `code:lint:70-ruff` and `code:lint:90-uv` (`[contributes.claude.claude_md.gates]`), and the dependency line `python` (`[contributes.claude.claude_md.deps]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 ## Values
 

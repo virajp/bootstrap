@@ -104,6 +104,11 @@ None.
 | ------------ | -------------------------------- | -------------------------------------------------------------------------------------- |
 | `pre-commit` | `.config/pre-commit-config.yaml` | The hook block `format`, which calls `code:format --fix` with the files of the commit. |
 | `vscode`     | `.vscode/extensions.json`        | `dprint.dprint`.                                                                       |
+| `claude`     | `CLAUDE.md`                      | The gate line of `code:format:05-dprint` (`[contributes.claude.claude_md.gates]`).     |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 Other tools contribute blocks and plugins to `dprint.jsonc` in
 `[contributes.dprint]`, and each tool file lists them. A tool can also add

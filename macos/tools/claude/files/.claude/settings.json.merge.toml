@@ -63,6 +63,16 @@ match = [ "hooks.command" ]
 value = { hooks = [ { command = "claude-status --caps-hook", type = "command" } ] }
 <%- end %>
 
+# The npm hook: before a Bash command, it changes npm and npx to pnpm when
+# pnpm is on PATH. The hook script is .claude/hooks/npm-normalize.sh of this
+# tool.
+[[item]]
+kind = "block"
+path = [ "hooks", "PreToolUse" ]
+id = "npm-normalize"
+match = [ "hooks.command" ]
+value = { matcher = "Bash", hooks = [ { command = "$HOME/.claude/hooks/npm-normalize.sh", type = "command" } ] }
+
 # Keys that bootstrap set before and no longer sets.
 [[item]]
 kind = "key"

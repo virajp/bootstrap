@@ -28,6 +28,12 @@ plugins = [ "npm:@dprint/exec@0.8.0/plugin.json@9d6234ea05810c775f388c2a4cce82b9
 command = "mise x -- gofmt"
 exts = [ "go" ]
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:lint:40-go" = "golangci-lint lints each Go module."
+"code:lint:45-gomod" = "each `go.mod` and `go.sum` must be tidy."
+
 # The mise config, generated into .config/mise/conf.d/go/mise.<env>.toml.
 [mise.tools.go]
 envs = [ "dev", "ci" ]

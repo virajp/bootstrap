@@ -219,9 +219,14 @@ The sync runs these scripts from the clone, and never copies them.
 
 ## Contributions
 
-| Tool     | Shared file               | Items                                                                    |
-| -------- | ------------------------- | ------------------------------------------------------------------------ |
-| `vscode` | `.vscode/extensions.json` | `hverlin.mise-vscode`, `redhat.vscode-yaml`, `tamasfe.even-better-toml`. |
+| Tool     | Shared file               | Items                                                                               |
+| -------- | ------------------------- | ----------------------------------------------------------------------------------- |
+| `vscode` | `.vscode/extensions.json` | `hverlin.mise-vscode`, `redhat.vscode-yaml`, `tamasfe.even-better-toml`.            |
+| `claude` | `CLAUDE.md`               | The gate line of `code:lint:60-bootstrap` (`[contributes.claude.claude_md.gates]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 ## Values
 

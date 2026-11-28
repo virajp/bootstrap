@@ -6,6 +6,16 @@ description = "The Kotlin language server (dev only), and the ktlint and detekt 
 root_only = false
 summary = "Kotlin, with the ktlint and detekt gates"
 
+# The gate lines of the bootstrap section of CLAUDE.md, one for each gate
+# task of the tool.
+[contributes.claude.claude_md.gates]
+"code:format:30-ktlint" = "ktlint checks the layout of the Kotlin files; its seed is `.config/ktlint.editorconfig`: fix the code, not the seed."
+"code:lint:30-detekt" = "detekt finds the code smells and the possible bugs in the Kotlin files; its seed is `.config/detekt.yml`: fix the code, not the seed."
+
+# The dependency line of the bootstrap section of CLAUDE.md.
+[contributes.claude.claude_md.deps]
+kotlin = "Each project needs dependencyLocking { lockAllConfigurations() }; ./gradlew dependencies --write-locks locks only the root and passes on a violation, so write the locks with mise run setup --upgrade, and commit the catalog edit with the lockfiles."
+
 # The mise config, generated into .config/mise/conf.d/kotlin/mise.<env>.toml.
 # ktlint is the layout gate, and detekt the correctness gate. detekt-cli runs
 # on the JDK of the java tool.
@@ -45,6 +55,22 @@ source = ".config/detekt.yml"
 [files.".config/ktlint.editorconfig"]
 mode = "seed"
 source = ".config/ktlint.editorconfig"
+
+# The kotlin skill, only with the claude tool and its skills = true.
+[files.".claude/skills/kotlin/SKILL.md"]
+mode = "template"
+source = ".claude/skills/kotlin/SKILL.md.tmpl"
+when = "claude.skills"
+
+[files.".claude/skills/kotlin/references/conventions.md"]
+source = ".claude/skills/kotlin/references/conventions.md"
+when = "claude.skills"
+
+# A seed: the repository writes its own rules here.
+[files.".claude/skills/kotlin/references/local.md"]
+mode = "seed"
+source = ".claude/skills/kotlin/references/local.md"
+when = "claude.skills"
 
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.

@@ -55,10 +55,15 @@ None.
 
 ## Contributions
 
-| Tool         | Shared file                      | Items                                                                              |
-| ------------ | -------------------------------- | ---------------------------------------------------------------------------------- |
-| `pre-commit` | `.config/pre-commit-config.yaml` | The hook block `lint`, which calls `code:lint --fix` with the files of the commit. |
-| `vscode`     | `.vscode/extensions.json`        | `dbaeumer.vscode-eslint`, `foxundermoon.shell-format`.                             |
+| Tool         | Shared file                      | Items                                                                                                           |
+| ------------ | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | `.config/pre-commit-config.yaml` | The hook block `lint`, which calls `code:lint --fix` with the files of the commit.                              |
+| `vscode`     | `.vscode/extensions.json`        | `dbaeumer.vscode-eslint`, `foxundermoon.shell-format`.                                                          |
+| `claude`     | `CLAUDE.md`                      | The gate lines of `code:lint:05-linter` and `code:lint:06-shellcheck` (`[contributes.claude.claude_md.gates]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 ## Values
 

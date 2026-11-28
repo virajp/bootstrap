@@ -8,6 +8,10 @@ parent = "node"
 root_only = false
 summary = "The pnpm package manager for Node"
 
+# The dependency line of the bootstrap section of CLAUDE.md.
+[contributes.claude.claude_md.deps]
+pnpm = "pnpm 11 ignores onlyBuiltDependencies and its related keys; allow a build with an allowBuilds entry in pnpm-workspace.yaml, and never weaken strictDepBuilds or minimumReleaseAge."
+
 # A repository without a package.json does not get the pnpm settings.
 # The mise config, generated into .config/mise/conf.d/pnpm/mise.<env>.toml.
 [mise.tools.pnpm]
@@ -15,10 +19,26 @@ envs = [ "dev", "ci" ]
 version = "latest"
 
 [mise.shell_alias]
-npx = "pnpm dlx"
+npx = "pnpm exec"
 
 # The files of the tool, below files/.
 [files."pnpm-workspace.yaml"]
 mode = "seed"
 requires = [ "package.json" ]
 source = "pnpm-workspace.yaml"
+
+# The pnpm skill, only with the claude tool and its skills = true.
+[files.".claude/skills/pnpm/SKILL.md"]
+mode = "template"
+source = ".claude/skills/pnpm/SKILL.md.tmpl"
+when = "claude.skills"
+
+[files.".claude/skills/pnpm/references/conventions.md"]
+source = ".claude/skills/pnpm/references/conventions.md"
+when = "claude.skills"
+
+# A seed: the repository writes its own rules here.
+[files.".claude/skills/pnpm/references/local.md"]
+mode = "seed"
+source = ".claude/skills/pnpm/references/local.md"
+when = "claude.skills"

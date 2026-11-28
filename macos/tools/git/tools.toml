@@ -1,15 +1,20 @@
-# The git tool: git, the git aliases, the global git config, the ignore file, the identity files and the commit guidelines.
+# The git tool: git, the git aliases, the global git config, the ignore file, the identity files, the commit guidelines and the Claude skill git-identity of the backup clone.
 # The identity values are questions; the projects folder of the `gitdir:`
 # includes is `projects_dir` of the cli tool. The [mise.*] tables become
 # ~/.config/mise/conf.d/git/mise.toml.
 
 category = "dev"
 depends = [ "cli", "diff-so-fancy" ]
-description = "git, its global config, the commit identity per forge (GitHub, GitLab) and the git aliases"
-summary = "git, its config and the identity per forge"
+description = "git, its global config, the commit identity per forge (GitHub, GitLab), the git aliases and the Claude skill git-identity of the backup clone"
+summary = "git, its config and the git-identity skill"
 
 [defaults]
 core_editor = "$HOMEBREW_PREFIX/bin/code" # core.editor of .config/git/config
+
+# The lines of the skill git-identity. Another tool adds one line with
+# [contributes.git.skill.lines] <tool> = "<line>", and SKILL.md shows one
+# bullet for each key, in key order.
+[defaults.skill.lines]
 
 [questions.name]
 detect = "id -F"
@@ -70,3 +75,23 @@ source = ".config/git/ignore"
 
 [files.".github/git-commit-guidelines.md"]
 source = ".github/git-commit-guidelines.md"
+
+# The Claude skill git-identity in the backup clone, when the claude tool is
+# selected and its value skills is true. local.md is a seed: the own rules of
+# the user.
+[files.".claude/skills/git-identity/SKILL.md"]
+mode = "template"
+root = "backup"
+source = ".claude/skills/git-identity/SKILL.md.tmpl"
+when = "claude.skills"
+
+[files.".claude/skills/git-identity/references/conventions.md"]
+root = "backup"
+source = ".claude/skills/git-identity/references/conventions.md"
+when = "claude.skills"
+
+[files.".claude/skills/git-identity/references/local.md"]
+mode = "seed"
+root = "backup"
+source = ".claude/skills/git-identity/references/local.md"
+when = "claude.skills"

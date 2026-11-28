@@ -76,9 +76,14 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Contributions
 
-| Tool     | Shared file               | Items                                      |
-| -------- | ------------------------- | ------------------------------------------ |
-| `vscode` | `.vscode/extensions.json` | `dart-code.dart-code`, `dart-code.flutter` |
+| Tool     | Shared file               | Items                                                                                                                                                                                |
+| -------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `vscode` | `.vscode/extensions.json` | `dart-code.dart-code`, `dart-code.flutter`                                                                                                                                           |
+| `claude` | `CLAUDE.md`               | The gate lines of `code:format:10-dart` and `code:lint:20-dart` (`[contributes.claude.claude_md.gates]`), and the dependency line `flutter` (`[contributes.claude.claude_md.deps]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 The tool adds no hook. The `format` hook of `dprint` and the `lint` hook of
 `linter` run the Dart tasks through `code:format` and `code:lint`.

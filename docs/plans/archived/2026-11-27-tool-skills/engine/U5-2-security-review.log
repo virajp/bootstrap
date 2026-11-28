@@ -1,0 +1,22 @@
+# Security review: branch delta d420194..HEAD (worktree all-2026-11-28-1412)
+
+Note: the skill's preamble collected git status and diff from the main checkout, which has no pending changes. The review below uses the worktree's delta against main (base d420194, 9 commits, 64 files, +1520/-53).
+
+Scope reviewed:
+
+- `macos/tools/claude/files/.claude/hooks/npm-normalize.sh`: the new PreToolUse hook of the Bash tool, and the only new executable code.
+- `macos/tools/claude/files/.claude/settings.json.merge.toml`: registers the hook.
+- `repo/tools/claude/files/CLAUDE.md.merge.toml`: the gomplate template of the CLAUDE.md section.
+- The `tools.toml` changes (skill `[files]` entries with `when = "claude.skills"`, `root = "backup"`, contributions) and the SKILL.md templates and reference docs.
+- The e2e tests (excluded as test-only).
+
+## Findings
+
+No high-confidence vulnerabilities found.
+
+## Candidates considered and rejected
+
+1. Command injection or rewriting in `npm-normalize.sh` (rejected). The hook leaves alone any command that contains a newline, a quote or a backslash. The sed expressions put only fixed text (`pnpm exec `, `pnpm install --frozen-lockfile`, `pnpm `) at command-start positions, and the command text is the sed input, never the pattern. The output JSON is built with `jq --arg`, so the command cannot break out of the JSON. The hook returns no `permissionDecision`, so the rewritten command still goes through the normal permission rules. Nothing an attacker controls can add new shell syntax.
+2. Deny-rule mismatch after the rewrite (rejected, confidence about 5/10). An npm-only deny or ask rule such as `Bash(npm publish:*)` does not match the rewritten `pnpm publish`. This needs the user to rely on npm-only rules, the resulting action is the same one the user meant to block, and the script header states this and tells the user to add a matching pnpm rule. That makes it a hardening or configuration note, not a concrete exploit.
+3. Template injection in `CLAUDE.md.merge.toml` and the `SKILL.md.tmpl` files (rejected). All interpolated values come from the user's own `.config/bootstrap/` or `macos.toml` values and from contributions in bootstrap's own `tools.toml` files. These are trusted inputs (the same trust as config and CLI flags). The output is Markdown documentation.
+4. Files written to the backup clone (`root = "backup"`) and the `runtime` additions for `.claude/hooks` and `.claude/skills` (rejected). The paths are fixed source paths declared in `tools.toml`, so no path comes from user input and there is no traversal.

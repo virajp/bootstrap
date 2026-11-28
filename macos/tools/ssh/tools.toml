@@ -16,6 +16,10 @@ detect = "id -un"
 example = "janedoe"
 question = "Which user name should ssh use by default for remote hosts (User inside Host *)?"
 
+# The line of the ssh tool in the Claude skill of git.
+[contributes.git.skill.lines]
+ssh = "ssh: put a host or a key of this Mac only in `~/.ssh/config.local`."
+
 # The files of the tool, below files/.
 # ssh refuses a ~/.ssh folder that other users can read: dir_perm keeps it
 # at 700.

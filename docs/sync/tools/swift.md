@@ -4,14 +4,14 @@ Swift and SwiftPM from the host Xcode or Command Line Tools (macOS only), the
 SwiftLint and swift-format gates, and the Xcode and simulator lookup of the
 Xcode tasks.
 
-| Property     | Value                                                |
-| ------------ | ---------------------------------------------------- |
-| Root only    | No                                                   |
-| Depends      | None                                                 |
-| Parent       | None                                                 |
-| Default envs | dev                                                  |
-| Hosts        | macos                                                |
-| Seeds        | `.config/swiftlint.yml`, `.config/swift-format.json` |
+| Property     | Value                                                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Root only    | No                                                                                                                          |
+| Depends      | None                                                                                                                        |
+| Parent       | None                                                                                                                        |
+| Default envs | dev                                                                                                                         |
+| Hosts        | macos                                                                                                                       |
+| Seeds        | `.config/swiftlint.yml`, `.config/swift-format.json`, `.claude/skills/swift/references/local.md`, only with `claude` skills |
 
 ## When the tool is relevant
 
@@ -30,16 +30,24 @@ look in the folders of a Flutter app.
 
 ## What the tool ships
 
-| Path in the repository                              | Kind      | Use                                                                |
-| --------------------------------------------------- | --------- | ------------------------------------------------------------------ |
-| `.config/mise/tasks/setup/deps/60-swift.py`         | Synced    | The task `setup:deps:60-swift`.                                    |
-| `.config/mise/tasks/code/lint/80-swiftlint.py`      | Synced    | The task `code:lint:80-swiftlint`.                                 |
-| `.config/mise/tasks/code/format/50-swift-format.py` | Synced    | The task `code:format:50-swift-format`.                            |
-| `.config/mise/tasks/test/golden/40-swift.py`        | Synced    | The part `test:golden:40-swift`.                                   |
-| `.config/mise/tasks/_scripts/xcode.py`              | Library   | The library `xcode.py`, with `require_xcode` and `find_xcodeproj`. |
-| `.config/swiftlint.yml`                             | Seed      | The SwiftLint rules. The layout rules are off for swift-format.    |
-| `.config/swift-format.json`                         | Seed      | The swift-format rules: 4 spaces, lines of 120 characters.         |
-| `.config/mise/conf.d/swift/mise.<env>.toml`         | Generated | The mise config of this tool.                                      |
+| Path in the repository                              | Kind      | Use                                                                               |
+| --------------------------------------------------- | --------- | --------------------------------------------------------------------------------- |
+| `.config/mise/tasks/setup/deps/60-swift.py`         | Synced    | The task `setup:deps:60-swift`.                                                   |
+| `.config/mise/tasks/code/lint/80-swiftlint.py`      | Synced    | The task `code:lint:80-swiftlint`.                                                |
+| `.config/mise/tasks/code/format/50-swift-format.py` | Synced    | The task `code:format:50-swift-format`.                                           |
+| `.config/mise/tasks/test/golden/40-swift.py`        | Synced    | The part `test:golden:40-swift`.                                                  |
+| `.config/mise/tasks/_scripts/xcode.py`              | Library   | The library `xcode.py`, with `require_xcode` and `find_xcodeproj`.                |
+| `.config/swiftlint.yml`                             | Seed      | The SwiftLint rules. The layout rules are off for swift-format.                   |
+| `.config/swift-format.json`                         | Seed      | The swift-format rules: 4 spaces, lines of 120 characters.                        |
+| `.config/mise/conf.d/swift/mise.<env>.toml`         | Generated | The mise config of this tool.                                                     |
+| `.claude/skills/swift/SKILL.md`                     | Template  | The Claude Code skill `swift`. Only with `claude` skills.                         |
+| `.claude/skills/swift/references/conventions.md`    | Synced    | The conventions of the skill `swift`. Only with `claude` skills.                  |
+| `.claude/skills/swift/references/local.md`          | Seed      | The own rules of the repository for the skill `swift`. Only with `claude` skills. |
+
+The skill files have `when = "claude.skills"`: the sync writes them only
+when the repository selects the `claude` tool and its value `skills` is
+`true` (the default). `SKILL.md` names `references/conventions.md` and
+`references/local.md`. See [`claude-tool.md`](claude-tool.md).
 
 ## mise tools
 
@@ -148,9 +156,14 @@ The sync runs the scripts of the tool from the clone, and never copies them.
 
 ## Contributions
 
-| Tool     | Shared file               | Items                    |
-| -------- | ------------------------- | ------------------------ |
-| `vscode` | `.vscode/extensions.json` | `swiftlang.swift-vscode` |
+| Tool     | Shared file               | Items                                                                                                                                                                                           |
+| -------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vscode` | `.vscode/extensions.json` | `swiftlang.swift-vscode`                                                                                                                                                                        |
+| `claude` | `CLAUDE.md`               | The gate lines of `code:format:50-swift-format` and `code:lint:80-swiftlint` (`[contributes.claude.claude_md.gates]`), and the dependency line `swift` (`[contributes.claude.claude_md.deps]`). |
+
+The `claude` tool writes each line into the bootstrap section of
+`CLAUDE.md`, only when the repository selects `claude`. See
+[`claude-tool.md`](claude-tool.md).
 
 ## Values
 
@@ -204,3 +217,5 @@ Only `env`. No questions. The keys of the values file are in
   are now the env values above.
 - The old `.config/swiftlint.yml` and `.config/swift-format.json` of stackgen
   stay as they are: the sync does not write a seed that exists.
+- Delete the old stackgen copy of `.claude/skills/swift/` before the next sync
+  (M62 of `migrate.md`).

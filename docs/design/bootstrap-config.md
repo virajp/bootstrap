@@ -147,20 +147,21 @@ web = "PATCH"
 
 `tools.toml`:
 
-| Key                                 | Type            | Necessary | Read by                                    |
-| ----------------------------------- | --------------- | --------- | ------------------------------------------ |
-| `format`                            | Integer         | Yes       | The engine: `3`, the form of the file      |
-| `[tools.<folder>]`                  | Table           | No        | The sync                                   |
-| `[tools.<folder>].env`              | List of strings | No        | The sync                                   |
-| `[tools.<folder>].projects`         | List of strings | No        | `check`, `describe`; `detect` writes it    |
-| `[tools.<folder>].<key>`            | Any             | No        | The templates and the scripts of the tools |
-| `[tools.<folder>.files."<target>"]` | Table           | No        | The sync: the overrides of a shared file   |
-| `[tools.claude.plugins.user]`       | Table           | No        | `setup:ai`                                 |
-| `[tools.claude.plugins.project]`    | Table           | No        | `setup:ai`                                 |
-| `[tools.claude.plugins].installed`  | List of strings | No        | `setup:ai`, which writes it                |
-| `[overrides.tools.<folder>]`        | Table           | No        | The sync: the local values of a tool       |
-| `[overrides.mise.<path>]`           | Any             | No        | The sync                                   |
-| `[overrides.mise_env.<env>.<path>]` | Any             | No        | The sync                                   |
+| Key                                 | Type            | Necessary | Read by                                                                           |
+| ----------------------------------- | --------------- | --------- | --------------------------------------------------------------------------------- |
+| `format`                            | Integer         | Yes       | The engine: `3`, the form of the file                                             |
+| `[tools.<folder>]`                  | Table           | No        | The sync                                                                          |
+| `[tools.<folder>].env`              | List of strings | No        | The sync                                                                          |
+| `[tools.<folder>].projects`         | List of strings | No        | `check`, `describe`; `detect` writes it                                           |
+| `[tools.<folder>].<key>`            | Any             | No        | The templates and the scripts of the tools                                        |
+| `[tools.<folder>.files."<target>"]` | Table           | No        | The sync: the overrides of a shared file                                          |
+| `[tools.claude].skills`             | Boolean         | No        | The sync: `when = "claude.skills"` of each skill entry of a tool (default `true`) |
+| `[tools.claude.plugins.user]`       | Table           | No        | `setup:ai`                                                                        |
+| `[tools.claude.plugins.project]`    | Table           | No        | `setup:ai`                                                                        |
+| `[tools.claude.plugins].installed`  | List of strings | No        | `setup:ai`, which writes it                                                       |
+| `[overrides.tools.<folder>]`        | Table           | No        | The sync: the local values of a tool                                              |
+| `[overrides.mise.<path>]`           | Any             | No        | The sync                                                                          |
+| `[overrides.mise_env.<env>.<path>]` | Any             | No        | The sync                                                                          |
 
 `releases.toml`:
 
@@ -614,6 +615,18 @@ The overrides of the bootstrap items of a shared file of the tool, for example
 `[tools.git.files.".gitignore"]` with `"*.log" = { "$mode" = "remove" }`. See
 [cli.md](cli.md#overrides-of-a-shared-file). The own items of
 the user go directly in the file.
+
+### `[tools.claude].skills`
+
+A boolean, a `[defaults]` of the `claude` tool, `true` by default. Each skill
+entry of a tool, for example `.claude/skills/kotlin/SKILL.md` of `kotlin`, has
+`when = "claude.skills"`: with `true`, the sync writes the skills of the
+selected tools to `.claude/skills/`; with `false`, or without the `claude`
+tool, it writes none, and the stale rule removes the synced copies. The value
+does not stop the bootstrap section of `CLAUDE.md`. The `claude` tool also has
+the tables `claude_md.deps` and `claude_md.gates`, empty by default: the other
+tools fill them in `[contributes.claude.claude_md]`, and a user does not write
+them. See [tools.md](tools.md#skills).
 
 ### `[tools.claude.plugins.user]` and `[tools.claude.plugins.project]`
 

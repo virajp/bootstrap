@@ -1,0 +1,24 @@
+U5 round 1 — the two reviewers' merged findings (range d420194..fd2d17f), for the fix loop-back.
+Both halves ran because the row's Scope (05-review.md, D11) names /code-review and /security-review.
+
+SECURITY (execute-security-reviewer, VERDICT approve, 2 findings + Q1):
+S1 [medium] macos/tools/claude/files/.claude/hooks/npm-normalize.sh:31 (U3) — npx is rewritten to `pnpm dlx`, which ignores the lockfile and fetches the registry package named <bin> at latest (npx tsc → pnpm dlx tsc fetches the unrelated package `tsc`); unpinned registry code runs. Fix depends on Q1.
+S2 [low] macos/tools/claude/files/.claude/hooks/npm-normalize.sh:37 (U3) — the rewrite runs before the permission check, so an npm-only deny/ask rule (Bash(npm publish:*)) no longer matches the rewritten pnpm command. Mitigation: document that npm-only permission rules stop applying while the hook is active, and to add a matching pnpm rule (routed to U6 as a docs line for the claude section of docs/setup/tools.md, plus a comment line in the hook head by U3).
+
+CODE (execute-code-reviewer, VERDICT changes-required):
+C1 [high] macos/tools/claude/files/.claude/hooks/npm-normalize.sh:28 (U3) — the command-start pattern matches ;, & or | inside quoted or escaped text: `git commit -m "docs; npm install gone"` becomes `... pnpm install gone`, `echo 'x | npx foo'` and `echo a\; npm i` are rewritten too. Fix: when the command contains ', " or \, print {} and exit 0 (as for a newline, D16 f).
+C2 [medium] macos/tools/claude/files/.claude/hooks/npm-normalize.sh:34 (U3) — the `npm ci` rule needs a space or end of line after ci; `npm ci;npm test`, `npm ci&&npm t` and `npm  ci` become `pnpm ci`. Fix: `${start}npm[[:space:]]+ci([[:space:]]|[;&|)]|$)`, keeping the captured end in \2.
+C3 [medium] e2e/macostools/claude_test.go:181 (U4) — the hook cases use only spaced separators and no quotes. Add `npm ci;npm test` (want `pnpm install --frozen-lockfile;pnpm test`), `npm  ci`, and a quoted `; npm` (want {}); keep the no-pnpm case; plus a case for the Q1 answer.
+C4 [low] repo/tools/java/files/.claude/skills/gradle/SKILL.md.tmpl:29 (U1) — lines 29-31 say without ben-manes `mise run setup --upgrade` gives no report, and references/conventions.md:18-22 says the bootstrap tasks write and check the Gradle lockfiles; only kotlin's setup:deps:30-kotlin runs Gradle. Fix: move the ben-manes sentence into the existing has .all "kotlin" block (line 33); in conventions.md say "with the kotlin tool" in the lockfile and report paragraphs.
+
+Dropped engine findings: the aube/npm-repo rewrite (contradicts D9 "No lockfile walk"), updatedInput without permissionDecision (D15 with its quoted docs), pnpm dlx -y (folded into Q1), bold-only labels (D13 i, U1 ran code:lint:05-linter green), missing docs (U6, later), the index.json status (fixed by the orchestrator).
+
+Loop-back state (after Q1 → D18): U1 fixed C4 in 39dc519. U3 fixed S1 (npx → pnpm exec), S2 (hook comment), C1 (quotes/backslash → {}), C2 (npm ci rule) — edits uncommitted in the worktree, waiting on Q2 (npx flags). Still to do: U3 commit after Q2, then U4 (C3 plus cases for D18 and Q2), then U5 round 2 over the fix commits. The DOCS FALSIFIED lines for U6 are in engine/docs-falsified.log.
+
+Update: Q2 answered (D19); U3 fix b2fd50b and U4 fix 4e88d6f committed. Round 2 (fd2d17f..4e88d6f): security clean. Review findings R2-1..R2-4 (npm ci separator consumed under /g; npm ci followed by < or >; missing test cases; no java-only gradle render check) went to the closing pass. Reviewer question: the pnpm tool alias npx = "pnpm dlx" (repo/tools/pnpm/tools.toml:22).
+
+Closing pass: a39b052 (U3: npm ci loop, end class with < >), 18415a7 (U4: cases, java-only gradle render). Both reviewers: R2-1..R2-4 RESOLVED, no regression. U5 is done save Q3 (the pnpm alias npx = "pnpm dlx"). On a Q3 answer to change it: U1 edits repo/tools/pnpm/tools.toml, then U5 runs a late round over that fix; else U5 goes green.
+
+Wave 4: U6 returned; every edit except Edit 6 is done and uncommitted in the worktree (docs/sync/, docs/setup/tools.md, docs/design/{tools,bootstrap-config,mac,mise}.md, CLAUDE.md, docs/memory/decisions/2026-11-28-tool-skills-are-bootstraps.md). It waits on Q4 (Edit 6: docs/prompts/ is gitignored, the file is only in the main checkout). Then the R4 wave review, gates and the U6 commit; then wave 5 (U7), the plan gate and K1, and the HELD landing.
+
+Wave 4: U6 committed 736ed01 (R4: 2 findings, then clean). Wave 5: U7 regenerated toml-yq.golden with this plan's lines only (uncommitted), the release check printed bootstrap@6.2.0 (no question), and every gate line was green in its run. It waits on Q5 (the stale golden lines from before this plan). Then R5, the gates, the U7 commit, the plan gate lines, K1 (after A1, in the landing phase), and the HELD landing.

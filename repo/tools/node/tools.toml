@@ -96,6 +96,23 @@ extensions = { ".cjs" = "javascript", ".cts" = "typescript", ".js" = "javascript
 source = "npm:typescript-language-server"
 startup_timeout = 60000
 
+# The files of the tool, below files/.
+# The typescript skill, only with the claude tool and its skills = true.
+[files.".claude/skills/typescript/SKILL.md"]
+mode = "template"
+source = ".claude/skills/typescript/SKILL.md.tmpl"
+when = "claude.skills"
+
+[files.".claude/skills/typescript/references/conventions.md"]
+source = ".claude/skills/typescript/references/conventions.md"
+when = "claude.skills"
+
+# A seed: the repository writes its own rules here.
+[files.".claude/skills/typescript/references/local.md"]
+mode = "seed"
+source = ".claude/skills/typescript/references/local.md"
+when = "claude.skills"
+
 # The task files of the tool, below tasks/. The key is the path below
 # .config/mise/tasks/.
 [tasks."setup/deps/40-node.py"]

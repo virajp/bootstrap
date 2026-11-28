@@ -61,6 +61,7 @@ into `.config/bootstrap/`.
 | `macos.toml` at the root of a clone, `config_path` in `[tools.mise]`, or `MACOS_SETUP_REPO_PATH` in a script                             | M56, before the next Mac sync.                                                                                                                             |
 | A work branch that tracks its base, or a `git branch --unset-upstream` after `git:worktree:create` in a script or a skill                | M58, before the next `git:merge:<branch>` of that branch.                                                                                                  |
 | An `[[IgnoredVulns]]` entry or a `[[PackageOverrides]]` entry of `.config/osv-scanner.toml` for an image of `.tools/docker-compose.yaml` | M59, after the sync.                                                                                                                                       |
+| `[tools.claude]`, or stackgen copies in `.claude/skills/` or `.claude/hooks/npm-normalize.sh`                                            | M62, before the next sync.                                                                                                                                 |
 
 **WARNING:** Do not delete a file before you move its repository-owned
 content. The sync never restores repository content.
@@ -1850,3 +1851,65 @@ ktlint and detekt and runs the two gates. See `tools/kotlin.md`.
 3. If `setup:deps:30-kotlin` stops because
    `gradle/wrapper/gradle-wrapper.properties` has no `distributionSha256Sum`,
    add the checksum as the message of the task tells.
+
+## M62: The bootstrap section of CLAUDE.md and the tool skills
+
+The `claude` tool now owns a section at the top of `CLAUDE.md`: the task
+rules, the dependency rules and the gate lines of the selected tools. The
+selected tools also ship their Claude Code skills to `.claude/skills/`:
+`typescript` (`node`), `pnpm` (`pnpm`), `kotlin` (`kotlin`), `gradle` (`java`)
+and `swift` (`swift`). A skill ships only when the repository selects
+`claude` and its value `skills` is `true` (the default). See
+`tools/claude-tool.md`.
+
+The stackgen plugin wrote older copies of some of these skills, for example in
+`linter` and `virajp.dev`. Do these steps before the next sync:
+
+1. Delete each of these stackgen folders that exists. Their rules are now
+   gate lines or dependency lines of the `CLAUDE.md` section, or they are
+   gone:
+
+   ```text
+   .claude/skills/eslint/
+   .claude/skills/ktlint/
+   .claude/skills/detekt/
+   .claude/skills/swiftlint/
+   .claude/skills/swift-format/
+   .claude/skills/analysis-options/
+   .claude/skills/tsconfig/
+   .claude/skills/swiftpm/
+   .claude/skills/ruff/
+   .claude/skills/uv/
+   .claude/skills/pub/
+   .claude/skills/bash/
+   .claude/skills/markdown/
+   ```
+
+2. Delete the old stackgen folders of the skills that `bootstrap` now ships,
+   so no old stackgen reference stays. The sync writes them again:
+
+   ```text
+   .claude/skills/typescript/
+   .claude/skills/pnpm/
+   .claude/skills/kotlin/
+   .claude/skills/gradle/
+   .claude/skills/swift/
+   ```
+
+   If a folder has own rules of the repository, move them to
+   `references/local.md` of the new skill after the sync.
+
+3. Delete `.claude/hooks/npm-normalize.sh`, and its `PreToolUse` entry in
+   `.claude/settings.json`. The Mac `claude` tool now ships this hook at user
+   level (`docs/setup/tools.md`).
+4. Do not run a stackgen sync or a stackgen materialize until the stackgen
+   release that stops the tool knowledge of stackgen. If one writes over a
+   `bootstrap` skill, run `mise run setup:configs` again. That stackgen
+   release also removes the `tool/` rows of `.claude/stackgen/lock.yaml`.
+5. Run `mise run setup:configs`. The sync adds the section at the top of
+   `CLAUDE.md`, and keeps each line of the file outside the section. If the
+   file repeats a rule of the section, tell the user, and remove the repeat
+   when the user agrees.
+6. After `skills = false`, or when an owner tool leaves the selection, the
+   seed `references/local.md` stays in a folder with no `SKILL.md`. Tell the
+   user that they can delete that folder.

@@ -4,5 +4,9 @@ category = "dev"
 description = "glab, the GitLab CLI"
 summary = "glab, the GitLab CLI"
 
+# The line of the glab tool in the Claude skill of git.
+[contributes.git.skill.lines]
+glab = "GitLab: never run `glab auth status --show-token`."
+
 [mise.bootstrap.packages]
 "brew:glab" = "latest" # GitLab CLI tool

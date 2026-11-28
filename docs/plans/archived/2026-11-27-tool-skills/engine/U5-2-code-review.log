@@ -1,0 +1,62 @@
+Review of `fd2d17f..4e88d6f`: 8 findings. Two are real bugs in the new `npm ci` rule. I confirmed both by running the hook at `4e88d6f` with a fake `pnpm` on PATH.
+
+```json
+[
+  {
+    "file": "macos/tools/claude/files/.claude/hooks/npm-normalize.sh",
+    "line": 43,
+    "summary": "When `npm ci` comes twice, joined by a separator with no space before it, the second one still becomes `pnpm ci`, a command pnpm does not have. The new `npm ci` rule consumes the `;`, `&`, `|` or `)` that ends it as `\\2`. Under sed's `/g` the next `npm` then has no start to match, so the general `npm -> pnpm` rule on line 46 takes it. Fix: do not consume the end character, for example by looping the substitution (`:a` ... `ta`) or running the `ci` substitution twice, and add a test case for `npm ci;npm ci`.",
+    "failure_scenario": "Running the hook with pnpm on PATH: `npm ci;npm ci` gave `pnpm install --frozen-lockfile;pnpm ci`. `npm ci&npm ci` and `npm ci|npm ci` gave the same `pnpm ci` tail. Running `pnpm ci` fails.",
+    "severity": "important"
+  },
+  {
+    "file": "macos/tools/claude/files/.claude/hooks/npm-normalize.sh",
+    "line": 43,
+    "summary": "`npm ci` directly followed by a redirect still becomes `pnpm ci`. The end class of the `ci` rule is `([[:space:]]|[;&|)]|$)`, which has no `>` and no `<`, so the general npm rule on line 46 rewrites it instead. Fix: add `<` and `>` to the end class, as in `[;&|)<>]`, and add a test case.",
+    "failure_scenario": "Input `npm ci>log` gave `pnpm ci>log`, and pnpm fails with an unknown command. `npm ci</dev/null` fails the same way.",
+    "severity": "important"
+  },
+  {
+    "file": "e2e/macostools/claude_test.go",
+    "line": 197,
+    "summary": "The new test case pins `npx -y tsc` → `pnpm exec -y tsc` as correct, but that command probably fails at runtime. `-y`/`--yes` is an npx install-consent flag, and `pnpm exec` does not seem to have it. `npx -p foo bar` also becomes `pnpm exec -p foo bar`. `npx -y <pkg>` is the form Claude uses most. D19 accepted this, so the test makes a likely broken rewrite look correct. Fix: check how `pnpm exec` treats `-y`/`-p` in the pnpm docs (Context7). If it rejects them, take up D19 again: drop `-y`/`--yes`, or skip an npx that starts with a flag.",
+    "failure_scenario": "Claude runs `npx -y prettier --check .` with pnpm on PATH. The hook sends `pnpm exec -y prettier --check .`, pnpm may stop on the unknown option `-y`, and a command that worked before now fails.",
+    "severity": "nit"
+  },
+  {
+    "file": "repo/tools/pnpm/tools.toml",
+    "line": 22,
+    "summary": "The pnpm tool still sets the shell alias `npx = \"pnpm dlx\"`. That is the risk S1/D18 just removed from the hook: it skips the lockfile and fetches the registry package named after the bin. The hook now passes every quoted command through unchanged, so in a pnpm repo `npx tsc --project \"a b\"` can still reach the alias. The two places also disagree on what npx means. Fix: decide whether the alias should also become `pnpm exec`, and update `docs/sync/tools/pnpm.md:39` and `docs/design/mise.md:252,790` to match.",
+    "failure_scenario": "In a consumer that selects pnpm, `npx tsc` through the alias runs `pnpm dlx tsc`. That fetches the unrelated registry package `tsc` at its latest version and runs it, not the locked TypeScript bin.",
+    "severity": "pre_existing"
+  },
+  {
+    "file": "macos/tools/claude/files/.claude/hooks/npm-normalize.sh",
+    "line": 7,
+    "summary": "The docs for the hook's behaviour were not updated. The hook now maps npx to `pnpm exec`, skips any command with a quote or a backslash, and has the permission-rule caveat. The gradle skill of the java tool now gates its lines on kotlin. `docs/setup/tools.md` (claude section) and `docs/sync/tools/java.md` were not changed in this range, and `engine/docs-falsified.log` defers them to U6. Fix: land the U6 docs before this range merges to main.",
+    "failure_scenario": "This breaks /Users/virajpatel/Projects/github.com/virajp/bootstrap/CLAUDE.md, \"Change a shared file\" step 2: \"If the change adds, removes or changes a file ... change `docs/sync/tools/<tool>.md` too ... A change to a tool in `macos/tools/` changes its section in `docs/setup/tools.md` too.\"",
+    "severity": "nit"
+  },
+  {
+    "file": "e2e/macostools/claude_test.go",
+    "line": 189,
+    "summary": "The new hook cases leave out inputs the fix was meant to cover, which is why the two bugs above got through. There is no `npm ci&&npm test` (no space, which reviewer C3 asked for), no `npm ci)` / `$(npm ci)`, no single-quote case like `echo 'x | npx foo'`, and no repeated `npm ci;npm ci`. Fix: add those cases next to the `npm ci;npm test` case.",
+    "failure_scenario": "A later change to the `ci` end class or the quote pattern breaks `&&`, `)` or single quotes, and the e2e suite stays green.",
+    "severity": "nit"
+  },
+  {
+    "file": "repo/tools/java/files/.claude/skills/gradle/SKILL.md.tmpl",
+    "line": 34,
+    "summary": "No test renders the gradle skill with java alone and with java plus kotlin. The fix for C4 moved a bullet inside the `<% if has .all \"kotlin\" %>` block, and nothing checks that the java-only render leaves out the setup/ben-manes lines and stays valid Markdown. Fix: add an `e2e/repo/files` case that compares both renders.",
+    "failure_scenario": "This breaks the rule in /Users/virajpatel/.claude/CLAUDE.md, \"Goal-Driven Execution\": \"'Fix the bug' → write a test that reproduces it, then make it pass\". A later template edit that moves `<% end %>` would bring the wrong advice back for java-only repos without any test failing.",
+    "severity": "nit"
+  },
+  {
+    "file": "docs/plans/2026-11-27-tool-skills/engine/U5-1-reviewers.log",
+    "line": 16,
+    "summary": "The plan state is out of date once this range ends. The loop-back line still says the U3 edits are \"uncommitted in the worktree, waiting on Q2\", but D19 is recorded and b2fd50b/4e88d6f are committed. U4 is marked `green` with its old commit `08bc65c`, although 4e88d6f is U4's fix commit. Fix: update the loop-back line and U4's `commit` when U5 round 2 starts.",
+    "failure_scenario": "A resumed `/vwf:execute` or a handoff reads the log and either waits for a Q2 answer that already exists, or links U4 to the commit before the fix.",
+    "severity": "nit"
+  }
+]
+```

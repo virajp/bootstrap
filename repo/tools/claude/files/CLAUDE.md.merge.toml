@@ -1,0 +1,51 @@
+# The merge spec of CLAUDE.md, a shared file. bootstrap owns the section at
+# the top of the file, between the bootstrap:start and bootstrap:end lines,
+# and writes it again on each sync. The user adds own rules after the
+# bootstrap:end line, and they stay.
+#
+# The section has three parts, each with a bold label and no heading, so it
+# can stay above the first heading of the file: Tasks, Dependencies (the
+# common rules, then the lines of [contributes.claude.claude_md.deps]) and
+# Gates (the lines of [contributes.claude.claude_md.gates], one for each gate
+# task). The lines come in key order. Without a gate line, Gates is not
+# written.
+
+format = "text"
+comment = "<!--"
+
+[[item]]
+kind = "section"
+value = '''
+**Tasks**
+
+- Run a task with `mise run <task>`, and list the tasks with `mise tasks`.
+- The aggregate tasks are `setup`, `code`, `code:format`, `code:lint`,
+  `code:sec`,<% if has .all "pre-commit" %> `code:precommit`,<% end %> `test`, `test:e2e` and `test:golden`.
+- A part of an aggregate has a number prefix for its run order, for example
+  `code:lint:NN-<name>` or `setup:deps:NN-<name>`.
+- To add a tool, run `bootstrap add tool <tool>`. Do not run a bare
+  `mise use`, and do not edit a synced file (a file with the
+  `Synced from bootstrap` header) by hand.
+- Prefix each tool call with `mise x --`, for example `mise x -- dprint check`.
+- An own task is a Python uv script below `.config/mise/tasks/` that imports
+  `helpers` from `_scripts/`.
+
+**Dependencies**
+
+- Install the dependencies with `mise run setup`, and upgrade them with
+  `mise run setup --upgrade`. Do not run the package manager directly.
+- Write a range in the manifest. The lockfile holds the exact version.
+- Ask the user before you add a dependency: name it and what it is for.
+- For a merge conflict in a lockfile, take one side, then install again with
+  `mise run setup`.
+<% range $tool, $line := .config.claude_md.deps -%>
+- <% $line %>
+<% end -%>
+<% if .config.claude_md.gates %>
+**Gates**
+
+<% range $task, $line := .config.claude_md.gates -%>
+- `<% $task %>`: <% $line %>
+<% end -%>
+<% end -%>
+'''
