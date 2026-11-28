@@ -13,7 +13,7 @@
   "execution": "teams",
   "status": {
     "state": "RUNNING",
-    "detail": "RUNNING — wave 3 (U5 review row) waits on Q2 (npx flags in the npm hook); U3 fix edits uncommitted in .worktrees/all-2026-11-28-1412"
+    "detail": "RUNNING — wave 3 (U5 review row) round 1 loop-back in .worktrees/all-2026-11-28-1412"
   },
   "consent": {
     "merge": true,
@@ -128,7 +128,7 @@
       "status": "green",
       "started": "2026-11-28T08:46:49.852Z",
       "ended": "2026-11-28T09:56:01.811Z",
-      "commit": "a667e2f",
+      "commit": "b2fd50b",
       "rounds": 3
     },
     {
@@ -150,7 +150,7 @@
       "waits": "Its checks read the files that U1 and U3 create.",
       "status": "green",
       "started": "2026-11-28T09:12:05.219Z",
-      "ended": "2026-11-28T09:18:05.635Z",
+      "ended": "2026-11-28T09:58:01.886Z",
       "commit": "08bc65c",
       "rounds": 1
     },

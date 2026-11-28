@@ -163,7 +163,7 @@ func sameJSON(got, want string) bool {
 
 // testClaudeHook: the synced npm hook changes npm only when pnpm is on PATH,
 // gives no permission decision, keeps the other keys of tool_input, and
-// changes no command with a newline.
+// changes no command with a newline, a quote or a backslash.
 func testClaudeHook(t *testing.T) {
 	t.Parallel()
 	c := newCase(t, "claude hook")
@@ -177,7 +177,7 @@ func testClaudeHook(t *testing.T) {
 	}
 	input := `{"tool_name":"Bash","tool_input":{"command":"npm ci && npx tsc && npm install x","timeout":5000,"description":"d"}}`
 	want := `{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":` +
-		`{"command":"pnpm install --frozen-lockfile && pnpm dlx tsc && pnpm install x","timeout":5000,"description":"d"}}}`
+		`{"command":"pnpm install --frozen-lockfile && pnpm exec tsc && pnpm install x","timeout":5000,"description":"d"}}}`
 	for _, tc := range []struct {
 		name, input, want string
 		pnpm              bool
@@ -186,6 +186,16 @@ func testClaudeHook(t *testing.T) {
 		{"no pnpm on PATH: {}", input, `{}`, false},
 		{"no npm in the command: {}", `{"tool_input":{"command":"ls -la"}}`, `{}`, true},
 		{"a command with a newline: {}", `{"tool_input":{"command":"npm ci\nnpx tsc"}}`, `{}`, true},
+		{"npm ci before ; with no space", `{"tool_input":{"command":"npm ci;npm test"}}`,
+			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"pnpm install --frozen-lockfile;pnpm test"}}}`, true},
+		{"npm ci with two spaces", `{"tool_input":{"command":"npm  ci"}}`,
+			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"pnpm install --frozen-lockfile"}}}`, true},
+		{"a quoted ; npm: {}", `{"tool_input":{"command":"git commit -m \"docs; npm install gone\""}}`, `{}`, true},
+		{"a backslash: {}", `{"tool_input":{"command":"echo a\\; npm i"}}`, `{}`, true},
+		{"npx becomes pnpm exec", `{"tool_input":{"command":"npx tsc"}}`,
+			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"pnpm exec tsc"}}}`, true},
+		{"npx keeps its flags", `{"tool_input":{"command":"npx -y tsc"}}`,
+			`{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"pnpm exec -y tsc"}}}`, true},
 	} {
 		got := runHook(t, hook, c.dir, tc.input, tc.pnpm)
 		c.check(sameJSON(got, tc.want), "hook: "+tc.name, "hook: "+tc.name+": got "+got)
