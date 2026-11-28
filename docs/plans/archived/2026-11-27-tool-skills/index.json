@@ -12,8 +12,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "BLOCKED",
-    "detail": "BLOCKED at preflight (land: yes resume) — gates.wave `mise x -- mise run code:lint --all` red, inherited from the machine, not the plan: code:lint:60-bootstrap reports bootstrap 6.1.0 is older than 6.2.0, the version that the clone needs (upgrade with mise use -g github:virajp/bootstrap); every unit green, unit gate green; not run: overrides entry, landing, after-landing; worktree .worktrees/all-2026-11-28-1412"
+    "state": "COMPLETE",
+    "detail": "COMPLETE 2026-11-28 — dc3be8a a39b052 18415a7 736ed01 1bad54c"
   },
   "consent": {
     "merge": true,
@@ -551,6 +551,10 @@
     {
       "id": "O1",
       "text": "shared worktree: all-2026-11-28-1412; hold landing"
+    },
+    {
+      "id": "O2",
+      "text": "shared worktree: all-2026-11-28-1412; land: yes; skip after-landing"
     }
   ],
   "run": {
