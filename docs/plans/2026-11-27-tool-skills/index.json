@@ -95,7 +95,7 @@
       "waits": "",
       "status": "green",
       "started": "2026-11-28T08:46:49.783Z",
-      "ended": "2026-11-28T09:28:14.269Z",
+      "ended": "2026-11-28T09:50:34.262Z",
       "commit": "1eda3b2",
       "rounds": 3
     },
@@ -448,6 +448,15 @@
         "U3",
         "U4",
         "U7"
+      ]
+    },
+    {
+      "id": "D18",
+      "decision": "Q1: The npm hook (D9) rewrites npx <bin> to pnpm dlx <bin>, which ignores the lockfile and fetches the registry package named <bin>. What should the hook do with npx?",
+      "ruling": "npx becomes pnpm exec. The local locked bin runs, and an npx of a package that is not installed fails instead of a fetch.",
+      "rejected": "leave npx unchanged, rewrite only npm and npm ci; keep pnpm dlx as D9 rules",
+      "units": [
+        "U3"
       ]
     }
   ],

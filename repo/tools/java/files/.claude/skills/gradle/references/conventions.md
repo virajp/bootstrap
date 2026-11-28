@@ -15,12 +15,12 @@ committed wrapper, as `./gradlew`.
 `gradle/libs.versions.toml` holds each library and plugin version, as a range.
 A build script reads `libs.<alias>`.
 
-**The lockfiles are committed.** The bootstrap tasks write them
-(`mise run setup --upgrade`) and check them (`mise run setup`).
+**The lockfiles are committed.** With the kotlin tool, the bootstrap tasks
+write them (`mise run setup --upgrade`) and check them (`mise run setup`).
 
 **The updates are a report.** The ben-manes plugin at the root reports the old
-versions. A move of a version is a catalog edit and new lockfiles, in one
-commit.
+versions, with the kotlin tool in `mise run setup --upgrade`. A move of a
+version is a catalog edit and new lockfiles, in one commit.
 
 **The build cache and the configuration cache are on** in
 `gradle.properties`.

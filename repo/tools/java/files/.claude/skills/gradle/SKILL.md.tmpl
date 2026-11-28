@@ -27,12 +27,12 @@ paths:
 - Declare the repositories only in `settings.gradle.kts`, with
   `FAIL_ON_PROJECT_REPOS`.
 - Apply the ben-manes plugin `com.github.ben-manes.versions` at the root.
-  Without it, `mise run setup --upgrade` does not give the report of the old
-  versions.
 - Turn on the build cache and the configuration cache in `gradle.properties`
   (`org.gradle.caching=true` and `org.gradle.configuration-cache=true`).<% if has .all "kotlin" %>
   `setup:deps:30-kotlin` runs Gradle with `--no-configuration-cache`, because
   its resolve tasks cannot use that cache.
+- Without the ben-manes plugin, `mise run setup --upgrade` does not give the
+  report of the old versions.
 - The locking rules are in the bootstrap section of `CLAUDE.md`.<% end %>
 
 Read `references/conventions.md` for the conventions, and
