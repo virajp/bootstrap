@@ -1,3 +1,61 @@
+<!-- Shared with bootstrap: repo/tools/claude/files/CLAUDE.md.merge.toml. -->
+<!-- A change in this file stays. A removed bootstrap item comes back at the next -->
+<!-- sync, unless .config/bootstrap/tools.toml has an override for it. -->
+<!-- bootstrap:start - the next sync writes this part again, and a change in it is lost -->
+
+**Tasks**
+
+- Run a task with `mise run <task>`, and list the tasks with `mise tasks`.
+- The aggregate tasks are `setup`, `code`, `code:format`, `code:lint`,
+  `code:sec`, `code:precommit`, `test`, `test:e2e` and `test:golden`.
+- A part of an aggregate has a number prefix for its run order, for example
+  `code:lint:NN-<name>` or `setup:deps:NN-<name>`.
+- To add a tool, run `bootstrap add tool <tool>`. Do not run a bare
+  `mise use`, and do not edit a synced file (a file with the
+  `Synced from bootstrap` header) by hand.
+- Prefix each tool call with `mise x --`, for example `mise x -- dprint check`.
+- An own task is a Python uv script below `.config/mise/tasks/` that imports
+  `helpers` from `_scripts/`.
+
+**Dependencies**
+
+- Install the dependencies with `mise run setup`, and upgrade them with
+  `mise run setup --upgrade`. Do not run the package manager directly.
+- Write a range in the manifest. The lockfile holds the exact version.
+- Ask the user before you add a dependency: name it and what it is for.
+- For a merge conflict in a lockfile, take one side, then install again with
+  `mise run setup`.
+- Python comes from mise: never run uv python install and never pin a Python
+  version in uv; use uv sync --locked through mise run setup, never --frozen by
+  hand.
+
+**Gates**
+
+- `code:format:05-dprint`: dprint checks the format of each file type that
+  `dprint.jsonc` configures.
+- `code:lint:05-linter`: the house linter (`@virajp.dev/linter`) lints the
+  TypeScript, JavaScript, JSON, YAML, TOML, Markdown, CSS, HTML and Astro files.
+- `code:lint:06-shellcheck`: ShellCheck finds the problems of severity warning
+  or higher in the shell scripts.
+- `code:lint:40-go`: golangci-lint lints each Go module.
+- `code:lint:45-gomod`: each `go.mod` and `go.sum` must be tidy.
+- `code:lint:50-pyrefly`: pyrefly checks the types of the Python files, in a
+  repository with a `pyproject.toml`.
+- `code:lint:60-bootstrap`: bootstrap check validates the values in
+  `.config/bootstrap/`.
+- `code:lint:70-ruff`: ruff lints the Python files, in a repository with a
+  `pyproject.toml`.
+- `code:lint:90-uv`: each `uv.lock` must agree with its `pyproject.toml`.
+- `code:sec:10-gitleaks`: gitleaks finds secrets in the files and in the staged
+  changes; its seed is `.config/gitleaks.toml`: fix the code, not the seed.
+- `code:sec:20-grype`: grype finds the known vulnerabilities of the
+  dependencies; its seed is `.config/grype.yaml`: fix the code, not the seed.
+- `code:sec:30-osv-scanner`: osv-scanner finds the known vulnerabilities of the
+  lockfiles and of the container images in the OSV database; its seed is
+  `.config/osv-scanner.toml`: fix the code, not the seed.
+
+<!-- bootstrap:end - add own text below this line -->
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with
