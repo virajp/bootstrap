@@ -141,11 +141,11 @@
         "U3"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-28T05:13:43.106Z",
+      "ended": "2026-11-28T05:37:16.925Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 2
     }
   ],
   "waves": [
@@ -169,8 +169,8 @@
     },
     {
       "id": "W4",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T05:13:43.072Z",
       "ended": ""
     }
   ],
@@ -306,6 +306,15 @@
       "rejected": "Leave each edge to the unit",
       "units": [
         "U1",
+        "U4"
+      ]
+    },
+    {
+      "id": "D14",
+      "decision": "Q1: The golden file toml-yq.golden was already out of date before this plan (about 80 more entries on a real regeneration). Keep the 2-line change, or commit the fully regenerated golden file?",
+      "ruling": "Keep the 2-line change only. Refresh the out-of-date golden file in its own later change.",
+      "rejected": "Commit the fully regenerated golden file in this plan",
+      "units": [
         "U4"
       ]
     }
