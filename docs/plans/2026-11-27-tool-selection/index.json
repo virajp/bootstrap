@@ -122,11 +122,11 @@
         "U2"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
+      "status": "green",
+      "started": "2026-11-28T07:47:42.032Z",
+      "ended": "2026-11-28T07:57:05.634Z",
       "commit": "",
-      "rounds": 0
+      "rounds": 1
     }
   ],
   "waves": [
@@ -144,8 +144,8 @@
     },
     {
       "id": "W3",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T07:47:41.994Z",
       "ended": ""
     }
   ],
@@ -290,6 +290,15 @@
       "rejected": "Full wording in every doc that states the closure — U2 adds the missing parts to kotlin.md, java.md, migrate.md M61 and docs/design/mise.md:805",
       "units": [
         "U2"
+      ]
+    },
+    {
+      "id": "D15",
+      "decision": "Q2: The TOML golden file was already out of date at HEAD for files this plan does not touch; regenerating it changes about 70 other lines, and TestTOMLMatchesYq skips. Should those lines go into this plan golden commit?",
+      "ruling": "Keep only the D7 lines, as the worktree has it now. A later change regenerates the golden file.",
+      "rejected": "Keep the full regeneration — TestTOMLMatchesYq runs again, but the commit carries lines from other plans changes",
+      "units": [
+        "U3"
       ]
     }
   ],
