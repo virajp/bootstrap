@@ -8,6 +8,10 @@ depends = [ "fnox" ]
 description = "Homebrew: its environment, the brew alias, the Brewfile, its upgrade task and its shellenv in bash, zsh and fish"
 summary = "Homebrew, the Brewfile and its upgrade task"
 
+# The line of the homebrew tool in the Claude skill of mise.
+[contributes.mise.skill.lines]
+homebrew = "Homebrew: a formula is `brew:<name>` and a cask is `brew-cask:<name>`."
+
 [mise.env]
 # Homebrew behaviour (HOMEBREW_PREFIX stays in shell config: `brew shellenv`
 # needs it before mise activates)

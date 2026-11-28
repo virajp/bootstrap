@@ -1,9 +1,15 @@
 # The fnox tool: fnox and the fnox config (secrets in the macOS
-# Keychain, one profile for each consumer: brew, fnox). The [mise.*] tables
-# become ~/.config/mise/conf.d/fnox/mise.toml.
+# Keychain, one profile for each consumer: brew, fnox), and the Claude skill
+# secrets in ~/.claude/skills/secrets/. The [mise.*] tables become
+# ~/.config/mise/conf.d/fnox/mise.toml.
 category = "passwords"
-description = "fnox: secrets from the macOS Keychain, with a profile per consumer"
-summary = "fnox, secrets from the macOS Keychain"
+description = "fnox: secrets from the macOS Keychain, with a profile per consumer, and the Claude skill secrets"
+summary = "fnox, Keychain secrets and the secrets skill"
+
+# The lines of the skill secrets. Another tool adds one line with
+# [contributes.fnox.skill.lines] <tool> = "<line>", and SKILL.md shows one
+# bullet for each key, in key order.
+[defaults.skill.lines]
 
 [mise.bootstrap.packages]
 "brew:fnox" = "latest" # Secret management tool
@@ -11,3 +17,19 @@ summary = "fnox, secrets from the macOS Keychain"
 # The files of the tool, below files/.
 [files.".config/fnox/config.toml"]
 source = ".config/fnox/config.toml"
+
+# The Claude skill secrets, when the claude tool is selected and its value
+# skills is true. local.md is a seed: the own rules of the user.
+[files.".claude/skills/secrets/SKILL.md"]
+mode = "template"
+source = ".claude/skills/secrets/SKILL.md.tmpl"
+when = "claude.skills"
+
+[files.".claude/skills/secrets/references/conventions.md"]
+source = ".claude/skills/secrets/references/conventions.md"
+when = "claude.skills"
+
+[files.".claude/skills/secrets/references/local.md"]
+mode = "seed"
+source = ".claude/skills/secrets/references/local.md"
+when = "claude.skills"

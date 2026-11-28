@@ -19,6 +19,10 @@ identity_agent = "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.so
 [contributes.git]
 gpg.ssh.program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
 
+# The line of the 1password tool in the Claude skill of git.
+[contributes.git.skill.lines]
+1password = "1Password: its SSH agent holds the keys, and `op-ssh-sign` signs."
+
 [mise.bootstrap.packages]
 "brew-cask:1password" = { appdir = "/Applications", version = "latest" }
 

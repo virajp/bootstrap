@@ -14,6 +14,10 @@ detect = "git config --global core.editor"
 example = "code"
 question = "Which editor command should gh run for issue and pull request text (for example code, zed, vim)?"
 
+# The line of the gh tool in the Claude skill of git.
+[contributes.git.skill.lines]
+gh = "GitHub: never run `gh auth token` or `gh auth status --show-token`."
+
 # gh config set rewrites the file, so it is a shared file: the spec adds only
 # the keys of bootstrap; gh owns every other key.
 [mise.bootstrap.packages]

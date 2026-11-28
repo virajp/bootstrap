@@ -4,5 +4,9 @@ category = "system"
 description = "Collection of apps available by subscription"
 summary = "Setapp, apps by subscription"
 
+# The line of the setapp tool in the Claude skill of mise.
+[contributes.mise.skill.lines]
+setapp = "Setapp: install and remove each Setapp app in Setapp, not in the sync."
+
 [mise.bootstrap.packages]
 "brew-cask:setapp" = "latest" # Collection of apps available by subscription

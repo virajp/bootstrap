@@ -1,13 +1,17 @@
 # The claude tool: the ~/.claude files that Claude Code and Claude Desktop
-# share (settings.json and CLAUDE.md), and the upgrade:ai task. claude-cli and
-# claude-desktop depend on it.
+# share (settings.json and CLAUDE.md), the npm hook, the skills of the Mac
+# tools, and the upgrade:ai task. claude-cli and claude-desktop depend on it.
+# The npm hook reads its JSON input with jq, so this tool depends on jq.
 
 category = "ai"
-description = "The shared Claude files: settings.json, CLAUDE.md and the upgrade:ai task"
+depends = [ "jq" ]
+description = "The shared Claude files: settings.json, CLAUDE.md, the npm hook, the skills of the Mac tools and the upgrade:ai task"
 # Claude Code writes its sessions, history and caches in ~/.claude, so the
-# backup clone links the synced files of ~/.claude one by one.
-runtime = [ ".claude/history.jsonl", ".claude/projects", ".claude/sessions" ]
-summary = "The shared Claude settings and CLAUDE.md"
+# backup clone links the synced files of ~/.claude one by one. Other programs
+# also write items into ~/.claude/skills and ~/.claude/hooks, so the backup
+# clone links the synced items of these two folders one by one.
+runtime = [ ".claude/history.jsonl", ".claude/hooks", ".claude/projects", ".claude/sessions", ".claude/skills" ]
+summary = "The Claude settings, CLAUDE.md, hook and skills"
 
 # settings.json and CLAUDE.md are shared files. bootstrap adds the keys and
 # list items of the settings.json spec, and Claude Code owns the rest. In
@@ -16,15 +20,23 @@ summary = "The shared Claude settings and CLAUDE.md"
 
 # The own settings of the user, in [tools.claude] of macos.toml. settings is a
 # table of keys for settings.json. lists maps a dotted path, for example
-# "permissions.allow", to the items that the sync adds to that list.
+# "permissions.allow", to the items that the sync adds to that list. skills =
+# false stops the skills of all Mac tools: each [files] entry of a skill has
+# when = "claude.skills".
 [defaults]
 lists = {}
 settings = {}
+skills = true
 
 # The files of the tool, below files/.
 [files.".claude/CLAUDE.md"]
 mode = "merge"
 source = ".claude/CLAUDE.md.merge.toml"
+
+# The PreToolUse hook of the Bash tool, which the settings.json spec adds.
+[files.".claude/hooks/npm-normalize.sh"]
+perm = "755"
+source = ".claude/hooks/npm-normalize.sh"
 
 [files.".claude/settings.json"]
 mode = "merge"

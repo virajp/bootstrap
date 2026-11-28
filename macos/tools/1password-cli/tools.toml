@@ -6,5 +6,9 @@ depends = [ "1password" ]
 description = "The 1Password CLI (op)"
 summary = "The 1Password CLI (op)"
 
+# The line of the 1password-cli tool in the Claude skill of fnox.
+[contributes.fnox.skill.lines]
+1password-cli = "1Password: give a secret with `op run`. Never print the output of `op read`."
+
 [mise.tools.1password]
 version = "latest"
