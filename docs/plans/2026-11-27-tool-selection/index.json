@@ -312,5 +312,8 @@
   },
   "gaps": [],
   "overrides": [],
-  "run": {}
+  "run": {
+    "worktree": ".worktrees/all-2026-11-28-1014",
+    "log": "~/Library/Caches/vwf/bootstrap/2026-11-27-tool-selection.jsonl"
+  }
 }
