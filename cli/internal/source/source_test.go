@@ -157,6 +157,12 @@ root = "backup"
 [files."a/.Git/x"]
 source = "x"
 root = "backup"
+[files."./dotfiles/x"]
+source = "x"
+root = "backup"
+[files.".//dotfiles/y"]
+source = "x"
+root = "backup"
 [files."m.json"]
 source = "m.merge.toml"
 mode = "merge"
@@ -191,6 +197,8 @@ requires = [ "/abs" ]
 	}
 	const at = "macos/tools/a/tools.toml: "
 	wantMsgs := []string{
+		at + `[files.".//dotfiles/y"] a target of root = "backup" needs a clean path, with no empty or . part`,
+		at + `[files."./dotfiles/x"] a target of root = "backup" needs a clean path, with no empty or . part`,
 		at + `[files."@backup/x"] must be a path relative to the target root, with no .. part`,
 		at + `[files."DotFiles/x"] a target of root = "backup" cannot be below dotfiles/ or a .git folder of the backup clone`,
 		at + `[files."a/.Git/x"] a target of root = "backup" cannot be below dotfiles/ or a .git folder of the backup clone`,

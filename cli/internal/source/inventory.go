@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -237,7 +238,9 @@ func (s Source) entries(shown, dir string, raw *Obj) ([]FileEntry, []*fail.Error
 					fail1("root must be \"home\" or \"backup\"")
 				case r == "backup":
 					fe.Backup = true
-					if badBackupPath(key) {
+					if path.Clean(key) != key {
+						fail1("a target of root = \"backup\" needs a clean path, with no empty or . part")
+					} else if badBackupPath(key) {
 						fail1("a target of root = \"backup\" cannot be below dotfiles/ or a .git folder of the backup clone")
 					}
 				}

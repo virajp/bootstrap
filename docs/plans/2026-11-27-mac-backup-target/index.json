@@ -73,9 +73,9 @@
       "waits": "",
       "status": "green",
       "started": "2026-11-28T04:48:30.070Z",
-      "ended": "2026-11-28T04:57:22.732Z",
+      "ended": "2026-11-28T05:03:36.947Z",
       "commit": "0838b3c",
-      "rounds": 1
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -89,14 +89,14 @@
         "U1"
       ],
       "waits": "",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T05:00:07.883Z",
       "ended": "",
       "commit": "",
-      "rounds": 0,
+      "rounds": 1,
       "range": {
-        "from": "",
-        "to": ""
+        "from": "15c925d",
+        "to": "73e7fd9"
       }
     },
     {
@@ -156,8 +156,8 @@
     },
     {
       "id": "W2",
-      "status": "pending",
-      "started": "",
+      "status": "running",
+      "started": "2026-11-28T05:00:07.850Z",
       "ended": ""
     },
     {

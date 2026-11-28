@@ -191,6 +191,8 @@ const BackupRow = "@backup"
 // badBackupPath tells if the target <p> of a root = "backup" entry is not
 // permitted: its first segment is dotfiles (the links of the $HOME targets),
 // or a segment is .git (the git folder of the clone). The check ignores case.
+// The caller first makes sure that <p> is a clean path (path.Clean), so
+// that an empty or . segment cannot hide the first segment.
 func badBackupPath(p string) bool {
 	segs := strings.Split(p, "/")
 	if strings.EqualFold(segs[0], "dotfiles") {

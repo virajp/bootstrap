@@ -1,0 +1,11 @@
+/security-review engine, loop U2, round 1, range 15c925d..73e7fd9 (run over the worktree; the skill's own git context read the main checkout, so the review ran as its sub-task over the range)
+
+No high-confidence vulnerabilities found.
+
+Candidates dropped:
+- Stale-rule deletion through a forged @backup/<path> row (cli/internal/macos/macos.go stale, manifest.Stale): the manifest ~/.cache/bootstrap/macos-generated.tsv belongs to the user; BadRow and BadPath still refuse .., empty, ., .git segments and a misplaced @backup segment; a file is removed only if it carries the bootstrap header. Confidence 2.
+- Symlinks inside the backup clone sending a write or delete outside the clone (file.go manifest.Real, Finish; manifest.Stale Real): same as the $HOME root; the clone is the user's own repo; the delete needs the header. Confidence 3.
+- Walk top when the real path is outside rootReal (file.go): same logic with the root swapped; Unblock removes only header files. Confidence 2.
+- Target or requires traversal in a root = "backup" entry (source/inventory.go, check.go): paths come from the trusted source repo; badRelPath refuses .. and absolute paths; badBackupPath refuses dotfiles/ and .git. Confidence 2.
+- BackupClone resolving a relative backup against pwd, or ~ (macos.go): macos.toml is trusted user config. Confidence 1.
+- Command injection or data exposure: no new exec or shell calls; nothing written outside the configured roots.
