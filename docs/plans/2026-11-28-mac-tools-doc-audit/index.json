@@ -15,8 +15,8 @@
   "gaps_of": [],
   "execution": "teams",
   "status": {
-    "state": "APPROVED",
-    "detail": "APPROVED 2026-11-28 by the user"
+    "state": "RUNNING",
+    "detail": "RUNNING since 2026-11-28T10:55Z in .worktrees/all-2026-11-28-1412"
   },
   "consent": {
     "merge": true,
@@ -67,11 +67,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-28T10:56:31.511Z",
+      "ended": "2026-11-28T11:36:53.076Z",
+      "commit": "4581968",
+      "rounds": 2
     },
     {
       "id": "U2",
@@ -85,11 +85,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-28T10:56:31.579Z",
+      "ended": "2026-11-28T11:02:38.263Z",
+      "commit": "75b6737",
+      "rounds": 1
     },
     {
       "id": "U3",
@@ -103,11 +103,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-28T10:56:31.649Z",
+      "ended": "2026-11-28T11:34:43.035Z",
+      "commit": "0d6ab25",
+      "rounds": 3
     },
     {
       "id": "U4",
@@ -121,11 +121,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-28T10:56:31.720Z",
+      "ended": "2026-11-28T11:34:43.136Z",
+      "commit": "96b5299",
+      "rounds": 2
     },
     {
       "id": "U5",
@@ -139,11 +139,11 @@
       ],
       "depends_on": [],
       "waits": "",
-      "status": "pending",
-      "started": "",
-      "ended": "",
-      "commit": "",
-      "rounds": 0
+      "status": "green",
+      "started": "2026-11-28T10:56:31.790Z",
+      "ended": "2026-11-28T11:34:43.238Z",
+      "commit": "893e797",
+      "rounds": 2
     },
     {
       "id": "U6",
@@ -218,9 +218,9 @@
   "waves": [
     {
       "id": "W1",
-      "status": "pending",
-      "started": "",
-      "ended": ""
+      "status": "green",
+      "started": "2026-11-28T10:56:31.475Z",
+      "ended": "2026-11-28T11:40:37.643Z"
     },
     {
       "id": "W2",
@@ -457,6 +457,24 @@
       "ruling": "Yes. Keep the gate lines as written. A test on 2026-11-28 with mise 2026.11.14: mise run code:format --all --debug printed 5920 lines, mise run code:format -- --all --debug 5916, and mise run code:format --debug 132. A flag after the task name goes to the task. CLAUDE.md uses the same form (mise run test --all).",
       "rejected": "Write each gate line as mise run <task> -- --all: the result is the same, and the form differs from the repo and the other plans.",
       "units": []
+    },
+    {
+      "id": "D18",
+      "decision": "Q1: Should the audit keep, drop, or mark as owner knowledge the claims of docs/setup/tools.md that no file of macos/tools/ proves and none contradicts (the openwhispr Manual step details, the mise CLI item on owner patterns)?",
+      "ruling": "Keep them unchanged. The openwhispr Manual steps and the mise owner-pattern item stay as they are.",
+      "rejected": "drop them as findings of kind extra; keep them and mark them as owner knowledge in the prose",
+      "units": [
+        "U3"
+      ]
+    },
+    {
+      "id": "D19",
+      "decision": "Q2: What value should the Stage item of the bash, fish and zsh sections show, given stage = \"init\" in tools.toml and the legend value `migrate`?",
+      "ruling": "Keep `migrate` in all three sections (bash, fish, zsh), drop a.md F2, and apply the reworded legend of G2 (`migrate` for a tool with stage = \"init\").",
+      "rejected": "Change all three sections to `init` and rewrite the legend item as the stage value of tools.toml",
+      "units": [
+        "U1"
+      ]
     }
   ],
   "stages": {
@@ -486,7 +504,12 @@
     }
   },
   "gaps": [],
-  "overrides": [],
+  "overrides": [
+    {
+      "id": "O1",
+      "text": "shared worktree: all-2026-11-28-1412; hold landing"
+    }
+  ],
   "run": {
     "worktree": ".worktrees/all-2026-11-28-1412",
     "log": "~/Library/Caches/vwf/bootstrap/2026-11-28-mac-tools-doc-audit.jsonl"
