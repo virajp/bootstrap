@@ -122,7 +122,8 @@ type badTool struct {
 type planItem struct {
 	tool   string
 	path   string // Relative to the tool folder, or absolute for a generated file.
-	target string // Relative to $HOME.
+	target string // Relative to $HOME, or to the backup clone with backup.
+	backup bool   // root = "backup": the target is in the backup clone.
 	mode   string // generated, seed or merge.
 	format string // The `format` key, or "-".
 	tmpl   bool   // The source is a template.
@@ -142,6 +143,9 @@ type state struct {
 	home     string // _SS_HOME
 	homeReal string // _SS_HOME_REAL
 	work     string // _SS_WORK
+	// clone is the absolute path of the backup clone, and cloneReal its real
+	// path; empty when macos.toml has no backup.
+	clone, cloneReal string
 
 	values  *values.Macos
 	valFile string // _SS_VALUES: empty when there is no macos.toml.
@@ -285,6 +289,7 @@ func (s *state) run(args []string) fail.Code {
 	if code := s.readValues(); code != fail.OK {
 		return code
 	}
+	s.clone = BackupClone(s.values.Backup, s.home, s.pwd)
 	idx, err := s.src.Open()
 	if err != nil {
 		return s.logAll(err)
@@ -396,7 +401,7 @@ func (s *state) run(args []string) fail.Code {
 		s.r.Summary(0)
 		return fail.OK
 	}
-	if manifest.Write(s.e, manifestFile, append(s.rows, s.keptItems()...)) != fail.OK {
+	if manifest.Write(s.e, manifestFile, append(append(s.rows, s.keptItems()...), s.keptBackup()...)) != fail.OK {
 		s.r.Summary(1)
 		return fail.Other
 	}
@@ -615,6 +620,22 @@ func (s *state) keptItems() []manifest.Row {
 	return out
 }
 
+// keptBackup gives the old rows of the targets in the backup clone when
+// macos.toml has no backup: the run cannot find these files, so it keeps
+// their rows, and a later run with backup can still remove the files.
+func (s *state) keptBackup() []manifest.Row {
+	if s.clone != "" {
+		return nil
+	}
+	var out []manifest.Row
+	for _, r := range s.oldRows {
+		if _, ok := cutBackup(r.Path); ok && r.Item == "" {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
 // oldRowsOf is `_ss_old_rows`: the old rows whose tool is in <stage>.
 func (s *state) oldRowsOf(stage string) []manifest.Row {
 	var out []manifest.Row
@@ -626,9 +647,88 @@ func (s *state) oldRowsOf(stage string) []manifest.Row {
 	return out
 }
 
-// stale is `_ss_stale`: the stale rule for the old rows of <stage>.
+// stale is `_ss_stale`: the stale rule for the old rows of <stage>. The
+// rows of $HOME use $HOME as the root. The @backup/ rows use the backup
+// clone as the root; without backup, these rows stay and the rule removes
+// none of their files.
 func (s *state) stale(stage string) fail.Code {
-	return manifest.Stale(s.e, manifest.Macos, s.oldRowsOf(stage), s.handled, s.home)
+	var homeRows, cloneRows []manifest.Row
+	for _, r := range s.oldRowsOf(stage) {
+		if rel, ok := cutBackup(r.Path); ok {
+			r.Path = rel
+			cloneRows = append(cloneRows, r)
+		} else {
+			homeRows = append(homeRows, r)
+		}
+	}
+	var homeHandled, cloneHandled []string
+	for _, h := range s.handled {
+		if rel, ok := cutBackup(h); ok {
+			cloneHandled = append(cloneHandled, rel)
+		} else {
+			homeHandled = append(homeHandled, h)
+		}
+	}
+	rc := manifest.Stale(s.e, manifest.Macos, homeRows, homeHandled, s.home)
+	if s.clone != "" && len(cloneRows) > 0 {
+		rc = max(rc, manifest.Stale(s.e, manifest.Macos, cloneRows, cloneHandled, s.clone))
+	}
+	return rc
+}
+
+// BackupClone gives the absolute path of the backup clone from the value
+// <backup> of the key backup of macos.toml: a ~ at the start is $HOME
+// <home>, and a relative path is below <pwd>. It gives "" when <backup> is
+// empty.
+func BackupClone(backup, home, pwd string) string {
+	if backup == "" {
+		return ""
+	}
+	clone := backup
+	if clone == "~" || strings.HasPrefix(clone, "~/") {
+		clone = home + clone[1:]
+	}
+	if !strings.HasPrefix(clone, "/") {
+		clone = pwd + "/" + clone
+	}
+	return strings.TrimSuffix(clone, "/")
+}
+
+// TargetPath gives the absolute path of the target <target> of a [files]
+// entry: below $HOME <home>, or with <backup> below the backup clone
+// <clone>. It gives "" for a backup target when <clone> is empty.
+func TargetPath(home, clone, target string, backup bool) string {
+	if !backup {
+		return home + "/" + target
+	}
+	if clone == "" {
+		return ""
+	}
+	return clone + "/" + target
+}
+
+// rowPath gives the path of the manifest row of a target: the target, or
+// @backup/<target> for a target in the backup clone.
+func rowPath(target string, backup bool) string {
+	if backup {
+		return source.BackupRow + "/" + target
+	}
+	return target
+}
+
+// cutBackup gives the target of the row path <p> of a target in the backup
+// clone, and true; else <p> and false.
+func cutBackup(p string) (string, bool) {
+	return strings.CutPrefix(p, source.BackupRow+"/")
+}
+
+// showPath gives the absolute path <p> as an output line shows it: ~/...
+// below $HOME, else the absolute path.
+func (s *state) showPath(p string) string {
+	if r, ok := strings.CutPrefix(p, s.home+"/"); ok {
+		return tilde + "/" + r
+	}
+	return p
 }
 
 // recordCommit is `_ss_record_commit`. A sync that changed no file keeps a

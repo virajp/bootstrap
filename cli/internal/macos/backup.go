@@ -73,6 +73,19 @@ func linkPlan(targets, runtime []string) []link {
 	return out
 }
 
+// linkTargets gives the targets of <plan> that get a link: each target
+// below $HOME. A target of root = "backup" is a real file in the clone, so
+// it gets no link.
+func linkTargets(plan []planItem) []string {
+	var out []string
+	for _, it := range plan {
+		if !it.backup {
+			out = append(out, it.target)
+		}
+	}
+	return out
+}
+
 // step is one change of the adoption of a link.
 type step struct {
 	kind     int    // stepMove, stepRemove, stepMkdir or stepLink.
@@ -195,24 +208,19 @@ func (a *adoption) movesTo(c string) bool {
 // has `backup`. It runs before the render. A conflict stops the run with
 // code 2, before any change. A dry run shows the changes and writes nothing.
 func (s *state) backup(dryRun bool) fail.Code {
-	if s.values == nil || s.values.Backup == "" {
+	if s.clone == "" {
 		return fail.OK
 	}
-	clone := s.values.Backup
-	if clone == "~" || strings.HasPrefix(clone, "~/") {
-		clone = s.home + clone[1:]
-	}
-	clone = strings.TrimSuffix(s.abs(clone), "/")
+	clone := s.clone
 	if fi, err := os.Stat(clone); err != nil || !fi.IsDir() {
 		s.log("the backup clone %s is not a folder - set backup in %s to your clone, or remove the key", clone, valuesName)
 		return fail.Usage
 	}
+	s.cloneReal = realOf(clone)
 	root := clone + "/" + backupDir
 
-	var targets, runtime []string
-	for _, it := range s.plan {
-		targets = append(targets, it.target)
-	}
+	targets := linkTargets(s.plan)
+	var runtime []string
 	for _, g := range s.gen {
 		targets = append(targets, g.target)
 	}
@@ -225,12 +233,7 @@ func (s *state) backup(dryRun bool) fail.Code {
 		}
 	}
 
-	show := func(p string) string {
-		if r, ok := strings.CutPrefix(p, s.home+"/"); ok {
-			return tilde + "/" + r
-		}
-		return p
-	}
+	show := s.showPath
 	a := &adoption{}
 	for _, l := range linkPlan(targets, runtime) {
 		a.plan(l, s.home, root, show)

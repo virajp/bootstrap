@@ -1,0 +1,9 @@
+# The selection of the backup-target fixture config.
+
+format = 2
+
+[tools.backupfile]
+
+[tools.core]
+
+[tools.mise]

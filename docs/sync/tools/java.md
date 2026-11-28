@@ -13,8 +13,10 @@ The Java development kit (JDK), for Gradle and the Android SDK.
 ## When the tool is relevant
 
 - The repository builds with Gradle or Maven.
-- Another selected tool adds it: `android` and `kotlin` have `java` in their
-  `depends`.
+- Another selected tool adds it: `android` has `java` and `kotlin` in its
+  `depends`, and `kotlin` has `java`. `java` stays a direct dependency of
+  `android`, because the mise `depends` of a tool come from its direct
+  `depends` only, and `android-sdk` needs the JDK of `java`.
 
 `bootstrap detect` runs the detect script of the tool. It gives `match` when
 the root, or a folder one level below it, has a `*.gradle` or `*.gradle.kts`
@@ -70,10 +72,13 @@ None.
 ## Adapt to the repository
 
 1. A tool that adds `java` gives it its own environments (see
-   [`docs/design/mise.md`](../../design/mise.md)). `kotlin` is in dev only, so
-   `java` of `kotlin` is in dev only. To have it in CI, add `[tools.java]` to
-   the values file. `flutter` adds `android`, and `android` adds `java`, in the
-   environments of `flutter`.
+   [`docs/design/mise.md`](../../design/mise.md)). `kotlin` alone is in dev
+   only, so `java` of `kotlin` is in dev only. To have it in CI, add
+   `[tools.java]` to the values file. `android` adds `java` and `kotlin` in the
+   environments of `android` (dev and ci), so in an `android` repository
+   `bootstrap sync` gives `kotlin` and `java` dev and ci (`kotlin-lsp` stays in
+   dev only). `flutter` adds `android`, and `android` adds `java` and
+   `kotlin`, in the environments of `flutter`.
 2. If the repository pins a different JDK, tell the user. The values file
    can set it with `[overrides.mise.tools.java]`, for example
    `version = "21"`, and a different vendor with `[overrides.mise.settings]`,

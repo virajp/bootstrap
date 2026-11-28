@@ -15,6 +15,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/fail"
 	"github.com/virajp/bootstrap/cli/internal/header"
 	"github.com/virajp/bootstrap/cli/internal/report"
+	"github.com/virajp/bootstrap/cli/internal/source"
 	"github.com/virajp/bootstrap/cli/internal/target"
 )
 
@@ -73,6 +74,29 @@ func BadPath(p string) bool {
 	return false
 }
 
+// BadRow is BadPath for a row of a manifest of the link mode <mode>. A Mac
+// row can start with the segment @backup: the row of a target in the backup
+// clone, @backup/<target>. @backup as another segment is bad. A repo row
+// whose first segment is @backup is bad.
+func BadRow(mode LinkMode, p string) bool {
+	if BadPath(p) {
+		return true
+	}
+	segs := strings.Split(p, "/")
+	if mode != Macos {
+		return segs[0] == source.BackupRow
+	}
+	if p == source.BackupRow {
+		return true
+	}
+	for _, seg := range segs[1:] {
+		if seg == source.BackupRow {
+			return true
+		}
+	}
+	return false
+}
+
 func isLink(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode()&os.ModeSymlink != 0
@@ -123,7 +147,7 @@ func Read(e *target.Env, mode LinkMode, file, root string) ([]Row, fail.Code) {
 		}
 		tool, path, ok := strings.Cut(line, "\t")
 		path, item, _ := strings.Cut(path, "\t")
-		if !ok || tool == "" || BadPath(path) {
+		if !ok || tool == "" || BadRow(mode, path) {
 			r.Warn(e.Show(file) + ": line " + strconv.Itoa(i+1) + " is not <tool><TAB><path> - skipped")
 			continue
 		}

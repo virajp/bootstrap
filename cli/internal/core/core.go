@@ -22,6 +22,7 @@ import (
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/repo"
 	"github.com/virajp/bootstrap/cli/internal/report"
+	"github.com/virajp/bootstrap/cli/internal/source"
 	"github.com/virajp/bootstrap/cli/internal/target"
 	"github.com/virajp/bootstrap/cli/internal/values"
 )
@@ -56,6 +57,10 @@ type Side struct {
 	Values string // The values file macos.toml; on the repo side, the values folder.
 	Clone  string // The folder of the clone of bootstrap.
 	Pwd    string // The current folder: a message shows a path relative to it.
+	// backup is the absolute path of the backup clone (the key backup of
+	// macos.toml); empty on the repo side and when the key is unset. Open
+	// sets it.
+	backup string
 }
 
 // EditFile gives the file that a selection command edits: macos.toml on the
@@ -81,6 +86,22 @@ func (sd Side) Home() string {
 		return os.Getenv("HOME")
 	}
 	return sd.Root
+}
+
+// Backup gives the absolute path of the backup clone of the Mac (the key
+// backup of macos.toml), or "" when the key is unset or on the repo side.
+func (sd Side) Backup() string { return sd.backup }
+
+// TargetPath gives the absolute path of the target of the [files] entry
+// <fe>, with the resolve function of the Mac sync: below Home(), or below
+// the backup clone for root = "backup". It gives "" for a target in the
+// backup clone when the key backup is unset or the clone is not a folder.
+func (sd Side) TargetPath(fe source.FileEntry) string {
+	p := macos.TargetPath(sd.Home(), sd.backup, fe.Target, fe.Backup)
+	if fi, err := os.Stat(sd.backup); fe.Backup && (err != nil || !fi.IsDir()) {
+		return ""
+	}
+	return p
 }
 
 // CmdName gives the command as the user types it.

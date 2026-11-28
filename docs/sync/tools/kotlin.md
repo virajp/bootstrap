@@ -15,6 +15,10 @@ resolves the Gradle dependencies against the lockfiles.
 
 - The repository has Kotlin code: `*.kt` or `*.kts` files, for example the
   Android part of a Flutter app.
+- The `android` tool adds it: `android` has `kotlin` in its `depends`, and
+  `flutter` has `android`. `flutter` gets `kotlin` through `android`: the
+  ktlint and detekt gates, the seeds `.config/detekt.yml` and
+  `.config/ktlint.editorconfig`, `setup:deps:30-kotlin` and the Kotlin LSP.
 - The user edits Kotlin with an editor or an agent that uses a language
   server.
 - The repository root has a Gradle build with an executable `./gradlew`.
@@ -137,11 +141,15 @@ None.
 1. `kotlin-lsp` has binaries for macOS only. If the user develops on a
    different platform, tell the user. ktlint and detekt work on macOS and
    Linux.
-2. To run the gates in CI, set `env = ["dev", "ci"]` in `[tools.kotlin]`.
-   Then `java` is in ci too.
+2. In an `android` or `flutter` repository, `kotlin` gets the environments of
+   `android` (dev and ci). Thus CI installs ktlint and detekt and runs the two
+   gates, and `java` is in ci too. `kotlin-lsp` stays in dev only. In a
+   repository without `android`, to run the gates in CI, set
+   `env = ["dev", "ci"]` in `[tools.kotlin]`. Then `java` is in ci too.
 3. The tool adds `java` as a dependency, and `java` gets the environments of
-   `kotlin`: dev only. Another selected tool can put `java` in CI through its
-   `depends` (for example `flutter`, through `android`). `setup` runs
+   `kotlin`. Without `android`, that is dev only. Another selected tool can put
+   `java` in CI through its `depends` (for example `android`, and `flutter`
+   through `android`). `setup` runs
    `setup:deps:30-kotlin` in every environment, and the task runs `./gradlew`
    when the root has one. If the root has an executable `./gradlew`, CI runs
    `mise run setup`, and `java` is not in CI, add `[tools.java]` to the values

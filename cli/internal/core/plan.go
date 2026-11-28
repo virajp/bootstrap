@@ -1350,13 +1350,12 @@ func (pl *planner) remove(names, extra []string) error {
 		delete(pl.direct, t)
 	}
 	// The seeds of the removed tools stay; the command lists them.
-	root := st.Home()
 	for _, t := range gone {
 		if need[t] {
 			continue
 		}
 		for _, fe := range st.Manifest(t).Files {
-			if p := root + "/" + fe.Target; fe.Mode == "seed" && Exists(p) {
+			if p := st.TargetPath(fe); fe.Mode == "seed" && p != "" && Exists(p) {
 				pl.p.Seeds = append(pl.p.Seeds, p)
 			}
 		}

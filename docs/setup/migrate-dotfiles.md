@@ -188,7 +188,8 @@ values of `[vars]` of
 `identity.toml` has no value for two more answers:
 
 - `backup`, the top-level key: the path of `<clone>`. The sync links the
-  synced files into `<clone>/dotfiles/`.
+  synced files into `<clone>/dotfiles/`, and writes the targets of the
+  `root = "backup"` entries as real files at the root of the clone.
 - `dock_orientation` of `[tools.macos-defaults]`. The pack `base` always adds
   that tool, so this answer is always necessary. Ask the owner.
 

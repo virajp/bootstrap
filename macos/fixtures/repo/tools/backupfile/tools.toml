@@ -1,0 +1,10 @@
+# The backupfile tool of the fixture repo: one target in the backup clone.
+
+category = "dev"
+description = "one target in the backup clone"
+summary = "One target in the backup clone"
+
+# The files of the tool, below files/.
+[files."notes/backup.txt"]
+root = "backup"
+source = "notes/backup.txt"

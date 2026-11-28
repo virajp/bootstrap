@@ -885,10 +885,10 @@ func (m *Model) replaceModal(old, new string) *modal {
 
 // seeds gives the seed files of <t>; with <there>, only those that exist.
 func (m *Model) seeds(t string, there bool) []string {
-	root := m.state.Home()
 	var out []string
 	for _, f := range m.manifest(t).Files {
-		if f.Mode == "seed" && (!there || core.Exists(root+"/"+f.Target)) {
+		p := m.state.TargetPath(f)
+		if f.Mode == "seed" && p != "" && (!there || core.Exists(p)) {
 			out = append(out, f.Target)
 		}
 	}

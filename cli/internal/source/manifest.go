@@ -37,6 +37,9 @@ type FileEntry struct {
 	// parts: the sync renders the entry one time for each table at that
 	// path. Empty: one file.
 	Each string
+	// Backup: the key root = "backup" of a Mac [files] entry. The target is
+	// then relative to the backup clone, not to $HOME.
+	Backup bool
 }
 
 // Formatter is the formatter of a tool: the sync formats each rendered file

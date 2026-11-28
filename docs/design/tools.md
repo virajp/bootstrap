@@ -15,10 +15,10 @@ the sync is in [cli.md](cli.md#the-exit-codes).
 
 ## The two sides
 
-| Side    | Tools root     | A file goes to             | Reads the tools of   |
-| ------- | -------------- | -------------------------- | -------------------- |
-| `repo`  | `repo/tools/`  | The path in the repository | `bootstrap sync`     |
-| `macos` | `macos/tools/` | The path below `$HOME`     | `bootstrap mac sync` |
+| Side    | Tools root     | A file goes to                                                           | Reads the tools of   |
+| ------- | -------------- | ------------------------------------------------------------------------ | -------------------- |
+| `repo`  | `repo/tools/`  | The path in the repository                                               | `bootstrap sync`     |
+| `macos` | `macos/tools/` | The path below `$HOME`, or below the backup clone with `root = "backup"` | `bootstrap mac sync` |
 
 A tool folder has four parts:
 
@@ -208,19 +208,22 @@ key: the top-level `seed` key, the old table of seed conditions
 A `[files."<target>"]` table of a `tools.toml` is the entry of one config file
 of the tool. The key is the target: the path in the repository, or the path
 below `$HOME` on the Mac side, with no `~/`. A target has no `..` part and does
-not start with `/`.
+not start with `/`. The first segment of a target is not `@backup`, on both
+sides: that segment starts the manifest row of a target in the backup clone. On
+the Mac side, `root = "backup"` puts the target below the backup clone.
 
-| Key              | Side | Meaning                                                                                                                                                                         |
-| ---------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`         | Both | Necessary. The path below `files/`, with no `..` part. A folder copies each regular file below it, to the same path below the target. For `merge`, a spec `<name>.merge.toml`.  |
-| `mode`           | Both | `copy` (the default): copied on each run. `template`: rendered on each run. `seed`: written only when it is missing. `merge`: a shared file, merged item by item from its spec. |
-| `render`         | Both | Only with `seed`. `true` renders the seed at its first write.                                                                                                                   |
-| `requires`       | Both | A list of exact paths. Each path must exist. It is relative to the root of the repository, or to `$HOME` on the Mac side. It has no `..` part.                                  |
-| `requires_found` | Repo | A list of file names, met when any one of them is found. See [repo.md](repo.md#requires_found). On the Mac side, it stops the sync.                                             |
-| `format`         | Both | `text`, `json`, `jsonc`, `yaml` or `toml`: the type of the file, not the extension. It selects the parse check and the merge. The default comes from the extension.             |
-| `when`           | Both | A value path `<tool>.<path>` in the values of all tools, with an optional `!` at the start. The entry applies only when the value is `true` (with `!`: not `true`).             |
-| `perm`           | Both | The mode of the file, an octal string, for example `"600"`. The default is the mode of the source.                                                                              |
-| `dir_perm`       | Both | The mode of the folder of the target, an octal string, for example `"700"` for each file below `~/.ssh`.                                                                        |
+| Key              | Side | Meaning                                                                                                                                                                                                                                                           |
+| ---------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`         | Both | Necessary. The path below `files/`, with no `..` part. A folder copies each regular file below it, to the same path below the target. For `merge`, a spec `<name>.merge.toml`.                                                                                    |
+| `mode`           | Both | `copy` (the default): copied on each run. `template`: rendered on each run. `seed`: written only when it is missing. `merge`: a shared file, merged item by item from its spec.                                                                                   |
+| `render`         | Both | Only with `seed`. `true` renders the seed at its first write.                                                                                                                                                                                                     |
+| `requires`       | Both | A list of exact paths. Each path must exist. It is relative to the root of the repository, or to `$HOME` on the Mac side (to the backup clone with `root = "backup"`). It has no `..` part.                                                                       |
+| `requires_found` | Repo | A list of file names, met when any one of them is found. See [repo.md](repo.md#requires_found). On the Mac side, it stops the sync.                                                                                                                               |
+| `format`         | Both | `text`, `json`, `jsonc`, `yaml` or `toml`: the type of the file, not the extension. It selects the parse check and the merge. The default comes from the extension.                                                                                               |
+| `when`           | Both | A value path `<tool>.<path>` in the values of all tools, with an optional `!` at the start. The entry applies only when the value is `true` (with `!`: not `true`).                                                                                               |
+| `perm`           | Both | The mode of the file, an octal string, for example `"600"`. The default is the mode of the source.                                                                                                                                                                |
+| `dir_perm`       | Both | The mode of the folder of the target, an octal string, for example `"700"` for each file below `~/.ssh`.                                                                                                                                                          |
+| `root`           | Mac  | `home` (the default): the target is below `$HOME`. `backup`: the target is a real file below the backup clone, the key `backup` of `macos.toml`. See [mac.md](mac.md#the-backup-clone). Any other value stops the sync. On the repo side, the key stops the sync. |
 
 The `.tmpl` suffix of a source is a name convention for a template. The `mode`
 key, not the suffix, makes a file a template. A `copy` or `template` file is an
@@ -234,6 +237,12 @@ removes a synced copy. For example, the task `git:merge:develop` of `git` has
 Any other key stops the sync. `requires` and `requires_found` must
 be
 non-empty lists.
+
+A `root = "backup"` entry has mode `copy`, `template` or `seed`. Mode `merge`
+stops the sync. Its target must be a clean path, with no empty or `.` part and
+no `/` at the end. Its first segment is not `dotfiles` (the links of the
+`$HOME` targets are there), and no segment is `.git` (the git folder of the
+clone). These two checks ignore case. Each error stops the sync.
 
 When a `requires` path is not there, or no name of `requires_found` is found,
 the sync does not write the
@@ -582,8 +591,14 @@ name in the registry.
 ### The current state
 
 - `repo/tools/flutter/tools.toml` has `depends = ["android"]`, so the mise tool
-  `flutter` depends on `android-sdk`. Thus each Flutter consumer gets `android`
-  and `java`, also a web-only or a desktop-only app.
+  `flutter` depends on `android-sdk`. `repo/tools/android/tools.toml` has
+  `depends = ["java", "kotlin"]`. `java` stays a direct dependency, because
+  the mise `depends` of a tool come from its direct `depends` only, and
+  `android-sdk` needs the JDK of `java`. Thus each Flutter consumer gets
+  `android`, `java` and `kotlin`, also a web-only or a desktop-only app.
+  `flutter` gets `kotlin` through `android`: the ktlint and detekt gates, the
+  seeds `.config/detekt.yml` and `.config/ktlint.editorconfig`,
+  `setup:deps:30-kotlin` and the Kotlin LSP.
 - Gradle does not come from mise. The Android tasks use the `gradlew` wrapper
   of the project. The `kotlin` tool ships `ktlint`, `detekt` and `kotlin-lsp`.
 

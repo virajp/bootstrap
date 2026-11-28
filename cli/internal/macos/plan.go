@@ -11,8 +11,11 @@ import (
 // shipped is one file of a selected tool: a line of `files` in `_ss_plan`.
 type shipped struct {
 	tool, path, target string
-	tmpl               bool
+	backup, tmpl       bool
 }
+
+// row gives the manifest row path of the file: its handled target.
+func (f shipped) row() string { return rowPath(f.target, f.backup) }
 
 // makePlan is `_ss_plan`. Each file of a selected tool, except its tools.toml,
 // gives a target relative to $HOME, without `.tmpl`. It sets the plan (in the
@@ -29,15 +32,16 @@ func (s *state) makePlan() fail.Code {
 			if !source.When(s.all, f.When) {
 				continue
 			}
-			files = append(files, shipped{tool, f.Path, f.Target, f.Tmpl})
+			files = append(files, shipped{tool, f.Path, f.Target, f.Backup, f.Tmpl})
 		}
 	}
 	rc := fail.OK
 
-	// A target that more than one file gives.
+	// A target that more than one file gives. A target in the backup clone
+	// and the same path below $HOME are two targets.
 	count := map[string]int{}
 	for _, f := range files {
-		count[f.target]++
+		count[f.row()]++
 	}
 	var dups []string
 	for t, n := range count {
@@ -48,16 +52,18 @@ func (s *state) makePlan() fail.Code {
 	sort.Strings(dups)
 	for _, t := range dups {
 		var b strings.Builder
+		var where string
 		for _, f := range files {
-			if f.target == t {
+			if f.row() == t {
 				b.WriteString(" " + shown + "/" + f.tool + "/" + f.path)
+				where = s.showTarget(f.target, f.backup)
 			}
 		}
-		s.log("%s/%s comes from more than one source:%s", tilde, t, b.String())
+		s.log("%s comes from more than one source:%s", where, b.String())
 		rc = fail.Usage
 	}
 	for _, f := range files {
-		if strings.HasPrefix(f.target, confTarget+"/") {
+		if !f.backup && strings.HasPrefix(f.target, confTarget+"/") {
 			s.log("%s/%s/%s: the sync generates .config/mise/conf.d/ from [mise.*] of tools.toml - remove the file", shown, f.tool, f.path)
 			rc = fail.Usage
 		}
@@ -70,11 +76,11 @@ func (s *state) makePlan() fail.Code {
 	// defaults. The generated mise files come first.
 	var all []planItem
 	for _, g := range s.gen {
-		all = append(all, planItem{g.tool, g.file, g.target, "generated", "toml", false})
+		all = append(all, planItem{g.tool, g.file, g.target, false, "generated", "toml", false})
 	}
 	for _, f := range files {
 		mode, format := "generated", "-"
-		if fe := s.entry(f.tool, f.target); fe != nil {
+		if fe := s.entry(f.tool, f.row()); fe != nil {
 			if fe.Mode != "" {
 				mode = fe.Mode
 			}
@@ -82,7 +88,7 @@ func (s *state) makePlan() fail.Code {
 				format = fe.Format
 			}
 		}
-		all = append(all, planItem{f.tool, f.path, f.target, mode, format, f.tmpl})
+		all = append(all, planItem{f.tool, f.path, f.target, f.backup, mode, format, f.tmpl})
 	}
 
 	s.plan = nil
@@ -96,25 +102,42 @@ func (s *state) makePlan() fail.Code {
 				if s.res.Init[it.tool] != (stage == "init") {
 					continue
 				}
-				if strings.HasPrefix(it.target, ".config/mise/") != (pass == "mise") {
+				if (!it.backup && strings.HasPrefix(it.target, ".config/mise/")) != (pass == "mise") {
 					continue
 				}
 				s.plan = append(s.plan, it)
-				s.handled = append(s.handled, it.target)
+				s.handled = append(s.handled, it.row())
 			}
 		}
 	}
 	return fail.OK
 }
 
-// entry gives the [files] table of <target> of <tool>, or nil.
-func (s *state) entry(tool, target string) *source.FileEntry {
+// row gives the manifest row path of the item: its handled target.
+func (it planItem) row() string { return rowPath(it.target, it.backup) }
+
+// showTarget gives the target <target> as an output line shows it: ~/<target>,
+// or for a target in the backup clone its path in the clone. Without backup
+// in macos.toml, a target in the clone shows as @backup/<target>.
+func (s *state) showTarget(target string, backup bool) string {
+	if !backup {
+		return tilde + "/" + target
+	}
+	if s.clone == "" {
+		return rowPath(target, true)
+	}
+	return s.showPath(s.clone + "/" + target)
+}
+
+// entry gives the [files] table of <tool> whose manifest row path is <row>,
+// or nil.
+func (s *state) entry(tool, row string) *source.FileEntry {
 	m := s.idx.Manifests[tool]
 	if m == nil {
 		return nil
 	}
 	for i := range m.Files {
-		if m.Files[i].Target == target {
+		if rowPath(m.Files[i].Target, m.Files[i].Backup) == row {
 			return &m.Files[i]
 		}
 	}

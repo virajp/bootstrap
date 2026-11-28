@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/virajp/bootstrap/cli/internal/fail"
+	"github.com/virajp/bootstrap/cli/internal/macos"
 	"github.com/virajp/bootstrap/cli/internal/oldform"
 	"github.com/virajp/bootstrap/cli/internal/scripts"
 	"github.com/virajp/bootstrap/cli/internal/selection"
@@ -22,6 +23,9 @@ type Selected struct {
 	Raw   *source.Obj // The repo side: the values, values.Combine of the folder.
 	Res   *selection.Resolved
 	Items []values.Item // The [tools.*] and [packs.*] entries of the values file.
+	// Backup is the key backup of macos.toml as the file has it; empty on
+	// the repo side.
+	Backup string
 }
 
 // SelectionOf reads the values <file> of the side <sd> and resolves its
@@ -46,7 +50,7 @@ func SelectionOf(sd Side, file, overridesOf string) (*Selected, error) {
 		if err != nil {
 			return nil, err
 		}
-		s.User, s.Items = v.User, v.Sel
+		s.User, s.Items, s.Backup = v.User, v.Sel, v.Backup
 		if res, err = selection.ResolveMacos(idx, v); err != nil {
 			return nil, err
 		}
@@ -134,6 +138,9 @@ func stateOf(sd Side, file string, cur []byte, raw *source.Obj) (*State, error) 
 	}
 	if !sd.Mac {
 		raw = sel.Raw
+	}
+	if sd.Mac {
+		sd.backup = macos.BackupClone(sel.Backup, sd.Home(), sd.Pwd)
 	}
 	s := &State{Side: sd, Cur: cur, Raw: raw, Sel: sel, Res: sel.Res, Named: map[string]bool{}}
 	for _, it := range sel.Items {

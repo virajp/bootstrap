@@ -32,9 +32,13 @@ Flutter and Dart. The tool adds the `android` tool for the Android build.
 | --------- | ------- | ------------ |
 | `flutter` | `3`     | dev, ci      |
 
-The tool has `android` in its `depends`, and `android` has `java`. Thus the
-sync adds both tools, in the environments of `flutter` (dev and ci). See
-[`android.md`](android.md) and [`java.md`](java.md).
+The tool has `android` in its `depends`, `android` has `java` and `kotlin`,
+and `kotlin` has `java`. Thus the sync adds the three tools, in the
+environments of `flutter` (dev and ci). `flutter` gets `kotlin` through
+`android`: the ktlint and detekt gates, the seeds `.config/detekt.yml` and
+`.config/ktlint.editorconfig`, `setup:deps:30-kotlin` and the Kotlin LSP. The
+CI of the repository installs ktlint and detekt and runs the two gates. See
+[`android.md`](android.md), [`java.md`](java.md) and [`kotlin.md`](kotlin.md).
 
 The tool declares the language server `dart-lsp`
 (`dart language-server --protocol=lsp`, for `.dart`). The `dart` command comes

@@ -2,13 +2,13 @@
 
 The Android SDK command-line tools.
 
-| Property     | Value   |
-| ------------ | ------- |
-| Root only    | No      |
-| Depends      | `java`  |
-| Parent       | None    |
-| Default envs | dev, ci |
-| Seeds        | None    |
+| Property     | Value            |
+| ------------ | ---------------- |
+| Root only    | No               |
+| Depends      | `java`, `kotlin` |
+| Parent       | None             |
+| Default envs | dev, ci          |
+| Seeds        | None             |
 
 ## When the tool is relevant
 
@@ -36,6 +36,16 @@ Gradle file at the root, or one level below it, uses the Android Gradle plugin
 | mise tool     | Version | Environments | Note                                                                   |
 | ------------- | ------- | ------------ | ---------------------------------------------------------------------- |
 | `android-sdk` | `23`    | dev, ci      | Runs on the JDK of `java`. Sets `ANDROID_HOME` and `ANDROID_SDK_ROOT`. |
+
+The tool has `java` and `kotlin` in its `depends`, and `kotlin` has `java`.
+`java` stays a direct dependency, because the mise `depends` of a tool come
+from its direct `depends` only, and `android-sdk` needs the JDK of `java`.
+`flutter` gets `kotlin` through `android`: the ktlint and detekt gates, the
+seeds `.config/detekt.yml` and `.config/ktlint.editorconfig`,
+`setup:deps:30-kotlin` and the Kotlin LSP. The sync adds both tools, in the
+environments of `android` (dev and ci). Thus the CI of the repository installs
+ktlint and detekt and runs the two gates. See
+[`java.md`](java.md) and [`kotlin.md`](kotlin.md).
 
 ## Tasks
 

@@ -76,7 +76,6 @@ The task finds the package manager from `.config/mise/conf.d/`:
 | No `package.json`           | The task prints nothing and exits 0.                |
 | `pnpm`                      | The task runs pnpm.                                 |
 | `aube`                      | The task runs aube.                                 |
-| `bun`, and no other         | The task prints nothing and exits 0.                |
 | `pnpm` and `aube`           | The task stops with a message, and the setup stops. |
 | None, with a `package.json` | The task stops with a message, and the setup stops. |
 
